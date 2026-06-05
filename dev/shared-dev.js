@@ -62,6 +62,104 @@ async function dbSet(key,val){
     return true;
   }catch(e){console.error('DB save exception:',e);return false;}
 }
+const DUPR_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-submit-match';
+
+// Fetch DUPR IDs for players in a match
+async function getDuprIds(playerNames){
+  if(!playerNames.length) return {};
+  try{
+    const names = playerNames.map(n => `player_name.eq.${encodeURIComponent(n)}`).join(',');
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(currentLeague?.id||'')}&or=(${names})&select=player_name,dupr_id`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok) return {};
+    const rows = await r.json();
+    const map = {};
+    for(const row of rows) map[row.player_name] = row.dupr_id;
+    return map;
+  }catch(e){ return {}; }
+}
+
+// Store DUPR match code in Supabase for future updates/deletes
+async function storeDuprMatchCode(identifier, matchCode, hashedMatchCode){
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/pb_scores_log`, {
+      method: 'PATCH',
+      headers:{
+        'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,
+        'Content-Type':'application/json'
+      },
+      body: JSON.stringify({ dupr_match_code: matchCode, dupr_hashed_code: hashedMatchCode })
+    });
+  }catch(e){ console.warn('Could not store DUPR match code:', e); }
+}
+
+async function submitToDUPR(week, matchIdx, m, games){
+  if(!currentLeague) return;
+  const r = seriesResult(m);
+  const isDoubles = m.p1a !== undefined;
+  const format = isDoubles ? 'DOUBLES' : 'SINGLES';
+
+  // Get all player names in this match
+  const playerNames = isDoubles
+    ? [m.p1a, m.p1b, m.p2a, m.p2b].filter(Boolean)
+    : [m.p1, m.p2].filter(Boolean);
+
+  // Look up DUPR IDs
+  const duprIds = await getDuprIds(playerNames);
+
+  // Only submit if ALL players have linked DUPR accounts
+  const allLinked = playerNames.every(p => duprIds[p]);
+  if(!allLinked){
+    const unlinked = playerNames.filter(p => !duprIds[p]);
+    console.log('DUPR submission skipped — unlinked players:', unlinked);
+    return;
+  }
+
+  // Build game scores for DUPR (they want each game separately)
+  // Use the last completed series result
+  const completedGames = games.filter(g => g.s1 !== null && g.s2 !== null);
+  if(!completedGames.length) return;
+
+  const teamA = isDoubles
+    ? { player1: duprIds[m.p1a], player2: duprIds[m.p1b] }
+    : { player1: duprIds[m.p1] };
+  const teamB = isDoubles
+    ? { player1: duprIds[m.p2a], player2: duprIds[m.p2b] }
+    : { player1: duprIds[m.p2] };
+
+  // Add game scores
+  completedGames.forEach((g, i) => {
+    const gNum = i + 1;
+    teamA[`game${gNum}`] = g.s1;
+    teamB[`game${gNum}`] = g.s2;
+  });
+
+  try{
+    const res = await fetch(DUPR_EDGE_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        match: { teamA, teamB },
+        leagueKey: currentLeague.key,
+        leagueName: currentLeague.name,
+        week,
+        matchNum: matchIdx + 1,
+        format
+      })
+    });
+    const data = await res.json();
+    if(data.success){
+      console.log('DUPR match submitted successfully:', data.matchCode);
+    } else {
+      console.warn('DUPR submission failed:', data.error, data.details);
+    }
+  }catch(e){
+    console.warn('DUPR Edge Function error:', e);
+  }
+}
+
 async function logScore(week, matchIdx, games, winner, team1, team2){
   try{
     await fetch(`${SUPABASE_URL}/rest/v1/pb_scores_log`,{
@@ -355,10 +453,12 @@ async function submitScore(){
   const{week,idx}=currentModalMatch;
   schedule.find(w=>w.week===week).matches[idx].games=games;
   const ok=await saveData();
-  // Log the score entry
+  // Log the score entry and submit to DUPR
   const m=schedule.find(w=>w.week===week).matches[idx];
   const r=seriesResult(m);
   await logScore(week, idx, games, r.winner, r.team1, r.team2);
+  // Submit to DUPR in background (don't block UI)
+  submitToDUPR(week, idx, m, games).catch(e => console.warn('DUPR submission error:', e));
   closeModal();
   if(typeof renderScoreMatches==='function')renderScoreMatches(week);
   if(typeof renderStandings==='function')renderStandings();
