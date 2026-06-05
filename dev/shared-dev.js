@@ -139,7 +139,11 @@ async function submitToDUPR(week, matchIdx, m, games){
   try{
     const res = await fetch(DUPR_EDGE_URL, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'apikey': SUPABASE_KEY
+      },
       body: JSON.stringify({
         match: { teamA, teamB },
         leagueKey: currentLeague.key,
