@@ -195,8 +195,9 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <th style="width:52px;white-space:nowrap">#</th><th>Player</th>
         <th class="num">W</th><th class="num">L</th>
         <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+        <th class="num">DUPR</th>
       </tr></thead>
-      <tbody id="standings-body"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
+      <tbody id="standings-body"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
   </div>
 
@@ -294,6 +295,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     if(found) viewingSeason = found;
   }
   await loadData();
+  await loadDuprRatings();
   scheduleWeek = scoresWeek = findCurrentWeek();
   renderSeasonSelector();
   renderStandings();
@@ -303,6 +305,25 @@ window.addEventListener('DOMContentLoaded', async ()=>{
 document.getElementById('score-modal').addEventListener('click', e=>{
   if(e.target===e.currentTarget) closeModal();
 });
+
+// DUPR ratings map: { playerName: { duprId, rating } }
+let duprRatings = {};
+
+async function loadDuprRatings(){
+  if(!currentLeague) return;
+  try{
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(currentLeague.id)}&select=player_name,dupr_id`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok) return;
+    const rows = await r.json();
+    duprRatings = {};
+    for(const row of rows){
+      duprRatings[row.player_name] = {duprId: row.dupr_id};
+    }
+  }catch(e){ console.warn('Could not load DUPR ratings:', e); }
+}
 
 function renderSeasonSelector(){
   const wrap = document.getElementById('season-selector-wrap');
@@ -391,6 +412,10 @@ function renderStandings(){
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
       <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
+      <td class="num">${duprRatings[r.p]?.duprId
+        ? `<span style="font-family:var(--font-display);font-size:12px;color:var(--muted)">${duprRatings[r.p].duprId}</span>`
+        : `<a href="dupr-connect.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;border:1px solid var(--border);padding:2px 6px;border-radius:4px;white-space:nowrap">Connect</a>`
+      }</td>
     </tr>`;
   }).join('');
 }

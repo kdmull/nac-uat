@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Connect DUPR Account — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.page{padding:2rem 1.5rem;max-width:600px;margin:0 auto}
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.5rem}
+.card h2{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.5rem}
+.card p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:1.2rem}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:1rem}
+.step-num{font-family:var(--font-display);font-size:18px;font-weight:900;color:var(--white);background:var(--navy);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-text{font-size:14px;color:var(--text)}
+.player-select{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--navy);padding:10px 14px;font-size:16px;width:100%;font-family:var(--font-body);outline:none;cursor:pointer;margin-bottom:1rem}
+.player-select:focus{border-color:var(--navy)}
+/* DUPR iframe */
+.dupr-iframe-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-top:1rem;display:none}
+.dupr-iframe-wrap iframe{width:100%;height:500px;border:none;display:block}
+/* Success state */
+.success-card{background:rgba(76,175,40,.06);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;display:none}
+.success-card h3{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--green-dark);margin-bottom:.5rem}
+.success-card p{color:var(--muted);font-size:14px}
+.dupr-id-badge{display:inline-block;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy);background:var(--surface2);padding:6px 16px;border-radius:var(--radius);margin:.75rem 0}
+/* Already linked */
+.linked-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px}
+.linked-name{flex:1;font-weight:600;font-size:14px;color:var(--navy)}
+.linked-id{font-family:var(--font-display);font-size:13px;color:var(--muted)}
+.linked-badge{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:600px){
+  .page{padding:1rem}
+  .card{padding:1.2rem}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+</nav>
+
+<div class="page">
+  <div class="card" id="setup-card">
+    <h2>Connect Your DUPR Account</h2>
+    <p>Link your DUPR account to your NAC Pickleball profile. Once connected, your match results will automatically count toward your DUPR rating.</p>
+
+    <div class="step"><div class="step-num">1</div><div class="step-text">Select your name from the league roster below</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Click <strong>Connect DUPR</strong> and log in with your DUPR credentials</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Your account is linked — done!</div></div>
+
+    <div style="margin-top:1.5rem">
+      <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Your League</label>
+      <select class="player-select" id="league-sel" onchange="onLeagueChange()">
+        <option value="">— Select your league —</option>
+        <option value="singles">Singles League</option>
+        <option value="beginner">All Ages Beginner</option>
+        <option value="int1949">19-49 Intermediate</option>
+        <option value="int50">50+ Intermediate</option>
+        <option value="adv1949">19-49 Advanced</option>
+        <option value="adv50">50+ Advanced</option>
+      </select>
+
+      <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Your Name</label>
+      <select class="player-select" id="player-sel" disabled>
+        <option value="">— Select your league first —</option>
+      </select>
+
+      <button class="btn btn-primary" id="connect-btn" onclick="startConnect()" disabled style="width:100%;margin-top:.5rem">Connect DUPR Account</button>
+    </div>
+  </div>
+
+  <div class="dupr-iframe-wrap" id="iframe-wrap">
+    <div style="background:var(--navy);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7)">Log in with DUPR</span>
+      <button onclick="cancelConnect()" style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>
+    <iframe id="dupr-iframe" src="" allow="*"></iframe>
+  </div>
+
+  <div class="success-card" id="success-card">
+    <h3>✓ Account Linked!</h3>
+    <p>Successfully connected <strong id="success-name"></strong> to DUPR</p>
+    <div class="dupr-id-badge" id="success-dupr-id"></div>
+    <p style="margin-top:.5rem">Your match results will now count toward your DUPR rating.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem">
+      <button class="btn btn-ghost" onclick="connectAnother()">Connect Another Player</button>
+      <a class="btn btn-primary" id="back-league-link" href="dev-index.html">Back to Leagues</a>
+    </div>
+  </div>
+
+  <div class="card" id="linked-card" style="display:none">
+    <h2>Already Linked</h2>
+    <p style="margin-bottom:1rem">These players in this league have already connected their DUPR accounts:</p>
+    <div id="linked-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+const DUPR_CLIENT_KEY_B64 = 'dGVzdC1jay03ZWVhZDg2YS01NGU0LTRlN2MtZmEzZi02M2QyN2YzZmI3ODQ=';
+const DUPR_SSO_BASE = 'https://uat.dupr.gg/login-external-app/';
+
+let selectedLeague = null;
+let selectedPlayer = null;
+
+// Read league from URL if provided
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const leagueId = params.get('league');
+  const playerName = params.get('player');
+
+  if(leagueId){
+    document.getElementById('league-sel').value = leagueId;
+    await onLeagueChange();
+    if(playerName){
+      document.getElementById('player-sel').value = playerName;
+      onPlayerChange();
+    }
+  }
+
+  // Listen for DUPR SSO postMessage
+  window.addEventListener('message', handleDUPRMessage, false);
+});
+
+async function onLeagueChange(){
+  const leagueId = document.getElementById('league-sel').value;
+  const playerSel = document.getElementById('player-sel');
+  const connectBtn = document.getElementById('connect-btn');
+
+  if(!leagueId){
+    playerSel.innerHTML = '<option value="">— Select your league first —</option>';
+    playerSel.disabled = true;
+    connectBtn.disabled = true;
+    return;
+  }
+
+  selectedLeague = LEAGUES.find(l => l.id === leagueId);
+  currentLeague = selectedLeague;
+
+  // Load players for this league
+  playerSel.innerHTML = '<option value="">Loading players...</option>';
+  playerSel.disabled = true;
+
+  await loadSeasons();
+  await loadData();
+
+  const players = getActivePlayers();
+  playerSel.innerHTML = '<option value="">— Select your name —</option>' +
+    players.map(p => `<option value="${p}">${p}</option>`).join('');
+  playerSel.disabled = false;
+  playerSel.onchange = onPlayerChange;
+
+  // Load already linked players
+  await loadLinkedPlayers(leagueId);
+}
+
+function onPlayerChange(){
+  selectedPlayer = document.getElementById('player-sel').value;
+  document.getElementById('connect-btn').disabled = !selectedPlayer;
+}
+
+async function loadLinkedPlayers(leagueId){
+  try{
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&select=player_name,dupr_id`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok) return;
+    const rows = await r.json();
+    const card = document.getElementById('linked-card');
+    const list = document.getElementById('linked-list');
+    if(rows.length){
+      list.innerHTML = rows.map(row => `
+        <div class="linked-row">
+          <span class="linked-name">${row.player_name}</span>
+          <span class="linked-id">DUPR: ${row.dupr_id}</span>
+          <span class="linked-badge">Linked</span>
+        </div>`).join('');
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  }catch(e){ console.warn('Could not load linked players:', e); }
+}
+
+function startConnect(){
+  if(!selectedPlayer || !selectedLeague){ showToast('Select your name first!'); return; }
+  const iframeWrap = document.getElementById('iframe-wrap');
+  const iframe = document.getElementById('dupr-iframe');
+  iframe.src = DUPR_SSO_BASE + DUPR_CLIENT_KEY_B64;
+  iframeWrap.style.display = 'block';
+  iframeWrap.scrollIntoView({behavior:'smooth'});
+}
+
+function cancelConnect(){
+  document.getElementById('iframe-wrap').style.display = 'none';
+  document.getElementById('dupr-iframe').src = '';
+}
+
+async function handleDUPRMessage(event){
+  // DUPR fires a message event after successful login
+  if(!event.data || !event.data.duprId) return;
+
+  const { duprId, userToken, refreshToken } = event.data;
+  console.log('DUPR SSO response:', event.data);
+
+  // Hide iframe
+  cancelConnect();
+
+  // Save to Supabase
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_players`, {
+      method: 'POST',
+      headers:{
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        league_key: selectedLeague.id,
+        player_name: selectedPlayer,
+        dupr_id: duprId,
+        access_token: userToken || null,
+        refresh_token: refreshToken || null,
+      })
+    });
+
+    if(!r.ok) throw new Error('Save failed: ' + r.status);
+
+    // Show success
+    document.getElementById('setup-card').style.display = 'none';
+    document.getElementById('iframe-wrap').style.display = 'none';
+    const successCard = document.getElementById('success-card');
+    document.getElementById('success-name').textContent = selectedPlayer;
+    document.getElementById('success-dupr-id').textContent = 'DUPR ID: ' + duprId;
+    document.getElementById('back-league-link').href = `dev-league.html?league=${selectedLeague.id}`;
+    successCard.style.display = 'block';
+    successCard.scrollIntoView({behavior:'smooth'});
+
+    // Refresh linked list
+    await loadLinkedPlayers(selectedLeague.id);
+
+  } catch(e){
+    console.error('Failed to save DUPR link:', e);
+    showToast('Failed to save — please try again');
+    document.getElementById('iframe-wrap').style.display = 'none';
+  }
+}
+
+function connectAnother(){
+  document.getElementById('setup-card').style.display = 'block';
+  document.getElementById('success-card').style.display = 'none';
+  document.getElementById('player-sel').value = '';
+  selectedPlayer = null;
+  document.getElementById('connect-btn').disabled = true;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
