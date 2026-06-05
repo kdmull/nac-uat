@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>NAC Pickleball</title>
+<script>
+// Set league type class before render to prevent nav layout shift
+(function(){
+  var p=new URLSearchParams(window.location.search).get('league');
+  var leagues={singles:'singles',beginner:'doubles',int1949:'doubles',int50:'doubles',adv1949:'doubles',adv50:'doubles'};
+  if(p&&leagues[p]) document.documentElement.setAttribute('data-league',p);
+  if(p==='singles') document.documentElement.setAttribute('data-show-bracket','1');
+  if(leagues[p]==='doubles') document.documentElement.setAttribute('data-show-playoffs','1');
+})();
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --blue:#4db8e8;--blue-dark:#2a9fd4;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;border-right:1px solid rgba(255,255,255,.15);text-decoration:none}
+.back-btn:hover{color:var(--green)}
+.nav-tabs{display:flex}
+.nav-tab{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+.nav-tab:hover{color:var(--white)}.nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
+[data-show-bracket='1'] #bracket-tab{display:block!important}
+[data-show-playoffs='1'] #playoffs-tab{display:block!important}
+.league-banner{background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 1.5rem;font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);text-align:center}
+.page{display:none;padding:2rem 1.5rem;max-width:1000px;margin:0 auto;word-break:break-word}.page.active{display:block}
+.section-header{margin-bottom:1.5rem;display:flex;align-items:flex-end;gap:16px}
+.section-header-text h2{font-family:var(--font-display);font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy)}
+.section-header-text p{color:var(--muted);font-size:14px;margin-top:2px}
+.section-accent{width:4px;height:40px;background:var(--green);border-radius:2px;flex-shrink:0}
+/* Standings */
+.standings-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 4px rgba(26,42,108,.06)}
+.standings-table thead{background:var(--navy)}
+.standings-table th{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.7);padding:11px 14px;text-align:left;border-bottom:none}
+.standings-table th.num{text-align:center}
+.standings-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.standings-table td.num{text-align:center;font-weight:600}
+.standings-table tbody tr:last-child td{border-bottom:none}
+.standings-table tbody tr:hover{background:var(--surface)}
+.playoff-row{background:rgba(76,175,40,.05)}.playoff-row:hover{background:rgba(76,175,40,.1)!important}
+.playoff-row td:first-child{border-left:3px solid var(--green)}
+.cutline-row td{border-top:2px dashed rgba(76,175,40,.4)!important}
+.playoff-badge{display:inline-block;font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle}
+.rank{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--muted);white-space:nowrap;display:block;text-align:center}
+.rank-1{color:#d4a017}.rank-2{color:#8a8a8a}.rank-3{color:#a0522d}
+.player-name{font-weight:600;font-size:15px;color:var(--navy)}
+.win-pct{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy)}
+.streak-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;font-family:var(--font-display);letter-spacing:.3px}
+.streak-w{background:rgba(76,175,40,.12);color:var(--green-dark)}.streak-l{background:rgba(217,59,59,.1);color:var(--danger)}
+.pts-diff{font-size:13px}.pts-diff.pos{color:var(--green-dark)}.pts-diff.neg{color:var(--danger)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.stat-card .stat-label{font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-card .stat-val{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--navy)}
+.stat-card .stat-sub{font-size:12px;color:var(--muted);margin-top:2px}
+/* Week tabs */
+.week-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:1.5rem;scrollbar-width:none}
+.week-scroll::-webkit-scrollbar{display:none}
+.week-btn{flex-shrink:0;padding:7px 14px;background:var(--white);border:1px solid var(--border);border-radius:20px;font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;transition:all .12s;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.week-btn:hover{border-color:var(--navy);color:var(--navy)}.week-btn.active{background:var(--navy);border-color:var(--navy);color:var(--white)}
+/* Match cards */
+.matches-grid{display:flex;flex-direction:column;gap:10px}
+.match-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 18px;display:flex;align-items:center;gap:16px;transition:border-color .12s;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.match-card:hover{border-color:rgba(26,42,108,.3)}
+.match-card.completed{border-left:4px solid var(--green)}.match-card.upcoming{border-left:4px solid var(--surface2)}
+.doubles-match-layout{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.doubles-team{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.doubles-team .match-player{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doubles-team.winner .match-player{color:var(--green-dark)}
+.match-num{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;min-width:60px}
+.match-players{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.match-player{font-weight:600;font-size:15px;color:var(--navy);min-width:0;overflow-wrap:break-word;word-break:break-word}
+.match-player.winner{color:var(--green-dark)}
+.vs-badge{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--muted);background:var(--surface);padding:2px 8px;border-radius:4px;flex-shrink:0}
+.match-score{font-family:var(--font-display);font-size:18px;font-weight:700;letter-spacing:.5px;min-width:90px;text-align:center;color:var(--navy)}
+.match-status{font-size:12px;color:var(--muted);min-width:70px;text-align:right}
+.match-status.pending{color:var(--blue-dark);font-weight:600}
+.score-btn{padding:7px 14px;background:transparent;border:1.5px solid var(--navy);border-radius:var(--radius);font-family:var(--font-display);font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--navy);cursor:pointer;transition:all .12s;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.score-btn:hover{background:var(--navy);color:var(--white)}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,60,.6);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:1rem;padding-top:max(1rem,env(safe-area-inset-top));overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:440px;border-top:4px solid var(--navy);margin:auto}
+.modal h3{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:1.2rem;letter-spacing:.5px}
+.modal-players{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.modal-player{flex:1;text-align:center}
+.modal-player-name{font-weight:600;font-size:14px;color:var(--navy)}
+.modal-vs{font-family:var(--font-display);font-weight:700;color:var(--muted)}
+.game-row{display:grid;grid-template-columns:60px 1fr 28px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.game-row:last-child{border-bottom:none}
+.game-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.game-input{width:100%;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--navy);padding:5px 4px;outline:none;min-height:44px}
+.game-input:focus{border-color:var(--navy)}.game-input.winner{border-color:var(--green);background:rgba(76,175,40,.06);color:var(--green-dark)}
+.game-dash{text-align:center;font-family:var(--font-display);font-weight:700;color:var(--muted);font-size:16px}
+.game-row-disabled .game-input{opacity:.35;pointer-events:none}
+.series-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.3px}
+.series-badge.complete{background:rgba(76,175,40,.12);color:var(--green-dark)}.series-badge.inprog{background:rgba(26,42,108,.08);color:var(--navy)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.2rem}
+/* Buttons */
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+/* Scores gate */
+#scores-gate > div{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;max-width:360px;margin:0 auto;box-shadow:0 1px 4px rgba(26,42,108,.07)}
+/* Misc */
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--muted);font-family:var(--font-display);font-size:16px;text-transform:uppercase;letter-spacing:1px;gap:12px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+/* Responsive */
+@media(max-width:768px){
+  nav{flex-wrap:wrap}
+  .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
+  .nav-logo{height:36px}
+  .back-btn{display:none}
+  .nav-tabs{width:100%;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{flex:1;padding:.7rem .5rem;font-size:13px;text-align:center;min-width:70px}
+  .page{padding:1.2rem 1rem}
+  .section-header h2{font-size:22px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat-card .stat-val{font-size:22px}
+  .standings-table th,.standings-table td{padding:8px 8px;font-size:13px;white-space:nowrap}
+  .rank{font-size:15px}.win-pct{font-size:14px}
+  .match-card{flex-wrap:wrap;gap:6px;padding:10px 12px}
+  .match-num{min-width:auto;font-size:11px;width:100%}
+  .match-players{width:100%;order:0;flex-wrap:wrap;gap:6px}
+  .match-player{font-size:13px;flex:1;min-width:0;word-break:break-word}
+  .match-score{min-width:auto;font-size:13px;order:2;flex:1;text-align:left}
+  .match-status{min-width:auto;order:3;text-align:left}
+  .score-btn{order:4;width:100%;text-align:center;padding:8px}
+  .week-btn{padding:5px 10px;font-size:12px}
+  .modal{padding:1.4rem;max-width:100%}
+  .modal h3{font-size:18px}
+  .game-input{font-size:17px;padding:5px 2px}
+  .game-row{grid-template-columns:50px 1fr 22px 1fr;gap:6px}
+  .game-label{font-size:11px}
+}
+@media(max-width:400px){
+  .nav-tab{font-size:11px;padding:.65rem .35rem}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .match-card{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="dev-index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('standings',this)">Standings</button>
+    <button class="nav-tab" onclick="showPage('schedule',this)">Schedule</button>
+    <button class="nav-tab" onclick="showPage('scores',this)">Scores</button>
+    <a class="nav-tab" id="bracket-tab" href="dev-bracket.html" style="display:none;text-decoration:none">Bracket</a>
+    <a class="nav-tab" id="playoffs-tab" href="#" style="display:none;text-decoration:none">Playoffs</a>
+  </div>
+</nav>
+
+<div class="league-banner" id="league-banner">Loading...</div>
+
+<!-- STANDINGS -->
+<div class="page active" id="page-standings">
+  <div id="season-selector-wrap" style="margin-bottom:1rem"></div>
+  <div class="section-header">
+    <div class="section-accent"></div>
+    <div class="section-header-text"><h2>Standings</h2><p id="standings-subtitle">Loading...</p></div>
+  </div>
+  <div class="stats-grid" id="league-stats"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+    <table class="standings-table" style="border:none;border-radius:0">
+      <thead><tr>
+        <th style="width:52px;white-space:nowrap">#</th><th>Player</th>
+        <th class="num">W</th><th class="num">L</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+      </tr></thead>
+      <tbody id="standings-body"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
+    </table>
+  </div>
+
+
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="section-header">
+    <div class="section-accent"></div>
+    <div class="section-header-text"><h2>Schedule</h2><p id="schedule-subtitle">Loading...</p></div>
+  </div>
+  <div class="week-scroll" id="week-tabs"></div>
+  <div class="matches-grid" id="schedule-matches"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
+</div>
+
+<!-- SCORES -->
+<div class="page" id="page-scores">
+  <div class="section-header">
+    <div class="section-accent"></div>
+    <div class="section-header-text"><h2>Submit Scores</h2><p>Password required to enter or edit results.</p></div>
+  </div>
+  <div id="scores-gate" style="text-align:center;padding:2rem 1rem">
+    <div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:1.2rem">Enter the league password to submit or edit scores.</p>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <input type="password" id="scores-pw" placeholder="League password"
+          style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 14px;font-size:16px;width:180px;outline:none;font-family:var(--font-body)"
+          onkeydown="if(event.key==='Enter')checkScoresAuth()"
+          onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"/>
+        <button class="btn btn-primary" onclick="checkScoresAuth()">Enter</button>
+      </div>
+      <p id="scores-err" style="color:#d93b3b;font-size:13px;margin-top:8px;min-height:18px"></p>
+    </div>
+  </div>
+  <div id="scores-content" style="display:none">
+    <div class="week-scroll" id="score-week-tabs"></div>
+    <div class="matches-grid" id="score-matches"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
+    <div style="margin-top:1.5rem">
+      <div class="section-header" style="margin-bottom:1rem">
+        <div class="section-accent"></div>
+        <div class="section-header-text"><h3 style="font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)">Recent Results</h3></div>
+      </div>
+      <div id="match-log-body"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCORE MODAL -->
+<div class="modal-overlay" id="score-modal">
+  <div class="modal">
+    <h3>Enter Series Scores</h3>
+    <div class="modal-players" style="margin-bottom:1rem">
+      <div class="modal-player"><div class="modal-player-name" id="modal-p1"></div></div>
+      <div class="modal-vs">vs</div>
+      <div class="modal-player"><div class="modal-player-name" id="modal-p2"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:60px 1fr 28px 1fr;gap:8px;padding:0 0 4px 0;margin-bottom:2px">
+      <span></span>
+      <span style="text-align:center;font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)" id="col-p1-label"></span>
+      <span></span>
+      <span style="text-align:center;font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)" id="col-p2-label"></span>
+    </div>
+    <div id="modal-series-status" style="text-align:center;font-family:var(--font-display);font-size:13px;color:var(--muted);margin-bottom:1rem;min-height:18px"></div>
+    <div id="modal-games"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitScore()">Save Series</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', async ()=>{
+  currentLeague = getLeagueFromURL();
+  if(!currentLeague){
+    window.location.href='dev-index.html';
+    return;
+  }
+  document.title = currentLeague.name + ' — NAC Pickleball';
+  document.getElementById('league-banner').textContent = currentLeague.name;
+  // Set playoffs href dynamically for doubles leagues
+  if(currentLeague.type === 'doubles'){
+    const pt = document.getElementById('playoffs-tab');
+    if(pt) pt.href = `dev-doubles-playoff.html?league=${currentLeague.id}`;
+  }
+  // Load seasons first so data key includes season suffix
+  await loadSeasons();
+  const urlSeason = getSeasonFromURL();
+  if(urlSeason){
+    const found = allSeasons.find(s=>s.id===urlSeason);
+    if(found) viewingSeason = found;
+  }
+  await loadData();
+  scheduleWeek = scoresWeek = findCurrentWeek();
+  renderSeasonSelector();
+  renderStandings();
+  renderScheduleMatches(scheduleWeek);
+});
+
+document.getElementById('score-modal').addEventListener('click', e=>{
+  if(e.target===e.currentTarget) closeModal();
+});
+
+function renderSeasonSelector(){
+  const wrap = document.getElementById('season-selector-wrap');
+  if(!wrap || allSeasons.length <= 1) return;
+  const isActive = isViewingActiveSeason();
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;box-shadow:0 1px 3px rgba(26,42,108,.05)">
+      <span style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)">Season:</span>
+      <select onchange="switchSeason(this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--navy);padding:5px 10px;font-size:14px;font-family:var(--font-body);outline:none;cursor:pointer">
+        ${allSeasons.slice().reverse().map(s=>`<option value="${s.id}" ${s.id===viewingSeason?.id?'selected':''}>${s.name}${s.id===currentSeason?.id?' (Current)':''}</option>`).join('')}
+      </select>
+      ${!isActive?`<span style="font-size:12px;color:var(--muted);font-style:italic">Viewing past season — read only</span>`:''}
+    </div>`;
+}
+
+async function switchSeason(seasonId){
+  const found = allSeasons.find(s=>s.id===seasonId);
+  if(!found) return;
+  viewingSeason = found;
+  schedule = JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
+  PLAYERS = ['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+  await loadData();
+  scheduleWeek = scoresWeek = findCurrentWeek();
+  renderSeasonSelector();
+  renderStandings();
+  renderScheduleMatches(scheduleWeek);
+  if(scoreAuthed) renderScoreMatches(scoresWeek);
+}
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  if(id==='standings') renderStandings();
+  if(id==='schedule') renderScheduleMatches(scheduleWeek);
+  if(id==='scores'){
+    if(scoreAuthed){
+      document.getElementById('scores-gate').style.display='none';
+      document.getElementById('scores-content').style.display='block';
+      renderScoreMatches(scoresWeek);
+    } else {
+      document.getElementById('scores-gate').style.display='block';
+      document.getElementById('scores-content').style.display='none';
+      setTimeout(()=>document.getElementById('scores-pw')?.focus(),100);
+    }
+  }
+}
+
+function checkScoresAuth(){
+  const pw=document.getElementById('scores-pw').value;
+  if(pw===SCORES_PW||pw===ADMIN_PW){
+    scoreAuthed=true;
+    document.getElementById('scores-gate').style.display='none';
+    document.getElementById('scores-content').style.display='block';
+    renderScoreMatches(scoresWeek);
+  } else {
+    document.getElementById('scores-err').textContent='Incorrect password.';
+    document.getElementById('scores-pw').value='';
+  }
+}
+
+function renderStandings(){
+  const stats=getStats();
+  const active=getActivePlayers();
+  const rows=active.map(p=>{
+    const s=stats[p]||{w:0,l:0,pts:0,opp:0,streak:[]};
+    const tot=s.w+s.l;
+    return{...s,p,pct:tot?s.w/tot:0,diff:s.pts-s.opp,streak:s.streak.slice(-3).join('')||'—',last:s.streak[s.streak.length-1]||null};
+  }).sort((a,b)=>b.pct-a.pct||b.diff-a.diff);
+  const played=schedule.reduce((a,w)=>a+w.matches.filter(m=>seriesResult(m).complete).length,0);
+  document.getElementById('standings-subtitle').textContent=`${played} matches played this season`;
+  document.getElementById('league-stats').innerHTML=[
+    ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
+    ['Leader',rows[0]?.p||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+  ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
+  document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
+    const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const dc=r.diff>0?'pos':r.diff<0?'neg':'';
+    const sc=r.last==='W'?'streak-w':'streak-l';
+    const playoff=i<4,cutline=i===4;
+    return`<tr class="${playoff?'playoff-row':''}${cutline?' cutline-row':''}">
+      <td><span class="rank ${rc}">${i+1}</span></td>
+      <td><a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${r.p}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
+      <td class="num">${r.w}</td><td class="num">${r.l}</td>
+      <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
+      <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
+      <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderMatchLog(){
+  const el = document.getElementById('match-log-body');
+  if(!el) return;
+  el.innerHTML='<div class="loading-overlay"><div class="spinner"></div>Loading...</div>';
+
+  try {
+    const leagueKey = viewingSeason ? seasonKey(currentLeague.key, viewingSeason.id) : currentLeague.key;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/pb_scores_log?league_key=eq.${encodeURIComponent(leagueKey)}&order=submitted_at.desc&limit=50`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok) throw new Error('fetch failed');
+    const rows = await r.json();
+
+    if(!rows.length){
+      el.innerHTML='<p style="color:var(--muted);font-size:14px;padding:.5rem 0">No results logged yet this season.</p>';
+      return;
+    }
+
+    el.innerHTML=`<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+      <table style="width:100%;border-collapse:collapse;background:var(--white);min-width:400px">
+        <thead style="background:var(--navy)">
+          <tr>
+            <th style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:9px 12px;text-align:left">When</th>
+            <th style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:9px 12px;text-align:left">Week</th>
+            <th style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:9px 12px;text-align:left">Winner</th>
+            <th style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:9px 12px;text-align:left">Defeated</th>
+            <th style="font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7);padding:9px 12px;text-align:left">Scores</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(row=>{
+            const dt=new Date(row.submitted_at);
+            const timeStr=dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+            const games=(row.games||[]).filter(g=>g.s1!==null).map(g=>`${g.s1}-${g.s2}`).join(', ');
+            const loser = row.winner===row.team1 ? row.team2 : row.team1;
+            return`<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+              <td style="padding:9px 12px;font-size:12px;color:var(--muted);white-space:nowrap">${timeStr}</td>
+              <td style="padding:9px 12px;font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--muted)">Wk ${row.week}</td>
+              <td style="padding:9px 12px;font-size:13px;font-weight:600;color:var(--green-dark)">${row.winner||'—'}</td>
+              <td style="padding:9px 12px;font-size:13px;color:var(--muted)">${loser||'—'}</td>
+              <td style="padding:9px 12px;font-size:12px;color:var(--muted)">${games||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch(e) {
+    el.innerHTML='<p style="color:var(--muted);font-size:14px;padding:.5rem 0">Could not load match log.</p>';
+  }
+}
+
+function renderScheduleMatches(week){
+  scheduleWeek=week;
+  const sub=document.getElementById('schedule-subtitle');
+  if(sub) sub.textContent=currentLeague?.type==='doubles'?'8-week round robin':'11-week round robin';
+  renderWeekTabs('week-tabs',week,'setScheduleWeek');
+  const wd=schedule.find(w=>w.week===week);
+  if(!wd){document.getElementById('schedule-matches').innerHTML='';return;}
+  const cards=wd.matches.map((m,i)=>{m._week=week;return matchCardHTML(m,i,false);}).join('');
+  document.getElementById('schedule-matches').innerHTML=cards+byeCardHTML(wd.bye);
+}
+function setScheduleWeek(w){renderScheduleMatches(w);}
+
+function renderScoreMatches(week){
+  renderMatchLog();
+  scoresWeek=week;
+  renderWeekTabs('score-week-tabs',week,'setScoresWeek');
+  const wd=schedule.find(w=>w.week===week);
+  if(!wd){document.getElementById('score-matches').innerHTML='';return;}
+  const cards=wd.matches.map((m,i)=>{m._week=week;return matchCardHTML(m,i,true);}).join('');
+  document.getElementById('score-matches').innerHTML=cards+byeCardHTML(wd.bye);
+}
+function setScoresWeek(w){renderScoreMatches(w);}
+</script>
+</body>
+</html>

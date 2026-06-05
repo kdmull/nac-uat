@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Playoff Bracket — NAC Singles</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;--gold:#d4a017;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none;border-right:1px solid rgba(255,255,255,.15)}
+.back-btn:hover{color:var(--green)}
+.nav-tabs{display:flex}
+.nav-tab{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+.nav-tab:hover{color:var(--white)}.nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.league-banner{background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 1.5rem;font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);text-align:center}
+.page{padding:2rem 1.5rem;max-width:1000px;margin:0 auto}
+.section-header{margin-bottom:1.5rem;display:flex;align-items:flex-end;gap:16px}
+.section-header-text h2{font-family:var(--font-display);font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy)}
+.section-header-text p{color:var(--muted);font-size:14px;margin-top:2px}
+.section-accent{width:4px;height:40px;background:var(--green);border-radius:2px;flex-shrink:0}
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
+
+/* BRACKET LAYOUT */
+.bracket-wrap{display:flex;gap:0;align-items:center;overflow-x:auto;padding-bottom:1rem;min-height:400px}
+.bracket-round{display:flex;flex-direction:column;flex-shrink:0}
+.round-label{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;padding-bottom:12px}
+.bracket-matches{display:flex;flex-direction:column;justify-content:space-around;flex:1}
+.bracket-match{display:flex;flex-direction:column;margin:8px 0}
+.bracket-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);width:200px;overflow:hidden;box-shadow:0 1px 4px rgba(26,42,108,.06);cursor:pointer;transition:border-color .12s}
+.bracket-card:hover{border-color:var(--navy)}
+.bracket-card.clickable{border-color:rgba(26,42,108,.3)}
+.bracket-slot{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.bracket-slot:last-child{border-bottom:none}
+.bracket-slot.winner{background:rgba(76,175,40,.06)}
+.bracket-slot.winner .slot-name{color:var(--green-dark);font-weight:700}
+.slot-seed{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--muted);width:18px;flex-shrink:0}
+.slot-name{font-size:13px;font-weight:600;color:var(--navy);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-name.tbd{color:var(--muted);font-weight:400;font-style:italic}
+.slot-score{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--navy)}
+
+/* Connector lines */
+.connector{display:flex;align-items:center;width:40px;flex-shrink:0}
+.connector svg{width:40px;overflow:visible}
+
+/* Champion */
+.champion-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 1rem;flex-shrink:0}
+.champion-card{background:var(--navy);border-radius:var(--radius-lg);padding:1.5rem 2rem;text-align:center;min-width:160px}
+.champion-trophy{font-size:36px;margin-bottom:8px}
+.champion-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.6);margin-bottom:4px}
+.champion-name{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--gold);letter-spacing:.5px}
+.champion-name.tbd{color:rgba(255,255,255,.3);font-size:16px;font-weight:400;font-style:italic;text-transform:none}
+
+/* Seedings panel */
+.seedings-panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.seedings-panel h3{font-family:var(--font-display);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--green)}
+.seedings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.seed-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);font-size:14px}
+.seed-num{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--navy);width:24px}
+.seed-name{font-weight:600;color:var(--navy);flex:1}
+.seed-record{font-family:var(--font-display);font-size:13px;color:var(--muted)}
+
+/* Auth gate */
+.auth-gate{text-align:center;padding:3rem 1rem}
+.auth-gate h3{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.auth-gate p{color:var(--muted);margin-bottom:1.2rem;font-size:14px}
+.auth-gate input{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 14px;font-size:16px;width:180px;outline:none;font-family:var(--font-body);margin-right:8px}
+.auth-gate input:focus{border-color:var(--navy)}
+.auth-gate .err{color:var(--danger);font-size:13px;margin-top:8px}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,60,.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:420px;border-top:4px solid var(--navy)}
+.modal h3{font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:1.2rem}
+.modal-players{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;text-align:center}
+.modal-player{flex:1;font-weight:600;font-size:14px;color:var(--navy)}
+.modal-vs{font-family:var(--font-display);font-weight:700;color:var(--muted)}
+.game-row{display:grid;grid-template-columns:60px 1fr 28px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.game-row:last-child{border-bottom:none}
+.game-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.game-input{width:100%;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--navy);padding:5px 4px;outline:none;min-height:44px}
+.game-input:focus{border-color:var(--navy)}.game-input.winner{border-color:var(--green);background:rgba(76,175,40,.06);color:var(--green-dark)}
+.game-dash{text-align:center;font-family:var(--font-display);font-weight:700;color:var(--muted);font-size:16px}
+.game-row-disabled .game-input{opacity:.35;pointer-events:none}
+.series-status{text-align:center;font-family:var(--font-display);font-size:13px;color:var(--muted);margin-bottom:1rem;min-height:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.2rem}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:4rem;color:var(--muted);font-family:var(--font-display);font-size:16px;text-transform:uppercase;letter-spacing:1px;gap:12px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){
+  nav{flex-wrap:wrap}
+  .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
+  .nav-logo{height:36px}
+  .back-btn{display:none}
+  .nav-tabs{width:100%;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{flex:1;padding:.7rem .5rem;font-size:13px;text-align:center;min-width:70px}
+}
+@media(max-width:700px){
+  .bracket-card{width:150px}
+  .slot-name{font-size:12px}
+  .back-btn{display:none}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Standings</a>
+    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Schedule</a>
+    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Scores</a>
+    <a class="nav-tab active" href="dev-bracket.html" style="text-decoration:none">Bracket</a>
+  </div>
+</nav>
+
+<div class="league-banner">Singles League</div>
+<div class="page">
+  <div class="section-header">
+    <div class="section-accent"></div>
+    <div class="section-header-text">
+      <h2>Playoff Bracket</h2>
+      <p>Singles League — Top 4 Seeds</p>
+    </div>
+  </div>
+
+  <div id="main-content">
+    <div class="loading-overlay"><div class="spinner"></div>Loading bracket...</div>
+  </div>
+</div>
+
+<!-- SCORE MODAL -->
+<div class="modal-overlay" id="score-modal">
+  <div class="modal">
+    <h3 id="modal-round-label">Enter Scores</h3>
+    <div class="modal-players">
+      <div class="modal-player" id="modal-p1">—</div>
+      <div class="modal-vs">vs</div>
+      <div class="modal-player" id="modal-p2">—</div>
+    </div>
+    <div class="series-status" id="modal-series-status"></div>
+    <div id="modal-games"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitBracketScore()">Save Series</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+const BRACKET_KEY = 'bracket_singles';
+let bracketData = null;
+let bracketAuthed = false;
+let currentModalSlot = null; // {round, matchIndex}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try {
+    currentLeague = LEAGUES.find(l => l.id === 'singles');
+    await loadData(); // load regular season data for seedings
+  } catch(e) {
+    console.warn('Could not load season data:', e);
+  }
+  try {
+    await loadBracket();
+  } catch(e) {
+    console.warn('Could not load bracket data:', e);
+    bracketData = initBracketFromStandings();
+  }
+  render();
+});
+
+document.getElementById('score-modal').addEventListener('click', e => {
+  if(e.target === e.currentTarget) closeModal();
+});
+
+// ── BRACKET DATA ──────────────────────────────────────
+async function loadBracket() {
+  try {
+    const result = await dbGet(BRACKET_KEY);
+    if(result && result.data && result.data.seeds) {
+      bracketData = result.data;
+    } else {
+      bracketData = initBracketFromStandings();
+      await saveBracket();
+    }
+  } catch(e) {
+    console.warn('Bracket load error:', e);
+    bracketData = initBracketFromStandings();
+  }
+}
+
+async function saveBracket() {
+  await dbSet(BRACKET_KEY, bracketData);
+}
+
+function initBracketFromStandings() {
+  const stats = getStats();
+  const active = getActivePlayers();
+  const seeds = active.map(p => {
+    const s = stats[p] || {w:0,l:0,pts:0,opp:0};
+    const tot = s.w + s.l;
+    return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+  }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
+
+  return {
+    seeds: seeds.map((s,i) => ({...s, seed:i+1})),
+    semis: [
+      // Seed 1 vs Seed 4
+      {p1: seeds[0]?.name||'TBD', p2: seeds[3]?.name||'TBD', games:[], winner:null},
+      // Seed 2 vs Seed 3
+      {p1: seeds[1]?.name||'TBD', p2: seeds[2]?.name||'TBD', games:[], winner:null},
+    ],
+    final: {p1:null, p2:null, games:[], winner:null},
+    champion: null,
+  };
+}
+
+function bracketSeriesResult(match) {
+  if(!match) return {p1w:0,p2w:0,complete:false,winner:null};
+  const games = match.games || [];
+  let p1w=0, p2w=0;
+  for(const g of games) {
+    if(g.s1===null||g.s2===null) continue;
+    if(g.s1>g.s2) p1w++; else if(g.s2>g.s1) p2w++;
+  }
+  const complete = p1w>=2||p2w>=2;
+  const winner = complete ? (p1w>p2w ? match.p1 : match.p2) : null;
+  return {p1w, p2w, complete, winner};
+}
+
+// ── RENDER ─────────────────────────────────────────────
+function render() {
+  // Safety — if bracketData is missing required fields, rebuild it
+  if(!bracketData || !bracketData.semis || bracketData.semis.length < 2) {
+    bracketData = initBracketFromStandings();
+  }
+  if(!bracketData.final) bracketData.final = {p1:null,p2:null,games:[],winner:null};
+
+  const stats = getStats();
+  const active = getActivePlayers();
+  const allRows = active.map(p => {
+    const s = stats[p]||{w:0,l:0,pts:0,opp:0};
+    const tot=s.w+s.l;
+    return {name:p,w:s.w,l:s.l,pct:tot?s.w/tot:0,diff:s.pts-s.opp};
+  }).sort((a,b)=>b.pct-a.pct||b.diff-a.diff);
+
+  const semi0 = bracketSeriesResult(bracketData.semis[0]);
+  const semi1 = bracketSeriesResult(bracketData.semis[1]);
+  const finalMatch = bracketSeriesResult(bracketData.final);
+
+  // Update final players from semi winners
+  if(semi0.complete && !bracketData.final.p1) {
+    bracketData.final.p1 = semi0.winner;
+  }
+  if(semi1.complete && !bracketData.final.p2) {
+    bracketData.final.p2 = semi1.winner;
+  }
+  if(finalMatch.complete) {
+    bracketData.champion = finalMatch.winner;
+  }
+
+  const champion = bracketData.champion;
+
+  function slotHTML(name, seed, score, isWinner) {
+    const tbd = !name || name==='TBD';
+    return `<div class="bracket-slot${isWinner?' winner':''}">
+      ${seed?`<span class="slot-seed">${seed}</span>`:'<span class="slot-seed"></span>'}
+      <span class="slot-name${tbd?' tbd':''}">${tbd?'TBD':name}</span>
+      <span class="slot-score">${score!==null&&score!==undefined?score:''}</span>
+    </div>`;
+  }
+
+  function matchCard(match, result, round, idx, label) {
+    const canClick = bracketAuthed && match.p1 && match.p2 && match.p1!=='TBD' && match.p2!=='TBD';
+    const seed1 = round==='semis' ? bracketData.seeds?.find(s=>s.name===match.p1)?.seed : null;
+    const seed2 = round==='semis' ? bracketData.seeds?.find(s=>s.name===match.p2)?.seed : null;
+    return `<div class="bracket-card${canClick?' clickable':''}" onclick="${canClick?`openBracketModal('${round}',${idx})`:''}">
+      ${slotHTML(match.p1, seed1, result.p1w||'', result.complete&&result.winner===match.p1)}
+      ${slotHTML(match.p2, seed2, result.p2w||'', result.complete&&result.winner===match.p2)}
+    </div>`;
+  }
+
+  // Auth gate if not logged in
+  const authSection = !bracketAuthed ? `
+    <div class="auth-gate" id="auth-gate">
+      <h3>Enter Scores</h3>
+      <p>Enter the league password to submit bracket scores</p>
+      <div>
+        <input type="password" id="bracket-pw" placeholder="League password"
+          onkeydown="if(event.key==='Enter')checkBracketAuth()"/>
+        <button class="btn btn-primary" onclick="checkBracketAuth()">Enter</button>
+      </div>
+      <p class="err" id="bracket-err"></p>
+    </div>` : `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--green-dark);font-weight:600">✓ Click any match to enter scores</span>
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;margin-left:auto" onclick="resetBracket()">Reset Bracket</button>
+    </div>`;
+
+  document.getElementById('main-content').innerHTML = `
+    ${authSection}
+
+    <div class="seedings-panel">
+      <h3>Playoff Seeds</h3>
+      <div class="seedings-grid">
+        ${(bracketData.seeds||[]).map(s=>`
+          <div class="seed-row">
+            <span class="seed-num">#${s.seed}</span>
+            <span class="seed-name">${s.name}</span>
+            <span class="seed-record">${s.w}-${s.l}</span>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)">
+      <div class="bracket-wrap">
+        <!-- Semis -->
+        <div class="bracket-round">
+          <div class="round-label">Semifinals</div>
+          <div class="bracket-matches" style="gap:40px">
+            <div class="bracket-match">${matchCard(bracketData.semis[0], semi0, 'semis', 0, 'Semi 1')}</div>
+            <div class="bracket-match">${matchCard(bracketData.semis[1], semi1, 'semis', 1, 'Semi 2')}</div>
+          </div>
+        </div>
+
+        <!-- Connectors -->
+        <div style="display:flex;flex-direction:column;justify-content:space-around;flex-shrink:0;width:40px;padding-top:32px">
+          <svg height="200" width="40" style="overflow:visible">
+            <path d="M0,50 H20 V150 H0" fill="none" stroke="var(--border)" stroke-width="2"/>
+            <path d="M20,100 H40" fill="none" stroke="var(--border)" stroke-width="2"/>
+          </svg>
+        </div>
+
+        <!-- Final -->
+        <div class="bracket-round">
+          <div class="round-label">Final</div>
+          <div class="bracket-matches" style="justify-content:center">
+            <div class="bracket-match">${matchCard(
+              {p1:bracketData.final.p1||'TBD', p2:bracketData.final.p2||'TBD', games:bracketData.final.games},
+              finalMatch, 'final', 0, 'Final'
+            )}</div>
+          </div>
+        </div>
+
+        <!-- Connector to champion -->
+        <div style="display:flex;align-items:center;flex-shrink:0;width:40px">
+          <svg height="2" width="40"><line x1="0" y1="1" x2="40" y2="1" stroke="var(--border)" stroke-width="2"/></svg>
+        </div>
+
+        <!-- Champion -->
+        <div class="champion-wrap">
+          <div class="champion-card">
+            <div class="champion-label">Champion</div>
+            <div class="champion-name${!champion?' tbd':''}">${champion||'TBD'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── AUTH ───────────────────────────────────────────────
+function checkBracketAuth() {
+  const pw = document.getElementById('bracket-pw').value;
+  if(pw===SCORES_PW||pw===ADMIN_PW) {
+    bracketAuthed = true;
+    render();
+  } else {
+    document.getElementById('bracket-err').textContent = 'Incorrect password.';
+    document.getElementById('bracket-pw').value = '';
+  }
+}
+
+// ── MODAL ──────────────────────────────────────────────
+function openBracketModal(round, idx) {
+  const match = round==='final' ? bracketData.final : bracketData.semis[idx];
+  currentModalSlot = {round, idx};
+  document.getElementById('modal-p1').textContent = match.p1;
+  document.getElementById('modal-p2').textContent = match.p2;
+  document.getElementById('modal-round-label').textContent = round==='final' ? 'Final' : `Semifinal ${idx+1}`;
+  document.getElementById('submit-btn').disabled = false;
+  renderBracketModalGames(match);
+  document.getElementById('score-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('score-modal').classList.remove('open');
+  currentModalSlot = null;
+}
+
+function renderBracketModalGames(match) {
+  const games = match.games && match.games.length ? match.games : [{s1:null,s2:null},{s1:null,s2:null},{s1:null,s2:null}];
+  while(games.length < 3) games.push({s1:null,s2:null});
+  let p1w=0,p2w=0;
+  for(let i=0;i<2;i++){
+    const g=games[i];
+    if(g.s1!==null&&g.s2!==null&&g.s1!==g.s2){if(g.s1>g.s2)p1w++;else p2w++;}
+  }
+  const sweep = p1w>=2||p2w>=2;
+  document.getElementById('modal-games').innerHTML = games.map((g,i)=>{
+    const locked = i===2&&sweep;
+    const p1win = g.s1!==null&&g.s2!==null&&g.s1>g.s2;
+    const p2win = g.s1!==null&&g.s2!==null&&g.s2>g.s1;
+    return `<div class="game-row${locked?' game-row-disabled':''}">
+      <span class="game-label">Game ${i+1}</span>
+      <input class="game-input${p1win?' winner':''}" type="number" min="0" max="30" id="bg${i}_s1" value="${g.s1!==null?g.s1:''}" placeholder="0" ${locked?'disabled':''} oninput="onBracketGameInput()"/>
+      <div class="game-dash">—</div>
+      <input class="game-input${p2win?' winner':''}" type="number" min="0" max="30" id="bg${i}_s2" value="${g.s2!==null?g.s2:''}" placeholder="0" ${locked?'disabled':''} oninput="onBracketGameInput()"/>
+    </div>`;
+  }).join('');
+  updateBracketStatus();
+}
+
+function onBracketGameInput(){
+  let p1w=0,p2w=0;
+  for(let i=0;i<3;i++){
+    const inp1=document.getElementById('bg'+i+'_s1');
+    const inp2=document.getElementById('bg'+i+'_s2');
+    if(!inp1||!inp2)continue;
+    const s1=parseInt(inp1.value),s2=parseInt(inp2.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){
+      if(s1>s2){p1w++;inp1.classList.add('winner');inp2.classList.remove('winner');}
+      else{p2w++;inp2.classList.add('winner');inp1.classList.remove('winner');}
+    }else{inp1.classList.remove('winner');inp2.classList.remove('winner');}
+  }
+  let g1p1w=0,g1p2w=0;
+  for(let i=0;i<2;i++){
+    const s1=parseInt(document.getElementById('bg'+i+'_s1')?.value);
+    const s2=parseInt(document.getElementById('bg'+i+'_s2')?.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)g1p1w++;else g1p2w++;}
+  }
+  const sweep=g1p1w>=2||g1p2w>=2;
+  const g3s1=document.getElementById('bg2_s1'),g3s2=document.getElementById('bg2_s2');
+  const g3row=g3s1?.closest('.game-row');
+  if(g3s1&&g3s2){
+    g3s1.disabled=sweep;g3s2.disabled=sweep;
+    if(g3row){sweep?g3row.classList.add('game-row-disabled'):g3row.classList.remove('game-row-disabled');}
+    if(sweep){g3s1.value='';g3s2.value='';}
+  }
+  updateBracketStatus();
+}
+
+function updateBracketStatus(){
+  let p1w=0,p2w=0;
+  const p1=document.getElementById('modal-p1').textContent;
+  const p2=document.getElementById('modal-p2').textContent;
+  for(let i=0;i<3;i++){
+    const s1=parseInt(document.getElementById('bg'+i+'_s1')?.value);
+    const s2=parseInt(document.getElementById('bg'+i+'_s2')?.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)p1w++;else p2w++;}
+  }
+  const el=document.getElementById('modal-series-status');
+  if(p1w>=2||p2w>=2){
+    const w=p1w>p2w?p1:p2;
+    el.innerHTML=`<span style="color:var(--green-dark);font-weight:700">✓ ${w} wins ${Math.max(p1w,p2w)}-${Math.min(p1w,p2w)}</span>`;
+  }else if(p1w>0||p2w>0){
+    el.textContent=`${p1} ${p1w} – ${p2w} ${p2}`;
+  }else{el.textContent='';}
+}
+
+async function submitBracketScore(){
+  const games=[];
+  for(let i=0;i<3;i++){
+    const s1v=document.getElementById('bg'+i+'_s1').value;
+    const s2v=document.getElementById('bg'+i+'_s2').value;
+    const s1=s1v===''?null:parseInt(s1v);
+    const s2=s2v===''?null:parseInt(s2v);
+    if(s1!==null||s2!==null){
+      if(s1===null||s2===null||s1<0||s2<0||isNaN(s1)||isNaN(s2)){showToast('Complete all started game scores!');return;}
+      if(s1===s2){showToast('No ties in pickleball!');return;}
+    }
+    games.push({s1,s2});
+  }
+  if(games[0].s1===null){showToast('Enter at least Game 1!');return;}
+
+  let p1w=0,p2w=0;
+  for(const g of games){if(g.s1!==null){if(g.s1>g.s2)p1w++;else p2w++;}}
+  const winner = p1w>=2||p2w>=2 ? (p1w>p2w?document.getElementById('modal-p1').textContent:document.getElementById('modal-p2').textContent) : null;
+
+  document.getElementById('submit-btn').disabled=true;
+  const {round,idx}=currentModalSlot;
+  if(round==='final'){
+    bracketData.final.games=games;
+    bracketData.final.winner=winner;
+    if(winner) bracketData.champion=winner;
+  }else{
+    bracketData.semis[idx].games=games;
+    bracketData.semis[idx].winner=winner;
+    // Advance winner to final
+    if(winner){
+      if(idx===0) bracketData.final.p1=winner;
+      else bracketData.final.p2=winner;
+    }
+  }
+  await saveBracket();
+  closeModal();
+  render();
+  showToast('Score saved!');
+}
+
+async function resetBracket(){
+  if(!confirm('Reset the bracket? All bracket scores will be cleared.'))return;
+  bracketData = initBracketFromStandings();
+  await saveBracket();
+  render();
+  showToast('Bracket reset!');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>

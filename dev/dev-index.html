@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>NAC Pickleball Leagues</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --blue:#4db8e8;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+.home-wrap{max-width:700px;margin:0 auto;padding:2rem 1.5rem}
+.home-header{text-align:center;padding:2.5rem 0 2rem}
+.home-header img{height:120px;width:auto;object-fit:contain}
+.home-header p{color:var(--muted);font-size:15px;margin-top:1rem}
+.leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.league-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(26,42,108,.05);display:flex;flex-direction:column;gap:6px;text-decoration:none}
+.league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
+.league-card-title{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
+.league-card-sub{font-size:13px;color:var(--muted)}
+@media(max-width:600px){
+  .home-header img{height:90px}
+  .league-card{padding:1.2rem}
+  .league-card-title{font-size:17px}
+  .leagues-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="home-wrap">
+  <div class="home-header">
+    <img src="logo.png" onerror="this.style.display='none'" alt="NAC Pickleball"/>
+    <p>Select a league to view standings, schedule, and scores</p>
+  </div>
+  <div class="leagues-grid">
+    <a class="league-card" href="dev-league.html?league=beginner">
+      <div class="league-card-title">All Ages Beginner</div>
+      <div class="league-card-sub">Under 3.0 rating</div>
+    </a>
+    <a class="league-card" href="dev-league.html?league=int1949">
+      <div class="league-card-title">19-49 Intermediate</div>
+      <div class="league-card-sub">3.0 – 3.4 rating</div>
+    </a>
+    <a class="league-card" href="dev-league.html?league=int50">
+      <div class="league-card-title">50+ Intermediate</div>
+      <div class="league-card-sub">3.0 – 3.4 rating</div>
+    </a>
+    <a class="league-card" href="dev-league.html?league=adv1949">
+      <div class="league-card-title">19-49 Advanced</div>
+      <div class="league-card-sub">3.5 & up rating</div>
+    </a>
+    <a class="league-card" href="dev-league.html?league=adv50">
+      <div class="league-card-title">50+ Advanced</div>
+      <div class="league-card-sub">3.5 & up rating</div>
+    </a>
+    <a class="league-card" href="dev-league.html?league=singles">
+      <div class="league-card-title">Singles</div>
+      <div class="league-card-sub">Open singles league</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>

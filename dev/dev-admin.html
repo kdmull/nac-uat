@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Admin — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --blue:#4db8e8;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none}
+.back-btn:hover{color:var(--green)}
+.page{padding:2rem 1.5rem;max-width:1000px;margin:0 auto;word-break:break-word}
+.section-header{margin-bottom:1.5rem;display:flex;align-items:flex-end;gap:16px}
+.section-header-text h2{font-family:var(--font-display);font-size:28px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy)}
+.section-header-text p{color:var(--muted);font-size:14px;margin-top:2px}
+.section-accent{width:4px;height:40px;background:var(--green);border-radius:2px;flex-shrink:0}
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.btn-danger{background:transparent;border-color:rgba(217,59,59,.3);color:var(--danger)}.btn-danger:hover{background:rgba(217,59,59,.06)}
+.admin-gate{text-align:center;padding:3rem 1rem}
+.admin-gate h3{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.admin-gate p{color:var(--muted);margin-bottom:1.5rem}
+.admin-gate input{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 16px;font-size:16px;width:220px;outline:none;margin-right:8px;font-family:var(--font-body)}
+.admin-gate input:focus{border-color:var(--navy)}
+.admin-gate .err{color:var(--danger);font-size:13px;margin-top:8px}
+.admin-content{display:none}.admin-content.visible{display:block}
+.admin-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.admin-section h3{font-family:var(--font-display);font-size:18px;font-weight:700;text-transform:uppercase;color:var(--navy);margin-bottom:1rem;letter-spacing:.5px}
+.admin-match-row{display:grid;grid-template-columns:50px 1fr 28px 1fr 1fr 80px 78px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.admin-match-row:last-child{border-bottom:none}
+.admin-match-header{display:grid;grid-template-columns:50px 1fr 28px 1fr 1fr 80px 78px;gap:6px;padding:4px 0;margin-bottom:2px}
+.admin-match-header span{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.admin-input{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:5px 8px;font-size:13px;width:100%;font-family:var(--font-body);outline:none}
+.admin-input:focus{border-color:var(--navy)}
+.save-bar{background:var(--navy);border-radius:var(--radius-lg);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
+.save-bar p{color:rgba(255,255,255,.8);font-size:14px}.save-bar p strong{color:var(--green)}
+.league-select-wrap{text-align:center;padding:2rem 1rem}
+.league-select-wrap h3{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:1rem}
+.league-btn{display:block;width:100%;max-width:320px;margin:8px auto;padding:12px 20px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);font-family:var(--font-display);font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);cursor:pointer;transition:all .15s;text-align:left}
+.league-btn:hover{border-color:var(--navy);background:var(--surface)}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--muted);font-family:var(--font-display);font-size:16px;text-transform:uppercase;letter-spacing:1px;gap:12px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:768px){
+  .admin-match-row,.admin-match-header{grid-template-columns:36px 1fr 1fr 70px 60px}
+  .save-bar{flex-direction:column;align-items:flex-start;gap:8px}
+  .save-bar>div{width:100%;display:flex;flex-wrap:wrap;gap:6px}
+  .save-bar>div .btn{flex:1;text-align:center;font-size:12px;padding:7px 8px}
+  .admin-section{padding:1rem}
+  .admin-gate input{width:100%;margin-right:0;margin-bottom:8px}
+  .admin-gate>div{display:flex;flex-direction:column;align-items:center;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="dev-index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+</nav>
+
+<div class="page">
+  <!-- League selector (shown if no league in URL) -->
+  <div id="league-selector" style="display:none">
+    <div class="league-select-wrap">
+      <h3>Select League to Manage</h3>
+      <button class="league-btn" onclick="selectAdminLeague('beginner')">All Ages Beginner</button>
+      <button class="league-btn" onclick="selectAdminLeague('int1949')">19-49 Intermediate</button>
+      <button class="league-btn" onclick="selectAdminLeague('int50')">50+ Intermediate</button>
+      <button class="league-btn" onclick="selectAdminLeague('adv1949')">19-49 Advanced</button>
+      <button class="league-btn" onclick="selectAdminLeague('adv50')">50+ Advanced</button>
+      <button class="league-btn" onclick="selectAdminLeague('singles')">Singles</button>
+    </div>
+  </div>
+
+  <!-- Admin panel (shown after league selected and auth) -->
+  <div id="admin-wrap" style="display:none">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <div class="section-header-text"><h2>Admin Panel</h2><p id="admin-league-label">Select a league</p></div>
+    </div>
+    <div class="admin-gate" id="admin-gate">
+      <h3>League Admin</h3>
+      <p>Enter your admin password to manage this league</p>
+      <div>
+        <input type="password" id="admin-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkAdmin()"/>
+        <button class="btn btn-primary" onclick="checkAdmin()">Enter</button>
+      </div>
+      <p class="err" id="admin-err"></p>
+    </div>
+    <div class="admin-content" id="admin-content">
+      <div class="save-bar">
+        <p>Managing <strong id="save-bar-league">—</strong></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2)" onclick="exportJSON()">Export JSON</button>
+          <button class="btn btn-danger" style="border-color:rgba(255,100,100,.4);color:#ff9090" onclick="resetToDefault()">Reset Schedule</button>
+          <button class="btn btn-green" id="admin-save-btn" onclick="saveAdmin()">Save All Changes</button>
+        </div>
+      </div>
+      <div class="admin-section" id="seasons-section">
+        <h3>Seasons</h3>
+        <div id="seasons-list" style="margin-bottom:1rem"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
+            <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:180px"/>
+          </div>
+          <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved.</p>
+      </div>
+      <div class="admin-section">
+        <h3>Player Names</h3>
+        <div id="admin-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+        <p style="color:var(--muted);font-size:13px">Names update everywhere in the schedule when you save.</p>
+      </div>
+      <div class="admin-section">
+        <h3>Schedule Editor</h3>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+          <label style="color:var(--muted);font-size:13px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Week:</label>
+          <select class="admin-input" style="width:120px" id="admin-week-sel" onchange="renderAdminMatches()"></select>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addMatch()">+ Add Match</button>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <div class="admin-match-header" style="min-width:480px">
+            <span>Match</span><span>Player 1</span><span class="vs-col"></span>
+            <span>Player 2</span><span colspan="2">Series Result</span><span></span>
+          </div>
+          <div id="admin-matches" style="min-width:480px"></div>
+        </div>
+      </div>
+    </div>
+    <div class="admin-section" id="score-log-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Score Log</h3>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadScoreLog()">↻ Refresh Log</button>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Time</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Week</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Match</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Winner</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Games</th>
+            </tr>
+          </thead>
+          <tbody id="score-log-body">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load score history.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- end admin-content -->
+</div><!-- end admin-wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', async ()=>{
+  currentLeague = getLeagueFromURL();
+  if(currentLeague){
+    await initAdminLeague(currentLeague);
+  } else {
+    document.getElementById('league-selector').style.display='block';
+  }
+});
+
+function selectAdminLeague(id){
+  window.location.href='dev-admin.html?league='+id;
+}
+
+async function initAdminLeague(league){
+  currentLeague=league;
+  document.title='Admin: '+league.name+' — NAC Pickleball';
+  document.getElementById('admin-league-label').textContent='Managing: '+league.name;
+  document.getElementById('save-bar-league').textContent=league.name;
+  document.getElementById('league-selector').style.display='none';
+  document.getElementById('admin-wrap').style.display='block';
+  await loadSeasons();
+  viewingSeason = currentSeason;
+  await loadData();
+  scheduleWeek=findCurrentWeek();
+}
+
+function checkAdmin(){
+  if(document.getElementById('admin-pw').value===ADMIN_PW){
+    document.getElementById('admin-gate').style.display='none';
+    document.getElementById('admin-content').classList.add('visible');
+    document.getElementById('score-log-section').style.display='block';
+    renderAdminPanel();
+    renderSeasonsAdmin();
+    loadScoreLog();
+  } else {
+    document.getElementById('admin-err').textContent='Incorrect password.';
+  }
+}
+
+function renderAdminPanel(){
+  const sel=document.getElementById('admin-week-sel');
+  sel.innerHTML=schedule.map(w=>`<option value="${w.week}">Week ${w.week}</option>`).join('');
+  let addWeekBtn=document.getElementById('add-week-btn');
+  if(!addWeekBtn){
+    addWeekBtn=document.createElement('button');
+    addWeekBtn.id='add-week-btn';
+    addWeekBtn.className='btn btn-ghost';
+    addWeekBtn.style.cssText='font-size:12px;padding:6px 12px';
+    addWeekBtn.textContent='+ Add Week';
+    addWeekBtn.onclick=addWeek;
+    sel.parentNode.appendChild(addWeekBtn);
+  }
+  document.getElementById('admin-players').innerHTML=PLAYERS.map((p,i)=>
+    `<div style="display:flex;align-items:center;gap:4px">
+      <input class="admin-input" style="width:110px" value="${p}" onchange="PLAYERS[${i}]=this.value"/>
+      <button class="btn btn-danger" style="font-size:11px;padding:3px 7px;white-space:nowrap" onclick="removePlayer(${i})" title="Remove">✕</button>
+    </div>`
+  ).join('');
+  renderAdminMatches();
+}
+
+function renderAdminMatches(){
+  const week=parseInt(document.getElementById('admin-week-sel').value);
+  const wd=schedule.find(w=>w.week===week);
+  if(!wd){
+    document.getElementById('admin-matches').innerHTML='<p style="color:var(--muted);font-size:13px;padding:8px 0">No weeks yet — click "+ Add Week" to get started.</p>';
+    return;
+  }
+  const isDoubles=currentLeague?.type==='doubles';
+  document.getElementById('admin-matches').innerHTML=wd.matches.map((m,i)=>{
+    const playerOpts=(sel)=>PLAYERS.map(p=>`<option${p===sel?' selected':''}>${p}</option>`).join('');
+    const r=seriesResult(m);
+    const t1=isDoubles
+      ?`<div style="display:flex;flex-direction:column;gap:3px">
+          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1a=this.value">${playerOpts(m.p1a)}</select>
+          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1b=this.value">${playerOpts(m.p1b)}</select>
+        </div>`
+      :`<select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1=this.value">${playerOpts(m.p1)}</select>`;
+    const t2=isDoubles
+      ?`<div style="display:flex;flex-direction:column;gap:3px">
+          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2a=this.value">${playerOpts(m.p2a)}</select>
+          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2b=this.value">${playerOpts(m.p2b)}</select>
+        </div>`
+      :`<select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2=this.value">${playerOpts(m.p2)}</select>`;
+    return`<div class="admin-match-row">
+      <span style="color:var(--muted);font-family:var(--font-display);font-size:12px;text-transform:uppercase">M${i+1}</span>
+      ${t1}
+      <span class="vs-col" style="text-align:center;color:var(--muted);font-family:var(--font-display);font-size:11px">vs</span>
+      ${t2}
+      <span style="font-size:11px;color:var(--muted);font-family:var(--font-display)">${r.complete?r.winner+' ('+r.seriesStr+')':'Pending'}</span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;white-space:nowrap" onclick="adminClearSeries(${week},${i})">Clear</button>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 8px" onclick="removeMatch(${week},${i})">Remove</button>
+    </div>`;
+  }).join('');
+}
+
+function addWeek(){
+  const next=schedule.length?Math.max(...schedule.map(w=>w.week))+1:1;
+  schedule.push({week:next,matches:[]});
+  renderAdminPanel();
+  document.getElementById('admin-week-sel').value=next;
+  renderAdminMatches();
+  showToast('Week '+next+' added');
+}
+function addMatch(){
+  const week=parseInt(document.getElementById('admin-week-sel').value);
+  if(!week||!schedule.find(w=>w.week===week)){showToast('Add a week first!');return;}
+  const isDoubles=currentLeague?.type==='doubles';
+  if(isDoubles){
+    schedule.find(w=>w.week===week).matches.push({p1a:PLAYERS[0],p1b:PLAYERS[1],p2a:PLAYERS[2]||PLAYERS[0],p2b:PLAYERS[3]||PLAYERS[1],games:[]});
+  }else{
+    schedule.find(w=>w.week===week).matches.push({p1:PLAYERS[0],p2:PLAYERS[1],games:[]});
+  }
+  renderAdminMatches();
+}
+function removeMatch(week,idx){schedule.find(w=>w.week===week).matches.splice(idx,1);renderAdminMatches();}
+function adminClearSeries(week,idx){
+  if(!confirm('Clear all game scores for this match?'))return;
+  schedule.find(w=>w.week===week).matches[idx].games=[];
+  renderAdminMatches();showToast('Series cleared — hit Save to sync');
+}
+function removePlayer(idx){
+  const name=PLAYERS[idx];
+  if(!confirm(`Remove "${name}"? This will also remove all their scheduled matches.`))return;
+  for(const w of schedule){
+    w.matches=w.matches.filter(m=>m.p1!==name&&m.p2!==name&&m.p1a!==name&&m.p1b!==name&&m.p2a!==name&&m.p2b!==name);
+  }
+  PLAYERS.splice(idx,1);
+  renderAdminPanel();showToast(name+' removed — hit Save to sync');
+}
+function renderSeasonsAdmin(){
+  const el=document.getElementById('seasons-list');
+  if(!el)return;
+  if(!allSeasons.length){el.innerHTML='<p style="color:var(--muted);font-size:13px">No seasons yet.</p>';return;}
+  el.innerHTML=allSeasons.slice().reverse().map(s=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px">
+      <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--navy);flex:1">${s.name}</span>
+      ${s.id===currentSeason?.id?'<span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px">Active</span>':'<span style="font-size:12px;color:var(--muted)">Archived</span>'}
+      <span style="font-size:12px;color:var(--muted)">${new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</span>
+    </div>`).join('');
+}
+
+async function createNewSeason(){
+  const name=document.getElementById('new-season-name').value.trim();
+  if(!name){showToast('Enter a season name!');return;}
+  if(allSeasons.find(s=>s.name.toLowerCase()===name.toLowerCase())){showToast('Season name already exists!');return;}
+  if(!confirm(`Start new season "${name}"? The current season will be archived and all leagues will start fresh.`))return;
+  await startNewSeason(name);
+  // Reset current league data to empty for new season
+  schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
+  PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+  await saveData();
+  document.getElementById('new-season-name').value='';
+  renderSeasonsAdmin();
+  renderAdminPanel();
+  showToast(`Season "${name}" started!`);
+}
+
+async function saveAdmin(){
+  const btn=document.getElementById('admin-save-btn');
+  btn.textContent='Saving...';btn.disabled=true;
+  const ok=await saveData();
+  btn.textContent='Save All Changes';btn.disabled=false;
+  showToast(ok?'Saved & synced!':'Save error — check DB connection');
+}
+async function resetToDefault(){
+  if(!confirm('Reset everything? All scores will be cleared.'))return;
+  schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
+  PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+  await saveData();renderAdminPanel();showToast('Reset complete!');
+}
+function exportJSON(){
+  const blob=new Blob([JSON.stringify({schedule,players:PLAYERS},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='nac-schedule.json';a.click();showToast('Exported!');
+}
+
+async function loadScoreLog(){
+  const logSection=document.getElementById('score-log-body');
+  if(!logSection){ console.warn('score-log-body not found'); return; }
+  logSection.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner"></div>Loading...</div></td></tr>';
+  try{
+    const seasonId = viewingSeason?.id || currentSeason?.id || 'spring2026';
+    const logKey = currentLeague ? `${currentLeague.key}_${seasonId}` : null;
+    const leagueFilter = logKey ? `&league_key=eq.${encodeURIComponent(logKey)}` : '';
+    const r=await fetch(
+      `${SUPABASE_URL}/rest/v1/pb_scores_log?order=submitted_at.desc&limit=100${leagueFilter}`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok){
+      console.error('Score log fetch failed:', r.status, r.statusText);
+      const errText = await r.text();
+      console.error('Error body:', errText);
+      logSection.innerHTML=`<tr><td colspan="6" style="color:var(--danger);padding:1rem">Failed to load log (${r.status}): ${errText}</td></tr>`;
+      return;
+    }
+    const rows=await r.json();
+    console.log('Score log rows:', rows.length);
+    if(!rows.length){
+      logSection.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No scores logged yet.</td></tr>';
+      return;
+    }
+    logSection.innerHTML=rows.map(row=>{
+      const games=(row.games||[]).filter(g=>g.s1!==null);
+      const gamesStr=games.map((g,i)=>`G${i+1}: ${g.s1}-${g.s2}`).join(' | ');
+      const dt=new Date(row.submitted_at);
+      const dateStr=dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const timeStr=dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+      return`<tr>
+        <td style="white-space:nowrap;font-size:13px">${dateStr}<br><span style="color:var(--muted);font-size:12px">${timeStr}</span></td>
+        <td style="font-size:13px">${row.league_name||row.league_key}</td>
+        <td style="font-size:13px">Week ${row.week}</td>
+        <td style="font-size:13px">${row.team1||'—'}<br><span style="color:var(--muted);font-size:12px">vs ${row.team2||'—'}</span></td>
+        <td style="font-size:13px;color:var(--green-dark);font-weight:600">${row.winner||'—'}</td>
+        <td style="font-size:12px;color:var(--muted)">${gamesStr||'—'}</td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    console.error('Score log exception:', e);
+    logSection.innerHTML=`<tr><td colspan="6" style="color:var(--danger);padding:1rem">Error: ${e.message}</td></tr>`;
+  }
+}
+</script>
+</body>
+</html>

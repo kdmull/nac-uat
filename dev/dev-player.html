@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Player Profile — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none;border-right:1px solid rgba(255,255,255,.15)}
+.back-btn:hover{color:var(--green)}
+.nav-tabs{display:flex}
+.nav-tab{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;text-decoration:none;display:block}
+.nav-tab:hover{color:var(--white)}.nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
+[data-show-bracket='1'] #bracket-tab{display:block!important}
+[data-show-playoffs='1'] #playoffs-tab{display:block!important}
+.page{padding:2rem 1.5rem;max-width:1000px;margin:0 auto}
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent}
+.loading-overlay{display:flex;align-items:center;justify-content:center;padding:4rem;color:var(--muted);font-family:var(--font-display);font-size:16px;text-transform:uppercase;letter-spacing:1px;gap:12px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Profile header */
+.profile-header{background:var(--navy);border-radius:var(--radius-lg);padding:2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:32px;font-weight:900;color:var(--white);flex-shrink:0;border:3px solid rgba(255,255,255,.2)}
+.profile-info{flex:1;min-width:0}
+.profile-name{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--white);line-height:1}
+.profile-league{font-size:13px;color:rgba(255,255,255,.6);margin-top:4px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px}
+.profile-rank{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--green);margin-top:6px}
+/* Stat cards */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1.5rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;box-shadow:0 1px 3px rgba(26,42,108,.05);text-align:center}
+.stat-label{font-size:11px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-val{font-family:var(--font-display);font-size:30px;font-weight:800;color:var(--navy);line-height:1}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:3px}
+/* Section */
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.section h3{font-family:var(--font-display);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--green)}
+/* Match history table */
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)}
+.history-table td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+.history-table tbody tr:last-child td{border-bottom:none}
+.history-table tbody tr:hover{background:var(--surface)}
+.result-w{display:inline-block;padding:2px 10px;border-radius:4px;font-family:var(--font-display);font-size:12px;font-weight:700;background:rgba(76,175,40,.12);color:var(--green-dark)}
+.result-l{display:inline-block;padding:2px 10px;border-radius:4px;font-family:var(--font-display);font-size:12px;font-weight:700;background:rgba(217,59,59,.1);color:var(--danger)}
+/* H2H */
+.h2h-grid{display:flex;flex-direction:column;gap:8px}
+.h2h-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.h2h-row:last-child{border-bottom:none}
+.h2h-name{flex:1;font-weight:600;font-size:14px;color:var(--navy)}
+.h2h-record{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy)}
+.h2h-bar{flex:2;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.h2h-bar-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:768px){
+  nav{flex-wrap:wrap}
+  .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
+  .nav-logo{height:36px}
+  .back-btn{display:none}
+  .nav-tabs{width:100%;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
+  .nav-tabs::-webkit-scrollbar{display:none}
+  .nav-tab{flex:1;padding:.7rem .5rem;font-size:13px;text-align:center;min-width:70px}
+  .profile-header{padding:1.2rem;gap:1rem}
+  .profile-avatar{width:56px;height:56px;font-size:24px}
+  .profile-name{font-size:24px}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .stat-val{font-size:24px}
+  .section{padding:1rem}
+  .history-table th:nth-child(5),.history-table td:nth-child(5){display:none}
+  .back-btn{display:none}
+}
+</style>
+</head>
+<body>
+<script>
+(function(){
+  var p=new URLSearchParams(window.location.search).get('league');
+  var leagues={singles:'singles',beginner:'doubles',int1949:'doubles',int50:'doubles',adv1949:'doubles',adv50:'doubles'};
+  if(p==='singles') document.documentElement.setAttribute('data-show-bracket','1');
+  if(leagues[p]==='doubles') document.documentElement.setAttribute('data-show-playoffs','1');
+  if(p) document.documentElement.setAttribute('data-league',p);
+})();
+</script>
+<nav>
+  <a class="nav-brand" href="dev-index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+  <div class="nav-tabs">
+    <a class="nav-tab" id="tab-standings" href="#" style="text-decoration:none">Standings</a>
+    <a class="nav-tab" id="tab-schedule" href="#" style="text-decoration:none">Schedule</a>
+    <a class="nav-tab" id="tab-scores" href="#" style="text-decoration:none">Scores</a>
+    <a class="nav-tab" id="bracket-tab" href="dev-bracket.html" style="display:none;text-decoration:none">Bracket</a>
+    <a class="nav-tab" id="playoffs-tab" href="#" style="display:none;text-decoration:none">Playoffs</a>
+  </div>
+</nav>
+
+<div class="league-banner" id="league-banner" style="background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 1.5rem;font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);text-align:center">Loading...</div>
+<div class="page" id="main-content">
+  <div class="loading-overlay"><div class="spinner"></div>Loading profile...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', async () => {
+  const params = new URLSearchParams(window.location.search);
+  const playerName = params.get('player');
+  const leagueId = params.get('league');
+
+  currentLeague = LEAGUES.find(l => l.id === leagueId) || null;
+  if(!currentLeague || !playerName){
+    document.getElementById('main-content').innerHTML = '<div class="loading-overlay">Invalid profile link.</div>';
+    return;
+  }
+
+  // Update back button
+
+  document.title = `${playerName} — NAC Pickleball`;
+  document.getElementById('league-banner').textContent = currentLeague?.name || '';
+
+  // Wire up nav tabs
+  const leagueUrl = `dev-league.html?league=${leagueId}`;
+  document.getElementById('tab-standings').href = leagueUrl;
+  document.getElementById('tab-schedule').href = leagueUrl;
+  document.getElementById('tab-scores').href = leagueUrl;
+  if(currentLeague?.type === 'doubles'){
+    const pt = document.getElementById('playoffs-tab');
+    if(pt){ pt.style.display='block'; pt.href=`dev-doubles-playoff.html?league=${leagueId}`; }
+  }
+
+  await loadData();
+  renderProfile(playerName, leagueId);
+});
+
+function renderProfile(playerName, leagueId) {
+  const stats = getStats();
+  const active = getActivePlayers();
+  const rows = active.map(p => {
+    const s = stats[p] || {w:0,l:0,pts:0,opp:0,streak:[]};
+    const tot = s.w + s.l;
+    return {...s, p, pct: tot ? s.w/tot : 0, diff: s.pts - s.opp};
+  }).sort((a,b) => b.pct - a.pct || b.diff - a.diff);
+
+  const rank = rows.findIndex(r => r.p === playerName) + 1;
+  const playerStats = stats[playerName] || {w:0,l:0,pts:0,opp:0,streak:[]};
+  const tot = playerStats.w + playerStats.l;
+  const pct = tot ? (playerStats.w / tot * 100).toFixed(0) : 0;
+  const diff = playerStats.pts - playerStats.opp;
+  const initials = playerName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+
+  // Build match history
+  const matches = [];
+  for(const w of schedule) {
+    for(const m of w.matches) {
+      const r = seriesResult(m);
+      const isDoubles = m.p1a !== undefined;
+      let involved = false, won = false, opponent = '', partner = '';
+      if(isDoubles) {
+        const myTeam = [m.p1a,m.p1b].includes(playerName) ? 'team1' : [m.p2a,m.p2b].includes(playerName) ? 'team2' : null;
+        if(myTeam) {
+          involved = true;
+          won = r.complete && ((myTeam==='team1' && r.p1w>r.p2w)||(myTeam==='team2' && r.p2w>r.p1w));
+          opponent = myTeam==='team1' ? `${m.p2a} / ${m.p2b}` : `${m.p1a} / ${m.p1b}`;
+          // Partner is the other player on the same team
+          const myTeamPlayers = myTeam==='team1' ? [m.p1a,m.p1b] : [m.p2a,m.p2b];
+          partner = myTeamPlayers.find(p => p !== playerName) || '';
+        }
+      } else {
+        if(m.p1===playerName||m.p2===playerName) {
+          involved = true;
+          won = r.complete && r.winner === playerName;
+          opponent = m.p1===playerName ? m.p2 : m.p1;
+          partner = '';
+        }
+      }
+      if(involved) {
+        const games = (m.games||[]).filter(g=>g.s1!==null);
+        matches.push({week:w.week, partner, opponent, won, complete:r.complete, games, seriesStr:r.seriesStr, winner:r.winner});
+      }
+    }
+  }
+
+  // Head to head
+  const h2h = {};
+  for(const m of matches) {
+    if(!h2h[m.opponent]) h2h[m.opponent] = {w:0,l:0};
+    if(m.complete) { if(m.won) h2h[m.opponent].w++; else h2h[m.opponent].l++; }
+  }
+
+  const rankLabel = rank===1?'🥇 1st Place':rank===2?'🥈 2nd Place':rank===3?'🥉 3rd Place':`#${rank} in Standings`;
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-avatar">${initials}</div>
+      <div class="profile-info">
+        <div class="profile-name">${playerName}</div>
+        <div class="profile-league">${currentLeague.name}</div>
+        <div class="profile-rank">${rank ? rankLabel : '—'}</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Wins</div><div class="stat-val" style="color:var(--green-dark)">${playerStats.w}</div><div class="stat-sub">series wins</div></div>
+      <div class="stat-card"><div class="stat-label">Losses</div><div class="stat-val" style="color:var(--danger)">${playerStats.l}</div><div class="stat-sub">series losses</div></div>
+      <div class="stat-card"><div class="stat-label">Win %</div><div class="stat-val">${pct}%</div><div class="stat-sub">win rate</div></div>
+      <div class="stat-card"><div class="stat-label">Pts +/-</div><div class="stat-val" style="font-size:24px;color:${diff>=0?'var(--green-dark)':'var(--danger)'}">${diff>0?'+':''}${diff}</div><div class="stat-sub">point differential</div></div>
+      <div class="stat-card"><div class="stat-label">Matches</div><div class="stat-val">${tot}</div><div class="stat-sub">played</div></div>
+    </div>
+
+    <div class="section">
+      <h3>Match History</h3>
+      ${matches.length === 0 ? '<p style="color:var(--muted);font-size:14px">No matches played yet.</p>' : `
+      <div style="overflow-x:auto">
+        <table class="history-table">
+          <thead><tr>
+            <th>Week</th><th>Partner</th><th>Opponent</th><th>Result</th><th>Games</th><th>Series</th>
+          </tr></thead>
+          <tbody>
+            ${matches.map(m => {
+              const gamesStr = m.games.map((g,i)=>`${g.s1}-${g.s2}`).join(', ');
+              const makePlayerLink = (name) => {
+                if(!name||name==='—') return '<span style="color:var(--muted)">—</span>';
+                // For doubles, names may be "A / B" — make each clickable
+                return name.split(' / ').map(n => {
+                  const encoded = encodeURIComponent(n.trim());
+                  return `<a href="dev-player.html?league=${leagueId}&player=${encoded}" style="font-weight:600;font-size:14px;color:var(--navy);text-decoration:none;border-bottom:1px dashed rgba(26,42,108,.3)">${n.trim()}</a>`;
+                }).join('<span style="color:var(--muted);font-size:13px"> / </span>');
+              };
+              return `<tr>
+                <td><span style="font-family:var(--font-display);font-weight:700">Wk ${m.week}</span></td>
+                <td>${m.partner ? makePlayerLink(m.partner) : '<span style="color:var(--muted)">—</span>'}</td>
+                <td>${makePlayerLink(m.opponent)}</td>
+                <td>${m.complete ? `<span class="${m.won?'result-w':'result-l'}">${m.won?'W':'L'}</span>` : '<span style="color:var(--muted);font-size:12px">Pending</span>'}</td>
+                <td style="color:var(--muted);font-size:13px">${gamesStr||'—'}</td>
+                <td style="font-family:var(--font-display);font-size:13px">${m.complete?m.seriesStr:'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`}
+    </div>
+
+
+  `;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>

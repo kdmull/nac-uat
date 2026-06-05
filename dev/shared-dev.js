@@ -1,0 +1,366 @@
+const ADMIN_PW  = 'cadMium13#';
+const SCORES_PW = 'NAC';
+const SUPABASE_URL='https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+
+const LEAGUES = [
+  {id:'beginner',  name:'All Ages Beginner',  key:'league_beginner',  type:'doubles', sub:'Under 3.0 rating'},
+  {id:'int1949',   name:'19-49 Intermediate', key:'league_int1949',   type:'doubles', sub:'3.0 – 3.4 rating'},
+  {id:'int50',     name:'50+ Intermediate',   key:'league_int50',     type:'doubles', sub:'3.0 – 3.4 rating'},
+  {id:'adv1949',   name:'19-49 Advanced',     key:'league_adv1949',   type:'doubles', sub:'3.5 & up rating'},
+  {id:'adv50',     name:'50+ Advanced',       key:'league_adv50',     type:'doubles', sub:'3.5 & up rating'},
+  {id:'singles',   name:'Singles League',     key:'league_singles',   type:'singles', sub:'Open singles league'},
+];
+
+const SCHEDULE_DEFAULT = [
+  {week:1,bye:'Jordan C.',matches:[{p1:'Cordel B.',p2:'Cam P.',games:[]},{p1:'Ethan V.',p2:'Tanner B.',games:[]},{p1:'Elias V.',p2:'Jordan M.',games:[]},{p1:'Marcus T.',p2:'Riley S.',games:[]},{p1:'Devon W.',p2:'Chase H.',games:[]}]},
+  {week:2,bye:'Cordel B.',matches:[{p1:'Ethan V.',p2:'Jordan C.',games:[]},{p1:'Elias V.',p2:'Cam P.',games:[]},{p1:'Marcus T.',p2:'Tanner B.',games:[]},{p1:'Devon W.',p2:'Jordan M.',games:[]},{p1:'Chase H.',p2:'Riley S.',games:[]}]},
+  {week:3,bye:'Ethan V.',matches:[{p1:'Elias V.',p2:'Cordel B.',games:[]},{p1:'Marcus T.',p2:'Jordan C.',games:[]},{p1:'Devon W.',p2:'Cam P.',games:[]},{p1:'Chase H.',p2:'Tanner B.',games:[]},{p1:'Riley S.',p2:'Jordan M.',games:[]}]},
+  {week:4,bye:'Elias V.',matches:[{p1:'Marcus T.',p2:'Ethan V.',games:[]},{p1:'Devon W.',p2:'Cordel B.',games:[]},{p1:'Chase H.',p2:'Jordan C.',games:[]},{p1:'Riley S.',p2:'Cam P.',games:[]},{p1:'Jordan M.',p2:'Tanner B.',games:[]}]},
+  {week:5,bye:'Marcus T.',matches:[{p1:'Devon W.',p2:'Elias V.',games:[]},{p1:'Chase H.',p2:'Ethan V.',games:[]},{p1:'Riley S.',p2:'Cordel B.',games:[]},{p1:'Jordan M.',p2:'Jordan C.',games:[]},{p1:'Tanner B.',p2:'Cam P.',games:[]}]},
+  {week:6,bye:'Devon W.',matches:[{p1:'Chase H.',p2:'Marcus T.',games:[]},{p1:'Riley S.',p2:'Elias V.',games:[]},{p1:'Jordan M.',p2:'Ethan V.',games:[]},{p1:'Tanner B.',p2:'Cordel B.',games:[]},{p1:'Cam P.',p2:'Jordan C.',games:[]}]},
+  {week:7,bye:'Chase H.',matches:[{p1:'Riley S.',p2:'Devon W.',games:[]},{p1:'Jordan M.',p2:'Marcus T.',games:[]},{p1:'Tanner B.',p2:'Elias V.',games:[]},{p1:'Cam P.',p2:'Ethan V.',games:[]},{p1:'Jordan C.',p2:'Cordel B.',games:[]}]},
+  {week:8,bye:'Riley S.',matches:[{p1:'Jordan M.',p2:'Chase H.',games:[]},{p1:'Tanner B.',p2:'Devon W.',games:[]},{p1:'Cam P.',p2:'Marcus T.',games:[]},{p1:'Jordan C.',p2:'Elias V.',games:[]},{p1:'Cordel B.',p2:'Ethan V.',games:[]}]},
+  {week:9,bye:'Jordan M.',matches:[{p1:'Tanner B.',p2:'Riley S.',games:[]},{p1:'Cam P.',p2:'Chase H.',games:[]},{p1:'Jordan C.',p2:'Devon W.',games:[]},{p1:'Cordel B.',p2:'Marcus T.',games:[]},{p1:'Ethan V.',p2:'Elias V.',games:[]}]},
+  {week:10,bye:'Tanner B.',matches:[{p1:'Cam P.',p2:'Jordan M.',games:[]},{p1:'Jordan C.',p2:'Riley S.',games:[]},{p1:'Cordel B.',p2:'Chase H.',games:[]},{p1:'Ethan V.',p2:'Devon W.',games:[]},{p1:'Elias V.',p2:'Marcus T.',games:[]}]},
+  {week:11,bye:'Cam P.',matches:[{p1:'Jordan C.',p2:'Tanner B.',games:[]},{p1:'Cordel B.',p2:'Jordan M.',games:[]},{p1:'Ethan V.',p2:'Riley S.',games:[]},{p1:'Elias V.',p2:'Chase H.',games:[]},{p1:'Marcus T.',p2:'Devon W.',games:[]}]},
+];
+
+let schedule = JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
+let PLAYERS = ['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+let scheduleWeek=1, scoresWeek=1, currentModalMatch=null, lastSynced=null;
+let scoreAuthed=false;
+let currentLeague=null; // full league object from LEAGUES array
+let currentSeason=null;  // { id, name } e.g. { id:'spring2026', name:'Spring 2026' }
+let allSeasons=[];        // list of all seasons
+let viewingSeason=null;   // season being viewed (may differ from active if browsing history)
+
+function getLeagueFromURL(){
+  const params=new URLSearchParams(window.location.search);
+  const id=params.get('league');
+  return LEAGUES.find(l=>l.id===id)||null;
+}
+function getSeasonFromURL(){
+  return new URLSearchParams(window.location.search).get('season')||null;
+}
+function seasonKey(leagueKey, seasonId){
+  return `${leagueKey}_${seasonId}`;
+}
+
+async function dbGet(key){
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/pb_league?key=eq.${encodeURIComponent(key)}&select=value`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!r.ok){console.error('DB fetch failed:',r.status);return{error:true};}
+    const data=await r.json();
+    return data.length?{data:data[0].value}:{empty:true};
+  }catch(e){console.error('DB fetch exception:',e);return{error:true};}
+}
+async function dbSet(key,val){
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/pb_league`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key,value:val,updated_at:new Date().toISOString()})});
+    if(!r.ok){console.error('DB save failed:',r.status);return false;}
+    return true;
+  }catch(e){console.error('DB save exception:',e);return false;}
+}
+async function logScore(week, matchIdx, games, winner, team1, team2){
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/pb_scores_log`,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        league_key: seasonKey(currentLeague?.key||'unknown', viewingSeason?.id||currentSeason?.id||'spring2026'),
+        league_name: currentLeague?.name||'unknown',
+        week,
+        match_num: matchIdx+1,
+        team1,
+        team2,
+        games,
+        winner
+      })
+    });
+  }catch(e){console.error('Score log failed:',e);}
+}
+
+async function loadSeasons(){
+  try {
+    const result = await dbGet('nac_seasons');
+    if(result && result.data && result.data.seasons){
+      allSeasons = result.data.seasons;
+      const activeId = result.data.active;
+      currentSeason = allSeasons.find(s=>s.id===activeId) || allSeasons[0] || null;
+    } else {
+      // First time — create default Spring 2026 season
+      currentSeason = {id:'spring2026', name:'Spring 2026', created: new Date().toISOString()};
+      allSeasons = [currentSeason];
+      await saveSeasons(currentSeason.id);
+    }
+    viewingSeason = viewingSeason || currentSeason;
+  } catch(e) {
+    console.warn('Could not load seasons:', e);
+    currentSeason = {id:'spring2026', name:'Spring 2026'};
+    allSeasons = [currentSeason];
+    viewingSeason = currentSeason;
+  }
+}
+async function saveSeasons(activeId){
+  await dbSet('nac_seasons', {active: activeId, seasons: allSeasons});
+}
+async function startNewSeason(name){
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const newSeason = {id, name, created: new Date().toISOString()};
+  allSeasons.push(newSeason);
+  currentSeason = newSeason;
+  viewingSeason = newSeason;
+  await saveSeasons(id);
+  return newSeason;
+}
+function isViewingActiveSeason(){
+  return viewingSeason && currentSeason && viewingSeason.id === currentSeason.id;
+}
+
+async function loadData(){
+  if(!currentLeague)return;
+  const seasonId = viewingSeason?.id || currentSeason?.id || 'spring2026';
+  const key = seasonKey(currentLeague.key, seasonId);
+  console.log('Loading data from key:', key);
+  const result=await dbGet(key);
+  if(result.data){
+    if(result.data.schedule)schedule=result.data.schedule;
+    if(result.data.players)PLAYERS=result.data.players;
+  }
+  lastSynced=new Date();
+}
+async function saveData(){
+  if(!schedule||!schedule.length||!schedule[0].matches||!schedule[0].matches.length){
+    showToast('Save blocked — schedule looks empty!');return false;
+  }
+  // Always use season key — default to spring2026 if seasons not loaded yet
+  const seasonId = viewingSeason?.id || currentSeason?.id || 'spring2026';
+  const key = seasonKey(currentLeague.key, seasonId);
+  const ok=await dbSet(key,{schedule,players:PLAYERS,updated:Date.now()});
+  lastSynced=new Date();return ok;
+}
+
+function seriesResult(m){
+  const games=m.games||[];
+  let p1w=0,p2w=0,pts1=0,pts2=0;
+  for(const g of games){
+    if(g.s1===null||g.s2===null)continue;
+    if(g.s1>g.s2)p1w++;else if(g.s2>g.s1)p2w++;
+    pts1+=g.s1;pts2+=g.s2;
+  }
+  const complete=p1w>=2||p2w>=2;
+  const isDoubles=m.p1a!==undefined;
+  const team1=isDoubles?`${m.p1a} / ${m.p1b}`:m.p1;
+  const team2=isDoubles?`${m.p2a} / ${m.p2b}`:m.p2;
+  const winner=complete?(p1w>p2w?team1:team2):null;
+  const loser=complete?(p1w>p2w?team2:team1):null;
+  return{p1w,p2w,pts1,pts2,complete,winner,loser,seriesStr:p1w+'-'+p2w,team1,team2,isDoubles};
+}
+
+function getActivePlayers(){
+  const seen=new Set();
+  for(const w of schedule)for(const m of w.matches){
+    if(m.p1a!==undefined){[m.p1a,m.p1b,m.p2a,m.p2b].forEach(p=>{if(p)seen.add(p);});}
+    else{if(m.p1)seen.add(m.p1);if(m.p2)seen.add(m.p2);}
+  }
+  const ordered=PLAYERS.filter(p=>seen.has(p));
+  seen.forEach(p=>{if(!ordered.includes(p))ordered.push(p);});
+  return ordered;
+}
+
+function getStats(){
+  const active=getActivePlayers();
+  const s={};for(const p of active)s[p]={w:0,l:0,pts:0,opp:0,streak:[]};
+  for(const w of schedule)for(const m of w.matches){
+    const r=seriesResult(m);
+    if(r.complete){
+      if(r.isDoubles){
+        const wp=r.p1w>r.p2w?[m.p1a,m.p1b]:[m.p2a,m.p2b];
+        const lp=r.p1w>r.p2w?[m.p2a,m.p2b]:[m.p1a,m.p1b];
+        const wpts=r.p1w>r.p2w?r.pts1:r.pts2,lpts=r.p1w>r.p2w?r.pts2:r.pts1;
+        for(const p of wp.filter(Boolean)){if(s[p]){s[p].w++;s[p].pts+=wpts;s[p].opp+=lpts;s[p].streak.push('W');}}
+        for(const p of lp.filter(Boolean)){if(s[p]){s[p].l++;s[p].pts+=lpts;s[p].opp+=wpts;s[p].streak.push('L');}}
+      }else{
+        if(s[r.winner]){s[r.winner].w++;s[r.winner].pts+=r.winner===m.p1?r.pts1:r.pts2;s[r.winner].opp+=r.winner===m.p1?r.pts2:r.pts1;s[r.winner].streak.push('W');}
+        if(s[r.loser]){s[r.loser].l++;s[r.loser].pts+=r.loser===m.p1?r.pts1:r.pts2;s[r.loser].opp+=r.loser===m.p1?r.pts2:r.pts1;s[r.loser].streak.push('L');}
+      }
+    }
+  }
+  return s;
+}
+
+function findCurrentWeek(){
+  for(const w of schedule)if(w.matches.some(m=>!seriesResult(m).complete))return w.week;
+  return schedule.length||1;
+}
+
+function renderWeekTabs(cid,aw,fn){
+  const cur=findCurrentWeek();
+  document.getElementById(cid).innerHTML=schedule.map(w=>
+    `<button class="week-btn${w.week===aw?' active':''}" onclick="${fn}(${w.week})">Wk ${w.week}${w.week===cur?' ●':''}</button>`
+  ).join('');
+}
+
+function matchCardHTML(m,i,showScoreBtn){
+  const r=seriesResult(m);
+  const gamesPlayed=(m.games||[]).filter(g=>g.s1!==null).length;
+  const scoreStr=r.complete
+    ?`<span style="color:var(--green-dark);font-size:13px;font-weight:700">${r.winner}</span> wins ${r.p1w>r.p2w?r.p1w+'-'+r.p2w:r.p2w+'-'+r.p1w}`
+    :(gamesPlayed>0?`Game ${gamesPlayed+1}`:'—');
+  const playersHTML=r.isDoubles
+    ?`<div class="doubles-match-layout">
+        <div class="doubles-team${r.winner===r.team1?' winner':''}">
+          <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1a}</span>
+          <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1b}</span>
+        </div>
+        <span class="vs-badge">vs</span>
+        <div class="doubles-team${r.winner===r.team2?' winner':''}">
+          <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2a}</span>
+          <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2b}</span>
+        </div>
+      </div>`
+    :`<div class="match-players">
+        <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1}</span>
+        <span class="vs-badge">vs</span>
+        <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2}</span>
+      </div>`;
+  const actionHTML=showScoreBtn
+    ?`<button class="score-btn" onclick="openModal(${m._week},${i})">${r.complete?'Edit':'Enter Scores'}</button>`
+    :`<div class="match-status${r.complete?'':' pending'}">${r.complete?'Final':'Pending'}</div>`;
+  return`<div class="match-card${r.complete?' completed':' upcoming'}">
+    <div class="match-num">Match ${i+1}</div>
+    ${playersHTML}
+    <div class="match-score" style="font-size:13px;min-width:110px">${scoreStr}</div>
+    ${actionHTML}
+  </div>`;
+}
+
+function byeCardHTML(byePlayer){
+  if(!byePlayer)return'';
+  return`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:10px 18px;display:flex;align-items:center;gap:16px;color:var(--muted)"><div class="match-num">BYE</div><div style="flex:1;font-size:14px"><span style="font-weight:600;color:var(--navy)">${byePlayer}</span> has a bye this week</div></div>`;
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// Score modal logic (shared)
+function openModal(week,idx){
+  const m=schedule.find(w=>w.week===week).matches[idx];
+  m._week=week;
+  currentModalMatch={week,idx};
+  const r=seriesResult(m);
+  document.getElementById('modal-p1').textContent=r.team1;
+  document.getElementById('modal-p2').textContent=r.team2;
+  const r2=seriesResult(m);
+  const lbl1=document.getElementById('col-p1-label');
+  if(lbl1)lbl1.textContent=r2.isDoubles?m.p1a.split(' ')[0]+'/'+m.p1b.split(' ')[0]:m.p1.split(' ')[0];
+  const lbl2=document.getElementById('col-p2-label');
+  if(lbl2)lbl2.textContent=r2.isDoubles?m.p2a.split(' ')[0]+'/'+m.p2b.split(' ')[0]:m.p2.split(' ')[0];
+  document.getElementById('submit-btn').disabled=false;
+  renderModalGames(m);
+  document.getElementById('score-modal').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('score-modal').classList.remove('open');
+  currentModalMatch=null;
+}
+function renderModalGames(m){
+  const games=m.games&&m.games.length?m.games:[{s1:null,s2:null},{s1:null,s2:null},{s1:null,s2:null}];
+  while(games.length<3)games.push({s1:null,s2:null});
+  let p1w=0,p2w=0;
+  for(let i=0;i<2;i++){
+    const g=games[i];
+    if(g.s1!==null&&g.s2!==null&&g.s1!==g.s2){if(g.s1>g.s2)p1w++;else p2w++;}
+  }
+  const sweep=p1w>=2||p2w>=2;
+  document.getElementById('modal-games').innerHTML=games.map((g,i)=>{
+    const locked=i===2&&sweep;
+    const p1win=g.s1!==null&&g.s2!==null&&g.s1>g.s2;
+    const p2win=g.s1!==null&&g.s2!==null&&g.s2>g.s1;
+    return`<div class="game-row${locked?' game-row-disabled':''}">
+      <span class="game-label">Game ${i+1}</span>
+      <input class="game-input${p1win?' winner':''}" type="number" min="0" max="30" id="g${i}_s1" value="${g.s1!==null?g.s1:''}" placeholder="0" ${locked?'disabled':''} oninput="onGameInput()"/>
+      <div class="game-dash">—</div>
+      <input class="game-input${p2win?' winner':''}" type="number" min="0" max="30" id="g${i}_s2" value="${g.s2!==null?g.s2:''}" placeholder="0" ${locked?'disabled':''} oninput="onGameInput()"/>
+    </div>`;
+  }).join('');
+  updateSeriesStatus();
+}
+function onGameInput(){
+  let p1w=0,p2w=0;
+  for(let i=0;i<3;i++){
+    const inp1=document.getElementById('g'+i+'_s1');
+    const inp2=document.getElementById('g'+i+'_s2');
+    if(!inp1||!inp2)continue;
+    const s1=parseInt(inp1.value),s2=parseInt(inp2.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){
+      if(s1>s2){p1w++;inp1.classList.add('winner');inp2.classList.remove('winner');}
+      else{p2w++;inp2.classList.add('winner');inp1.classList.remove('winner');}
+    }else{inp1.classList.remove('winner');inp2.classList.remove('winner');}
+  }
+  let g1p1w=0,g1p2w=0;
+  for(let i=0;i<2;i++){
+    const s1=parseInt(document.getElementById('g'+i+'_s1')?.value);
+    const s2=parseInt(document.getElementById('g'+i+'_s2')?.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)g1p1w++;else g1p2w++;}
+  }
+  const sweep=g1p1w>=2||g1p2w>=2;
+  const g3s1=document.getElementById('g2_s1'),g3s2=document.getElementById('g2_s2');
+  const g3row=g3s1?.closest('.game-row');
+  if(g3s1&&g3s2){
+    g3s1.disabled=sweep;g3s2.disabled=sweep;
+    if(g3row){sweep?g3row.classList.add('game-row-disabled'):g3row.classList.remove('game-row-disabled');}
+    if(sweep){g3s1.value='';g3s2.value='';}
+  }
+  updateSeriesStatus();
+}
+function updateSeriesStatus(){
+  let p1w=0,p2w=0;
+  const p1=document.getElementById('modal-p1').textContent;
+  const p2=document.getElementById('modal-p2').textContent;
+  for(let i=0;i<3;i++){
+    const s1=parseInt(document.getElementById('g'+i+'_s1')?.value);
+    const s2=parseInt(document.getElementById('g'+i+'_s2')?.value);
+    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)p1w++;else p2w++;}
+  }
+  const el=document.getElementById('modal-series-status');
+  if(!el)return;
+  if(p1w>=2||p2w>=2){
+    const winner=p1w>p2w?p1:p2;
+    el.innerHTML=`<span class="series-badge complete">✓ ${winner} wins the series ${Math.max(p1w,p2w)}-${Math.min(p1w,p2w)}</span>`;
+  }else if(p1w>0||p2w>0){
+    el.innerHTML=`<span class="series-badge inprog">${p1} ${p1w} – ${p2w} ${p2}</span>`;
+  }else{el.innerHTML='';}
+}
+async function submitScore(){
+  const games=[];
+  for(let i=0;i<3;i++){
+    const s1v=document.getElementById('g'+i+'_s1').value;
+    const s2v=document.getElementById('g'+i+'_s2').value;
+    const s1=s1v===''?null:parseInt(s1v);
+    const s2=s2v===''?null:parseInt(s2v);
+    if(s1!==null||s2!==null){
+      if(s1===null||s2===null||s1<0||s2<0||isNaN(s1)||isNaN(s2)){showToast('Complete all started game scores!');return;}
+      if(s1===s2){showToast('No ties in pickleball!');return;}
+    }
+    games.push({s1,s2});
+  }
+  if(games[0].s1===null){showToast('Enter at least Game 1 scores!');return;}
+  document.getElementById('submit-btn').disabled=true;
+  const{week,idx}=currentModalMatch;
+  schedule.find(w=>w.week===week).matches[idx].games=games;
+  const ok=await saveData();
+  // Log the score entry
+  const m=schedule.find(w=>w.week===week).matches[idx];
+  const r=seriesResult(m);
+  await logScore(week, idx, games, r.winner, r.team1, r.team2);
+  closeModal();
+  if(typeof renderScoreMatches==='function')renderScoreMatches(week);
+  if(typeof renderStandings==='function')renderStandings();
+  showToast(ok?'Series saved!':'Saved locally — check DB connection');
+}
