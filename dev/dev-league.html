@@ -195,7 +195,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <th style="width:52px;white-space:nowrap">#</th><th>Player</th>
         <th class="num">W</th><th class="num">L</th>
         <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
-        <th class="num">DUPR</th>
+        <th class="num">DUPR<br><span style="font-size:9px;opacity:.7" id="dupr-type-label">Rating</span></th>
       </tr></thead>
       <tbody id="standings-body"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
@@ -309,9 +309,12 @@ document.getElementById('score-modal').addEventListener('click', e=>{
 // DUPR ratings map: { playerName: { duprId, rating } }
 let duprRatings = {};
 
+const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-get-ratings';
+
 async function loadDuprRatings(){
   if(!currentLeague) return;
   try{
+    // 1. Get linked players (name → duprId) from Supabase
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(currentLeague.id)}&select=player_name,dupr_id`,
       {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
@@ -319,8 +322,34 @@ async function loadDuprRatings(){
     if(!r.ok) return;
     const rows = await r.json();
     duprRatings = {};
+    const duprIds = [];
     for(const row of rows){
       duprRatings[row.player_name] = {duprId: row.dupr_id};
+      duprIds.push(row.dupr_id);
+    }
+    if(!duprIds.length) return;
+
+    // 2. Fetch live ratings from DUPR via Edge Function
+    const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ duprIds })
+    });
+    if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status); return; }
+    const data = await rr.json();
+    const ratingsById = data.ratings || {};
+
+    // 3. Merge ratings into duprRatings by player name
+    for(const name in duprRatings){
+      const id = duprRatings[name].duprId;
+      if(ratingsById[id]){
+        duprRatings[name].singles = ratingsById[id].singles;
+        duprRatings[name].doubles = ratingsById[id].doubles;
+      }
     }
   }catch(e){ console.warn('Could not load DUPR ratings:', e); }
 }
@@ -412,10 +441,20 @@ function renderStandings(){
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
       <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
-      <td class="num">${duprRatings[r.p]?.duprId
-        ? `<span style="font-family:var(--font-display);font-size:12px;color:var(--muted)">${duprRatings[r.p].duprId}</span>`
-        : `<a href="dupr-connect.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;border:1px solid var(--border);padding:2px 6px;border-radius:4px;white-space:nowrap">Connect</a>`
-      }</td>
+      <td class="num">${(() => {
+        const dr = duprRatings[r.p];
+        if(!dr || !dr.duprId){
+          return `<a href="dupr-connect.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;border:1px solid var(--border);padding:2px 6px;border-radius:4px;white-space:nowrap">Connect</a>`;
+        }
+        // Show rating based on league type
+        const isSingles = currentLeague.type === 'singles';
+        const rating = isSingles ? dr.singles : dr.doubles;
+        if(rating === undefined || rating === null){
+          return `<span style="font-family:var(--font-display);font-size:12px;color:var(--muted)">${dr.duprId}</span>`;
+        }
+        const ratingNum = typeof rating === 'number' ? rating.toFixed(2) : rating;
+        return `<span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--navy)">${ratingNum}</span>`;
+      })()}</td>
     </tr>`;
   }).join('');
 }
