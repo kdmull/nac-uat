@@ -319,15 +319,17 @@ async function loadDuprRatings(){
       `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(currentLeague.id)}&select=player_name,dupr_id`,
       {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
     );
-    if(!r.ok) return;
+    if(!r.ok){ console.warn('dupr_players fetch failed:', r.status); return; }
     const rows = await r.json();
+    console.log('Linked players found:', rows.length, rows);
     duprRatings = {};
     const duprIds = [];
     for(const row of rows){
       duprRatings[row.player_name] = {duprId: row.dupr_id};
       duprIds.push(row.dupr_id);
     }
-    if(!duprIds.length) return;
+    console.log('DUPR IDs to fetch ratings for:', duprIds);
+    if(!duprIds.length){ console.log('No linked players — skipping ratings fetch'); return; }
 
     // 2. Fetch live ratings from DUPR via Edge Function
     const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
@@ -339,8 +341,10 @@ async function loadDuprRatings(){
       },
       body: JSON.stringify({ duprIds })
     });
-    if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status); return; }
+    console.log('Ratings Edge Function status:', rr.status);
+    if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status, await rr.text()); return; }
     const data = await rr.json();
+    console.log('Ratings response:', data);
     const ratingsById = data.ratings || {};
 
     // 3. Merge ratings into duprRatings by player name
