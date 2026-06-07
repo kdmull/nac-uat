@@ -193,12 +193,12 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <table class="standings-table" style="border:none;border-radius:0">
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
-        <th class="num" style="width:60px">DUPR</th>
+        <th class="num" style="width:72px">DUPR</th>
         <th>Player</th>
         <th class="num">W</th><th class="num">L</th>
-        <th class="num">Pct</th><th class="num">Pts +/-</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
       </tr></thead>
-      <tbody id="standings-body"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
+      <tbody id="standings-body"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
   </div>
 
@@ -444,7 +444,7 @@ function renderStandings(){
       <td class="num">${(() => {
         const dr = duprRatings[r.p];
         if(!dr || !dr.duprId){
-          return `<a href="dupr-connect.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-decoration:none">Connect</a>`;
+          return `<a href="dupr-connect.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-decoration:none;white-space:nowrap">Connect</a>`;
         }
         const isSingles = currentLeague.type === 'singles';
         const rating = isSingles ? dr.singles : dr.doubles;
@@ -458,6 +458,7 @@ function renderStandings(){
       <td class="num">${r.w}</td><td class="num">${r.l}</td>
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
+      <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
 }
