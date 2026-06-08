@@ -312,6 +312,19 @@ async function handleDUPRMessage(event){
       const ca = document.querySelector('#success-card .btn-ghost'); if(ca) ca.style.display = 'none';
       successCard.style.display = 'block';
       successCard.scrollIntoView({behavior:'smooth'});
+
+      // Auto-redirect after 3 seconds
+      const dest = returnTo || 'dev-dashboard.html';
+      let secs = 3;
+      const note = document.createElement('p');
+      note.style.cssText = 'margin-top:.75rem;font-size:13px;color:var(--muted)';
+      note.textContent = `Redirecting in ${secs}…`;
+      successCard.appendChild(note);
+      const timer = setInterval(() => {
+        secs--;
+        if(secs <= 0){ clearInterval(timer); window.location.href = dest; }
+        else { note.textContent = `Redirecting in ${secs}…`; }
+      }, 1000);
     }catch(e){
       console.error('Failed to save DUPR to profile:', e);
       showToast('Failed to save — please try again');
