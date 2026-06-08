@@ -207,14 +207,57 @@ async function loadSeasons(){
 async function saveSeasons(activeId){
   await dbSet('nac_seasons', {active: activeId, seasons: allSeasons});
 }
-async function startNewSeason(name, leagueTypes){
+async function startNewSeason(name, leagueTypes, regDeadline){
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
-  const newSeason = {id, name, created: new Date().toISOString(), leagueTypes: leagueTypes || {}};
+  const newSeason = {
+    id, name,
+    created: new Date().toISOString(),
+    leagueTypes: leagueTypes || {},
+    regDeadline: regDeadline || null,
+    regOpen: true,
+    scheduleGenerated: {}
+  };
   allSeasons.push(newSeason);
   currentSeason = newSeason;
   viewingSeason = newSeason;
   await saveSeasons(id);
   return newSeason;
+}
+
+// Persist changes to the seasons array (used for toggling regOpen, scheduleGenerated, etc.)
+async function updateSeasonField(seasonId, updates){
+  const s = allSeasons.find(x => x.id === seasonId);
+  if(!s) return;
+  Object.assign(s, updates);
+  await saveSeasons(currentSeason?.id || seasonId);
+}
+
+// Check if registration is open for the active season
+function isRegistrationOpen(season){
+  if(!season) return false;
+  if(season.regOpen === false) return false;
+  if(season.regDeadline){
+    const deadline = new Date(season.regDeadline + 'T23:59:59');
+    if(new Date() > deadline) return false;
+  }
+  return true;
+}
+
+// Load registered members for a league + season
+async function loadLeagueMembers(leagueId, seasonId){
+  try{
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/league_members?league_id=eq.${encodeURIComponent(leagueId)}&season_id=eq.${encodeURIComponent(seasonId)}&status=eq.active&select=*`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok) return [];
+    return await r.json();
+  }catch(e){ console.warn('loadLeagueMembers failed:', e); return []; }
+}
+
+// Has the admin generated a schedule for this league/season?
+function isScheduleGenerated(season, leagueId){
+  return !!(season && season.scheduleGenerated && season.scheduleGenerated[leagueId]);
 }
 function isViewingActiveSeason(){
   return viewingSeason && currentSeason && viewingSeason.id === currentSeason.id;

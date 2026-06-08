@@ -122,9 +122,15 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
       <div class="admin-section" id="seasons-section">
         <h3>Seasons</h3>
         <div id="seasons-list" style="margin-bottom:1rem"></div>
-        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:1rem">
-          <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
-          <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:200px"/>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
+            <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:200px"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Registration Deadline</label>
+            <input class="admin-input" type="date" id="new-season-deadline" style="width:180px"/>
+          </div>
         </div>
         <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Registration Type Per League</label>
         <div id="league-reg-types" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:1rem">
@@ -178,6 +184,16 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
         <h3>Player Names</h3>
         <div id="admin-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
         <p style="color:var(--muted);font-size:13px">Names update everywhere in the schedule when you save.</p>
+      </div>
+      <div class="admin-section" id="roster-admin-section">
+        <h3>Registered Players (Current League)</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Players who registered for this league this season. Load them in as the player list, then build the schedule below.</p>
+        <div id="admin-roster-list" style="margin-bottom:1rem"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">Load Registered Players</button>
+          <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule (Show Standings)</button>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:.5rem">"Publish Schedule" switches the league's public page from a roster list to full standings. Do this after you've built the schedule.</p>
       </div>
       <div class="admin-section">
         <h3>Schedule Editor</h3>
@@ -293,6 +309,7 @@ function checkAdmin(){
     document.getElementById('registrations-section').style.display='block';
     renderAdminPanel();
     renderSeasonsAdmin();
+    renderAdminRoster();
     loadRegistrations();
     loadScoreLog();
   } else {
@@ -391,16 +408,73 @@ function removePlayer(idx){
   PLAYERS.splice(idx,1);
   renderAdminPanel();showToast(name+' removed — hit Save to sync');
 }
+async function renderAdminRoster(){
+  const el = document.getElementById('admin-roster-list');
+  if(!el || !currentLeague) return;
+  el.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading...</p>';
+  const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
+  const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
+  if(!members.length){
+    el.innerHTML = '<p style="color:var(--muted);font-size:13px">No players registered for this league yet.</p>';
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${members.map(m=>
+    `<span style="background:var(--surface);padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--navy)">${m.first_name||''} ${m.last_name||''}${isPartner&&m.partner_name?' / '+m.partner_name:''}</span>`
+  ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${members.length} registered</p>`;
+}
+
+async function loadRosterIntoPlayers(){
+  const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
+  if(!members.length){ showToast('No registered players to load'); return; }
+  const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
+  if(isPartner){
+    // For partner leagues, each "player" entry is the team; use the member's name as primary
+    PLAYERS = members.map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim());
+  } else {
+    PLAYERS = members.map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim());
+  }
+  renderAdminPanel();
+  showToast(members.length + ' players loaded — now build the schedule & save');
+}
+
+async function markScheduleGenerated(){
+  if(!confirm('Publish the schedule for ' + currentLeague.name + '? This switches the public page from roster to standings.')) return;
+  const sg = currentSeason.scheduleGenerated || {};
+  sg[currentLeague.id] = true;
+  await updateSeasonField(currentSeason.id, { scheduleGenerated: sg });
+  showToast('Schedule published for ' + currentLeague.name);
+}
+
 function renderSeasonsAdmin(){
   const el=document.getElementById('seasons-list');
   if(!el)return;
   if(!allSeasons.length){el.innerHTML='<p style="color:var(--muted);font-size:13px">No seasons yet.</p>';return;}
-  el.innerHTML=allSeasons.slice().reverse().map(s=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px">
-      <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--navy);flex:1">${s.name}</span>
-      ${s.id===currentSeason?.id?'<span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px">Active</span>':'<span style="font-size:12px;color:var(--muted)">Archived</span>'}
-      <span style="font-size:12px;color:var(--muted)">${new Date(s.created).toLocaleDateString('en-US',{month:'short',year:'numeric'})}</span>
-    </div>`).join('');
+  el.innerHTML=allSeasons.slice().reverse().map(s=>{
+    const isActive = s.id===currentSeason?.id;
+    const regOpen = isRegistrationOpen(s);
+    const deadlineStr = s.regDeadline ? new Date(s.regDeadline+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'None';
+    return `
+    <div style="padding:10px 14px;background:var(--surface);border-radius:var(--radius);margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--navy);flex:1">${s.name}</span>
+        ${isActive?'<span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px">Active</span>':'<span style="font-size:12px;color:var(--muted)">Archived</span>'}
+      </div>
+      ${isActive ? `
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)">
+          <span>Registration deadline: <strong style="color:var(--navy)">${deadlineStr}</strong></span>
+          <span style="display:inline-flex;align-items:center;gap:6px">Status:
+            <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;${regOpen?'color:var(--green-dark);background:rgba(76,175,40,.12)':'color:var(--danger);background:rgba(217,59,59,.1)'}">${regOpen?'Open':'Closed'}</span>
+          </span>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="toggleRegistration('${s.id}', ${!(s.regOpen===false)})">${(s.regOpen===false)?'Re-open Registration':'Close Registration'}</button>
+        </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function toggleRegistration(seasonId, close){
+  await updateSeasonField(seasonId, { regOpen: !close });
+  renderSeasonsAdmin();
+  showToast(close ? 'Registration closed' : 'Registration re-opened');
 }
 
 async function createNewSeason(){
@@ -413,7 +487,8 @@ async function createNewSeason(){
   document.querySelectorAll('.reg-type-sel').forEach(sel => {
     leagueTypes[sel.dataset.league] = sel.value;
   });
-  await startNewSeason(name, leagueTypes);
+  const deadline = document.getElementById('new-season-deadline').value || null;
+  await startNewSeason(name, leagueTypes, deadline);
   // Reset current league data to empty for new season
   schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
   PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];

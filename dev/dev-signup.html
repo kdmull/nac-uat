@@ -113,16 +113,34 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Load active season + per-league registration types
   await loadSeasonConfig();
 
+  // Check registration cutoff
+  const activeSeason = allSeasons.find(s => s.id === activeSeasonId) || currentSeason;
+  if(!isRegistrationOpen(activeSeason)){
+    renderClosed();
+    return;
+  }
+
   renderLeagueSelect();
 });
+
+function renderClosed(){
+  document.getElementById('page').innerHTML = `
+    <div class="gate">
+      <h2>Registration Closed</h2>
+      <p>Registration for ${activeSeasonName} is closed.${currentProfile?' Check your dashboard for leagues you\'re in.':''}</p>
+      <a class="btn btn-primary" href="dev-dashboard.html" style="display:inline-block;text-decoration:none;max-width:280px">My Dashboard</a>
+    </div>`;
+}
 
 async function loadSeasonConfig(){
   try{
     const r = await dbGet('nac_seasons');
     if(r && r.data){
       activeSeasonId = r.data.active || 'spring2026';
-      const s = (r.data.seasons||[]).find(x => x.id === activeSeasonId);
+      allSeasons = r.data.seasons || [];
+      const s = allSeasons.find(x => x.id === activeSeasonId);
       if(s){
+        currentSeason = s;
         activeSeasonName = s.name;
         seasonLeagueTypes = s.leagueTypes || {};
       }
