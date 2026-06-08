@@ -34,7 +34,10 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .form-group label{font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
 .form-group input{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-size:16px;font-family:var(--font-body);outline:none;transition:border-color .12s}
 .form-group input:focus{border-color:var(--navy);background:var(--white)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row .form-group{min-width:0}
+.form-row input{width:100%;min-width:0}
+@media(max-width:380px){.form-row{grid-template-columns:1fr}}
 .btn{padding:12px 24px;border-radius:var(--radius);font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;width:100%}
 .btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .msg{font-size:13px;margin-top:10px;text-align:center;min-height:18px}
@@ -93,6 +96,10 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
         <label>Password</label>
         <input type="password" id="signup-password" autocomplete="new-password" placeholder="At least 6 characters"/>
       </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="signup-password2" autocomplete="new-password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')doSignup()"/>
+      </div>
       <button class="btn btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
       <div class="msg" id="signup-msg"></div>
     </div>
@@ -131,6 +138,8 @@ async function doSignup(){
   if(!first || !last){ msg.className='msg error'; msg.textContent='Enter your first and last name.'; return; }
   if(!email){ msg.className='msg error'; msg.textContent='Enter your email.'; return; }
   if(password.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  const password2 = document.getElementById('signup-password2').value;
+  if(password !== password2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
 
   const btn = document.getElementById('signup-btn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
