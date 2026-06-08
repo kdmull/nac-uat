@@ -273,12 +273,42 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared-dev.js"></script>
 <script>
+const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Refactor: unlock the admin panel (shared by password + account-based access)
+function unlockAdmin(){
+  document.getElementById('admin-gate').style.display='none';
+  document.getElementById('admin-content').classList.add('visible');
+  document.getElementById('score-log-section').style.display='block';
+  document.getElementById('registrations-section').style.display='block';
+  renderAdminPanel();
+  renderSeasonsAdmin();
+  renderAdminRoster();
+  loadRegistrations();
+  loadScoreLog();
+}
+
+// Check if the logged-in user is an admin — if so, skip the password gate
+async function checkAccountAdmin(){
+  try{
+    const { data: { session } } = await sbAuth.auth.getSession();
+    if(!session) return false;
+    const { data, error } = await sbAuth
+      .from('profiles').select('is_admin').eq('id', session.user.id).single();
+    if(error) return false;
+    return !!(data && data.is_admin);
+  }catch(e){ return false; }
+}
 window.addEventListener('DOMContentLoaded', async ()=>{
   currentLeague = getLeagueFromURL();
   if(currentLeague){
     await initAdminLeague(currentLeague);
+    // Auto-unlock if logged in as an admin account
+    const isAdmin = await checkAccountAdmin();
+    if(isAdmin){ unlockAdmin(); }
   } else {
     document.getElementById('league-selector').style.display='block';
   }
@@ -303,15 +333,7 @@ async function initAdminLeague(league){
 
 function checkAdmin(){
   if(document.getElementById('admin-pw').value===ADMIN_PW){
-    document.getElementById('admin-gate').style.display='none';
-    document.getElementById('admin-content').classList.add('visible');
-    document.getElementById('score-log-section').style.display='block';
-    document.getElementById('registrations-section').style.display='block';
-    renderAdminPanel();
-    renderSeasonsAdmin();
-    renderAdminRoster();
-    loadRegistrations();
-    loadScoreLog();
+    unlockAdmin();
   } else {
     document.getElementById('admin-err').textContent='Incorrect password.';
   }
