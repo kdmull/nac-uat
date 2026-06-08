@@ -207,9 +207,9 @@ async function loadSeasons(){
 async function saveSeasons(activeId){
   await dbSet('nac_seasons', {active: activeId, seasons: allSeasons});
 }
-async function startNewSeason(name){
+async function startNewSeason(name, leagueTypes){
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
-  const newSeason = {id, name, created: new Date().toISOString()};
+  const newSeason = {id, name, created: new Date().toISOString(), leagueTypes: leagueTypes || {}};
   allSeasons.push(newSeason);
   currentSeason = newSeason;
   viewingSeason = newSeason;

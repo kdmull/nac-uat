@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>League Registration — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.logout-btn{background:none;border:none;color:rgba(255,255,255,.7);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 0}
+.logout-btn:hover{color:var(--white)}
+.page{padding:2rem 1.5rem;max-width:560px;margin:0 auto}
+.page-header{text-align:center;margin-bottom:2rem}
+.page-header h1{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);margin-bottom:.4rem}
+.page-header p{color:var(--muted);font-size:15px}
+.leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:2rem}
+.league-card{background:var(--white);border:2px solid var(--border);border-radius:var(--radius-lg);padding:1.2rem;cursor:pointer;transition:all .15s;text-align:left;position:relative}
+.league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.1)}
+.league-card.selected{border-color:var(--green);background:rgba(76,175,40,.04)}
+.league-card-title{font-family:var(--font-display);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
+.league-card-sub{font-size:13px;color:var(--muted);margin-top:3px}
+.league-card-type{display:inline-block;margin-top:8px;font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px}
+.type-individual{background:rgba(77,184,232,.15);color:#2a7fa8}
+.type-partner{background:rgba(168,130,255,.15);color:#7a4fd4}
+.league-card-check{display:none;position:absolute;top:1.2rem;right:1.2rem;font-size:18px;color:var(--green)}
+.league-card.selected .league-card-check{display:inline}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 1px 4px rgba(26,42,108,.06)}
+.card h2{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:2px solid var(--green)}
+.info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-row .lbl{color:var(--muted);font-family:var(--font-display);text-transform:uppercase;font-size:12px;letter-spacing:.5px}
+.info-row .val{font-weight:600;color:var(--navy)}
+.form-group{display:flex;flex-direction:column;gap:5px;margin:1rem 0}
+.form-group label{font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.form-group input,.form-group select{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-size:16px;font-family:var(--font-body);outline:none}
+.form-group input:focus,.form-group select:focus{border-color:var(--navy);background:var(--white)}
+.selected-league-badge{display:flex;align-items:center;gap:8px;background:rgba(76,175,40,.08);border:1px solid rgba(76,175,40,.3);border-radius:var(--radius);padding:10px 14px;margin-bottom:1.5rem}
+.selected-league-badge span{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--green-dark);text-transform:uppercase;letter-spacing:.5px}
+.selected-league-badge button{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0}
+.btn{padding:12px 24px;border-radius:var(--radius);font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;width:100%}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}
+.success-wrap{display:none;text-align:center;padding:3rem 1rem}
+.success-icon{font-size:56px;margin-bottom:1rem}
+.success-wrap h2{font-family:var(--font-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--green-dark);margin-bottom:.5rem}
+.success-wrap p{color:var(--muted);font-size:15px;margin-bottom:1.5rem}
+.gate{text-align:center;padding:3rem 1rem}
+.gate h2{font-family:var(--font-display);font-size:24px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.gate p{color:var(--muted);margin-bottom:1.5rem}
+.msg{font-size:13px;margin-top:10px;text-align:center;min-height:18px}
+.msg.error{color:var(--danger)}.msg.success{color:var(--green-dark)}
+.loading{text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;margin-right:10px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:600px){.page{padding:1rem}.leagues-grid{grid-template-columns:1fr}.card{padding:1.2rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC"/></a>
+  <button class="logout-btn" id="logout-btn" onclick="doLogout()" style="display:none">Sign Out</button>
+</nav>
+
+<div class="page" id="page">
+  <div class="loading"><span class="spinner"></span>Loading...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared-dev.js"></script>
+<script>
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let selectedLeague = null;
+let activeSeasonId = 'spring2026';
+let activeSeasonName = 'Spring 2026';
+let seasonLeagueTypes = {}; // { leagueId: 'individual' | 'partner' }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session){
+    renderGate();
+    return;
+  }
+  currentUser = session.user;
+  document.getElementById('logout-btn').style.display = 'block';
+
+  // Load profile
+  const { data: prof } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = prof || { id: currentUser.id, email: currentUser.email };
+
+  // Load active season + per-league registration types
+  await loadSeasonConfig();
+
+  renderLeagueSelect();
+});
+
+async function loadSeasonConfig(){
+  try{
+    const r = await dbGet('nac_seasons');
+    if(r && r.data){
+      activeSeasonId = r.data.active || 'spring2026';
+      const s = (r.data.seasons||[]).find(x => x.id === activeSeasonId);
+      if(s){
+        activeSeasonName = s.name;
+        seasonLeagueTypes = s.leagueTypes || {};
+      }
+    }
+  }catch(e){ console.warn('Season config load failed:', e); }
+}
+
+function leagueRegType(leagueId){
+  return seasonLeagueTypes[leagueId] || 'individual';
+}
+
+function renderGate(){
+  document.getElementById('page').innerHTML = `
+    <div class="gate">
+      <h2>Sign In Required</h2>
+      <p>You need an account to register for a league.</p>
+      <a class="btn btn-primary" href="dev-auth.html" style="display:inline-block;text-decoration:none;max-width:280px">Sign In or Create Account</a>
+    </div>`;
+}
+
+function renderLeagueSelect(){
+  const leagues = [
+    {id:'beginner',name:'All Ages Beginner',sub:'Under 3.0 rating'},
+    {id:'int1949',name:'19-49 Intermediate',sub:'3.0 – 3.4 rating'},
+    {id:'int50',name:'50+ Intermediate',sub:'3.0 – 3.4 rating'},
+    {id:'adv1949',name:'19-49 Advanced',sub:'3.5 & up rating'},
+    {id:'adv50',name:'50+ Advanced',sub:'3.5 & up rating'},
+    {id:'singles',name:'Singles League',sub:'Open singles'},
+  ];
+  document.getElementById('page').innerHTML = `
+    <div class="page-header">
+      <h1>League Registration</h1>
+      <p>${activeSeasonName} — select a league to join</p>
+    </div>
+    <div class="leagues-grid">
+      ${leagues.map(l => {
+        const type = leagueRegType(l.id);
+        return `<div class="league-card" onclick='selectLeague(${JSON.stringify(l).replace(/'/g,"&#39;")})'>
+          <span class="league-card-check">✓</span>
+          <div class="league-card-title">${l.name}</div>
+          <div class="league-card-sub">${l.sub}</div>
+          <span class="league-card-type ${type==='partner'?'type-partner':'type-individual'}">${type==='partner'?'Partner Signup':'Individual'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+let partnerOptions = [];
+
+async function selectLeague(league){
+  selectedLeague = league;
+  const type = leagueRegType(league.id);
+  const p = currentProfile;
+
+  // If partner league, load other registered/available players for selection
+  let partnerSection = '';
+  if(type === 'partner'){
+    // Load profiles (excluding self) for partner dropdown
+    const { data: profs } = await sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id);
+    partnerOptions = profs || [];
+    partnerSection = `
+      <div class="form-group">
+        <label>Select Your Partner</label>
+        <select id="partner-sel">
+          <option value="">— Choose your partner —</option>
+          ${partnerOptions.map(pp => `<option value="${pp.id}">${pp.first_name||''} ${pp.last_name||''}</option>`).join('')}
+        </select>
+        <p style="font-size:12px;color:var(--muted);margin-top:4px">Your partner must have an account. Ask them to sign up first if they're not listed.</p>
+      </div>`;
+  }
+
+  document.getElementById('page').innerHTML = `
+    <div class="page-header">
+      <h1>Confirm Registration</h1>
+      <p>${activeSeasonName}</p>
+    </div>
+    <div class="card">
+      <div class="selected-league-badge">
+        <span>${league.name}${type==='partner'?' · Partner':' · Individual'}</span>
+        <button onclick="renderLeagueSelect()" title="Change league">✕</button>
+      </div>
+      <h2 style="font-size:18px">Your Info</h2>
+      <div class="info-row"><span class="lbl">Name</span><span class="val">${p.first_name||''} ${p.last_name||''}</span></div>
+      <div class="info-row"><span class="lbl">Email</span><span class="val">${p.email||''}</span></div>
+      <div class="info-row"><span class="lbl">Phone</span><span class="val">${p.phone||'—'}</span></div>
+      ${!p.phone ? `<p style="font-size:13px;color:var(--danger);margin-top:8px">Please add your phone number on your <a href="dev-dashboard.html" style="color:var(--navy)">profile</a> first.</p>` : ''}
+      ${partnerSection}
+      <button class="btn btn-green" id="confirm-btn" onclick="confirmRegistration()" style="margin-top:1rem" ${!p.phone?'disabled':''}>Register for ${league.name}</button>
+      <div class="msg" id="reg-msg"></div>
+    </div>`;
+}
+
+async function confirmRegistration(){
+  const type = leagueRegType(selectedLeague.id);
+  const msg = document.getElementById('reg-msg');
+  msg.className='msg'; msg.textContent='';
+
+  let partnerUserId = null, partnerName = null;
+  if(type === 'partner'){
+    partnerUserId = document.getElementById('partner-sel').value;
+    if(!partnerUserId){ msg.className='msg error'; msg.textContent='Please select your partner.'; return; }
+    const pp = partnerOptions.find(x => x.id === partnerUserId);
+    partnerName = pp ? `${pp.first_name||''} ${pp.last_name||''}`.trim() : null;
+  }
+
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true; btn.textContent = 'Registering...';
+
+  const p = currentProfile;
+  const { error } = await sb.from('league_members').insert({
+    league_id: selectedLeague.id,
+    season_id: activeSeasonId,
+    user_id: currentUser.id,
+    partner_user_id: partnerUserId || null,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    email: p.email,
+    phone: p.phone,
+    partner_name: partnerName,
+    status: 'active'
+  });
+
+  if(error){
+    btn.disabled=false; btn.textContent='Register for '+selectedLeague.name;
+    if(error.code === '23505'){ msg.className='msg error'; msg.textContent='You are already registered for this league.'; }
+    else { msg.className='msg error'; msg.textContent = error.message; }
+    return;
+  }
+
+  // Email notification (reuse registration-notification function)
+  fetch('https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/registration-notification', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY,'apikey':SUPABASE_KEY},
+    body: JSON.stringify({
+      firstName:p.first_name, lastName:p.last_name, email:p.email, phone:p.phone,
+      leagueName:selectedLeague.name + (partnerName?` (partner: ${partnerName})`:''),
+      adminEmail:'kdmullins222@gmail.com'
+    })
+  }).catch(()=>{});
+
+  document.getElementById('page').innerHTML = `
+    <div class="success-wrap" style="display:block">
+      <div class="success-icon">🎉</div>
+      <h2>You're Registered!</h2>
+      <p>You've joined <strong>${selectedLeague.name}</strong> for ${activeSeasonName}.${partnerName?` Your partner: <strong>${partnerName}</strong>.`:''}</p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <a class="btn btn-primary" href="dev-dashboard.html" style="text-decoration:none;max-width:200px">My Dashboard</a>
+        <a class="btn btn-primary" href="dev-signup.html" style="text-decoration:none;max-width:200px;background:transparent;color:var(--navy)">Register Another</a>
+      </div>
+    </div>`;
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  window.location.href = 'dev-auth.html';
+}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+</script>
+</body>
+</html>

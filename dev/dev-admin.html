@@ -122,14 +122,57 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
       <div class="admin-section" id="seasons-section">
         <h3>Seasons</h3>
         <div id="seasons-list" style="margin-bottom:1rem"></div>
-        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
-            <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:180px"/>
-          </div>
-          <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:1rem">
+          <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
+          <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:200px"/>
         </div>
-        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved.</p>
+        <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Registration Type Per League</label>
+        <div id="league-reg-types" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">All Ages Beginner</span>
+            <select class="admin-input reg-type-sel" data-league="beginner" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">19-49 Intermediate</span>
+            <select class="admin-input reg-type-sel" data-league="int1949" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">50+ Intermediate</span>
+            <select class="admin-input reg-type-sel" data-league="int50" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">19-49 Advanced</span>
+            <select class="admin-input reg-type-sel" data-league="adv1949" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">50+ Advanced</span>
+            <select class="admin-input reg-type-sel" data-league="adv50" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+            <span style="flex:1;font-size:13px;font-weight:600">Singles</span>
+            <select class="admin-input reg-type-sel" data-league="singles" style="width:auto;font-size:12px">
+              <option value="individual">Individual</option>
+              <option value="partner">Partner</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
+        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved. Set whether each league is individual or partner signup.</p>
       </div>
       <div class="admin-section">
         <h3>Player Names</h3>
@@ -150,6 +193,40 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
           </div>
           <div id="admin-matches" style="min-width:480px"></div>
         </div>
+      </div>
+    </div>
+    <div class="admin-section" id="registrations-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Registrations</h3>
+        <div style="display:flex;gap:8px">
+          <select id="reg-league-filter" class="admin-input" style="width:180px" onchange="loadRegistrations()">
+            <option value="">All Leagues</option>
+            <option value="beginner">All Ages Beginner</option>
+            <option value="int1949">19-49 Intermediate</option>
+            <option value="int50">50+ Intermediate</option>
+            <option value="adv1949">19-49 Advanced</option>
+            <option value="adv50">50+ Advanced</option>
+            <option value="singles">Singles</option>
+          </select>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadRegistrations()">↻ Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Name</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Email</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Phone</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+            </tr>
+          </thead>
+          <tbody id="registrations-body">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load registrations.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
     <div class="admin-section" id="score-log-section" style="display:none">
@@ -213,8 +290,10 @@ function checkAdmin(){
     document.getElementById('admin-gate').style.display='none';
     document.getElementById('admin-content').classList.add('visible');
     document.getElementById('score-log-section').style.display='block';
+    document.getElementById('registrations-section').style.display='block';
     renderAdminPanel();
     renderSeasonsAdmin();
+    loadRegistrations();
     loadScoreLog();
   } else {
     document.getElementById('admin-err').textContent='Incorrect password.';
@@ -329,7 +408,12 @@ async function createNewSeason(){
   if(!name){showToast('Enter a season name!');return;}
   if(allSeasons.find(s=>s.name.toLowerCase()===name.toLowerCase())){showToast('Season name already exists!');return;}
   if(!confirm(`Start new season "${name}"? The current season will be archived and all leagues will start fresh.`))return;
-  await startNewSeason(name);
+  // Capture per-league registration types
+  const leagueTypes = {};
+  document.querySelectorAll('.reg-type-sel').forEach(sel => {
+    leagueTypes[sel.dataset.league] = sel.value;
+  });
+  await startNewSeason(name, leagueTypes);
   // Reset current league data to empty for new season
   schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
   PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
@@ -357,6 +441,60 @@ function exportJSON(){
   const blob=new Blob([JSON.stringify({schedule,players:PLAYERS},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='nac-schedule.json';a.click();showToast('Exported!');
+}
+
+async function loadRegistrations(){
+  const tbody = document.getElementById('registrations-body');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner"></div>Loading...</div></td></tr>';
+  try{
+    const leagueFilter = document.getElementById('reg-league-filter')?.value;
+    const filter = leagueFilter ? `&league_id=eq.${leagueFilter}` : '';
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/league_registrations?order=registered_at.desc${filter}`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok){ tbody.innerHTML='<tr><td colspan="6" style="color:var(--danger);padding:1rem">Failed to load.</td></tr>'; return; }
+    const rows = await r.json();
+    if(!rows.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No registrations yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(row => {
+      const dt = new Date(row.registered_at);
+      const dateStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      const statusColor = row.status==='accepted'?'var(--green-dark)':row.status==='waitlisted'?'var(--blue-dark)':'var(--muted)';
+      return `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px 10px;font-size:13px;white-space:nowrap">${dateStr}</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:600">${row.first_name} ${row.last_name}</td>
+        <td style="padding:8px 10px;font-size:13px">${row.league_name}</td>
+        <td style="padding:8px 10px;font-size:13px"><a href="mailto:${row.email}" style="color:var(--navy)">${row.email}</a></td>
+        <td style="padding:8px 10px;font-size:13px">${row.phone}</td>
+        <td style="padding:8px 10px">
+          <select onchange="updateRegStatus(${row.id}, this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:3px 6px;font-size:12px;color:${statusColor};font-family:var(--font-display);font-weight:700;text-transform:uppercase;outline:none">
+            <option value="pending" ${row.status==='pending'?'selected':''}>Pending</option>
+            <option value="accepted" ${row.status==='accepted'?'selected':''}>Accepted</option>
+            <option value="waitlisted" ${row.status==='waitlisted'?'selected':''}>Waitlisted</option>
+            <option value="declined" ${row.status==='declined'?'selected':''}>Declined</option>
+          </select>
+        </td>
+      </tr>`;
+    }).join('');
+  }catch(e){
+    tbody.innerHTML=`<tr><td colspan="6" style="color:var(--danger);padding:1rem">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function updateRegStatus(id, status){
+  try{
+    await fetch(`${SUPABASE_URL}/rest/v1/league_registrations?id=eq.${id}`,{
+      method:'PATCH',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
+      body: JSON.stringify({status})
+    });
+    showToast('Status updated!');
+    loadRegistrations();
+  }catch(e){ showToast('Update failed'); }
 }
 
 async function loadScoreLog(){
