@@ -504,9 +504,33 @@ function renderSeasonsAdmin(){
             <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;${regOpen?'color:var(--green-dark);background:rgba(76,175,40,.12)':'color:var(--danger);background:rgba(217,59,59,.1)'}">${regOpen?'Open':'Closed'}</span>
           </span>
           <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="toggleRegistration('${s.id}', ${!(s.regOpen===false)})">${(s.regOpen===false)?'Re-open Registration':'Close Registration'}</button>
+        </div>
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
+          <p style="font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Registration Type Per League</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+            ${LEAGUES.map(l => {
+              const t = (s.leagueTypes && s.leagueTypes[l.id]) || 'individual';
+              return `<div style="display:flex;align-items:center;gap:8px;background:var(--white);padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border)">
+                <span style="flex:1;font-size:13px;font-weight:600;color:var(--navy)">${l.name}</span>
+                <select class="admin-input" style="width:auto;font-size:12px" onchange="updateLeagueType('${s.id}','${l.id}',this.value)">
+                  <option value="individual"${t==='individual'?' selected':''}>Individual</option>
+                  <option value="partner"${t==='partner'?' selected':''}>Partner</option>
+                </select>
+              </div>`;
+            }).join('')}
+          </div>
         </div>` : ''}
     </div>`;
   }).join('');
+}
+
+async function updateLeagueType(seasonId, leagueId, type){
+  const s = allSeasons.find(x => x.id === seasonId);
+  if(!s) return;
+  const leagueTypes = Object.assign({}, s.leagueTypes || {});
+  leagueTypes[leagueId] = type;
+  await updateSeasonField(seasonId, { leagueTypes });
+  showToast(LEAGUES.find(l=>l.id===leagueId)?.name + ' set to ' + type);
 }
 
 async function toggleRegistration(seasonId, close){
