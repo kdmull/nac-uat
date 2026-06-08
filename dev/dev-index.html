@@ -15,22 +15,45 @@
   --white:#ffffff;--off-white:#f4f7fb;
   --surface:#f0f4f9;--surface2:#e3eaf4;
   --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'Barlow',sans-serif;
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-actions{display:flex;align-items:center;gap:8px}
+.nav-btn{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:all .12s;border:1.5px solid transparent;white-space:nowrap}
+.nav-btn-ghost{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3)}
+.nav-btn-ghost:hover{border-color:#fff;color:#fff}
+.nav-btn-solid{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-btn-solid:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.nav-greeting{color:rgba(255,255,255,.85);font-size:14px;font-weight:600;margin-right:4px}
 .home-wrap{max-width:700px;margin:0 auto;padding:2rem 1.5rem}
-.home-header{text-align:center;padding:2.5rem 0 2rem}
-.home-header img{height:120px;width:auto;object-fit:contain}
+.home-header{text-align:center;padding:2rem 0 1.5rem}
+.home-header img{height:110px;width:auto;object-fit:contain}
 .home-header p{color:var(--muted);font-size:15px;margin-top:1rem}
+/* Sign-in prompt card (only shows when logged out) */
+.signin-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:2rem;text-align:center;display:none}
+.signin-card h2{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.25rem}
+.signin-card p{color:var(--muted);font-size:14px;margin-bottom:1.2rem}
+.signin-card .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.signin-card .btn{font-family:var(--font-display);font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:11px 26px;border-radius:var(--radius);text-decoration:none;border:1.5px solid transparent;transition:all .12s}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}.btn-navy:hover{background:var(--navy-dark)}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
+.section-label{font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;text-align:center}
 .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .league-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(26,42,108,.05);display:flex;flex-direction:column;gap:6px;text-decoration:none}
 .league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
 .league-card-title{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
 .league-card-sub{font-size:13px;color:var(--muted)}
 @media(max-width:600px){
-  .home-header img{height:90px}
+  nav{padding:0 1rem}
+  .nav-greeting{display:none}
+  .home-header img{height:80px}
+  .home-wrap{padding:1.5rem 1rem}
   .league-card{padding:1.2rem}
   .league-card-title{font-size:17px}
   .leagues-grid{grid-template-columns:1fr}
@@ -38,11 +61,30 @@ body{background:var(--off-white);color:var(--text);font-family:var(--font-body);
 </style>
 </head>
 <body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-actions" id="nav-actions">
+    <!-- populated by JS based on auth state -->
+  </div>
+</nav>
+
 <div class="home-wrap">
   <div class="home-header">
     <img src="logo.png" onerror="this.style.display='none'" alt="NAC Pickleball"/>
-    <p>Select a league to view standings, schedule, and scores</p>
+    <p>Standings, schedules, scores, and league registration</p>
   </div>
+
+  <!-- Sign-in prompt (logged-out only) -->
+  <div class="signin-card" id="signin-card">
+    <h2>Join a League</h2>
+    <p>Sign in or create an account to register for leagues and connect your DUPR rating.</p>
+    <div class="actions">
+      <a class="btn btn-navy" href="dev-auth.html">Sign In</a>
+      <a class="btn btn-green" href="dev-auth.html">Create Account</a>
+    </div>
+  </div>
+
+  <div class="section-label">View Leagues</div>
   <div class="leagues-grid">
     <a class="league-card" href="dev-league.html?league=beginner">
       <div class="league-card-title">All Ages Beginner</div>
@@ -70,5 +112,44 @@ body{background:var(--off-white);color:var(--text);font-family:var(--font-body);
     </a>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  const navActions = document.getElementById('nav-actions');
+  const signinCard = document.getElementById('signin-card');
+
+  if(session){
+    // Logged in — show greeting + dashboard + sign out
+    let firstName = '';
+    try{
+      const { data } = await sb.from('profiles').select('first_name').eq('id', session.user.id).single();
+      if(data && data.first_name) firstName = data.first_name;
+    }catch(e){}
+    navActions.innerHTML = `
+      ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
+      <a class="nav-btn nav-btn-solid" href="dev-signup.html">Register</a>
+      <a class="nav-btn nav-btn-ghost" href="dev-dashboard.html">My Profile</a>
+      <button class="nav-btn nav-btn-ghost" onclick="doLogout()">Sign Out</button>`;
+    signinCard.style.display = 'none';
+  } else {
+    // Logged out — show sign in / register, and the prompt card
+    navActions.innerHTML = `
+      <a class="nav-btn nav-btn-ghost" href="dev-auth.html">Sign In</a>
+      <a class="nav-btn nav-btn-solid" href="dev-auth.html">Create Account</a>`;
+    signinCard.style.display = 'block';
+  }
+});
+
+async function doLogout(){
+  await sb.auth.signOut();
+  window.location.reload();
+}
+</script>
 </body>
 </html>

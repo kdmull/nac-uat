@@ -120,7 +120,7 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // If already logged in, redirect to dashboard
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
-  if(session){ window.location.href = 'dev-dashboard.html'; }
+  if(session){ window.location.href = 'dev-index.html'; }
 });
 
 function switchTab(tab){
@@ -168,7 +168,7 @@ async function doSignup(){
 
   if(data.session){
     // Logged in immediately (email confirmation off)
-    window.location.href = 'dev-dashboard.html';
+    window.location.href = 'dev-index.html';
   } else {
     // Email confirmation required
     msg.className='msg success';
@@ -193,7 +193,7 @@ async function doLogin(){
   btn.disabled = false; btn.textContent = 'Sign In';
 
   if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
-  window.location.href = 'dev-dashboard.html';
+  window.location.href = 'dev-index.html';
 }
 </script>
 </body>
