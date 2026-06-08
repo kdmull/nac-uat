@@ -85,8 +85,35 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(!session){ window.location.href = 'dev-auth.html'; return; }
   currentUser = session.user;
   await loadProfile();
+  await loadMySeasonMembership();
   render();
 });
+
+let myMembership = null;
+let activeSeasonName = '';
+const LEAGUE_NAMES = {
+  beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
+  adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
+};
+
+async function loadMySeasonMembership(){
+  try{
+    // Find the active season id from nac_seasons
+    const { data: seasonRow } = await supabaseClient
+      .from('pb_league').select('value').eq('key','nac_seasons').maybeSingle();
+    let activeSeasonId = 'spring2026';
+    if(seasonRow && seasonRow.value){
+      const v = typeof seasonRow.value === 'string' ? JSON.parse(seasonRow.value) : seasonRow.value;
+      activeSeasonId = v.active || activeSeasonId;
+      const s = (v.seasons||[]).find(x => x.id === activeSeasonId);
+      if(s) activeSeasonName = s.name || '';
+    }
+    const { data } = await supabaseClient.from('league_members')
+      .select('*').eq('user_id', currentUser.id).eq('season_id', activeSeasonId)
+      .eq('status','active').maybeSingle();
+    myMembership = data || null;
+  }catch(e){ console.warn('membership load failed:', e); myMembership = null; }
+}
 
 async function loadProfile(){
   const { data, error } = await supabaseClient
@@ -111,8 +138,23 @@ function render(){
     </div>
 
     <div class="nav-links">
-      <a class="nav-link-btn" href="dev-signup.html">Register for a League</a>
+      <a class="nav-link-btn" href="dev-signup.html">${myMembership ? 'Manage My League' : 'Register for a League'}</a>
       <a class="nav-link-btn" href="dev-index.html">View Leagues</a>
+    </div>
+
+    <div class="card">
+      <h2>My League${activeSeasonName?' — '+activeSeasonName:''}</h2>
+      ${myMembership ? `
+        <div class="dupr-status" style="flex-wrap:wrap">
+          <span class="val">${LEAGUE_NAMES[myMembership.league_id]||myMembership.league_id}</span>
+          ${myMembership.partner_name ? `<span class="label">Partner: ${myMembership.partner_name}</span>` : ''}
+          <span class="badge-linked">Registered</span>
+        </div>
+        <a class="btn btn-ghost" href="dev-signup.html" style="display:inline-block;text-decoration:none;margin-top:1rem">Switch / Edit</a>
+      ` : `
+        <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">You're not registered for a league this season yet.</p>
+        <a class="btn btn-green" href="dev-signup.html" style="display:inline-block;text-decoration:none">Register Now</a>
+      `}
     </div>
 
     <div class="card">

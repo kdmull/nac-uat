@@ -113,15 +113,127 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Load active season + per-league registration types
   await loadSeasonConfig();
 
-  // Check registration cutoff
+  // Load any existing registration for this season
+  await loadMyMembership();
+
   const activeSeason = allSeasons.find(s => s.id === activeSeasonId) || currentSeason;
-  if(!isRegistrationOpen(activeSeason)){
+  const regOpen = isRegistrationOpen(activeSeason);
+
+  // If already registered this season, show the management view
+  if(myMembership){
+    renderMyRegistration(regOpen);
+    return;
+  }
+
+  // Not registered yet — if registration is closed, show closed message
+  if(!regOpen){
     renderClosed();
     return;
   }
 
   renderLeagueSelect();
 });
+
+let myMembership = null;
+let switchMode = false;
+
+async function loadMyMembership(){
+  try{
+    const { data, error } = await sb.from('league_members')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('season_id', activeSeasonId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if(error){ console.warn('membership load error:', error); myMembership = null; return; }
+    myMembership = data || null;
+  }catch(e){ console.warn('loadMyMembership failed:', e); myMembership = null; }
+}
+
+const LEAGUE_NAMES = {
+  beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
+  adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
+};
+
+function renderMyRegistration(regOpen){
+  switchMode = false;
+  const m = myMembership;
+  const leagueName = LEAGUE_NAMES[m.league_id] || m.league_id;
+  const isPartner = leagueRegType(m.league_id) === 'partner';
+  document.getElementById('page').innerHTML = `
+    <div class="page-header">
+      <h1>My Registration</h1>
+      <p>${activeSeasonName}</p>
+    </div>
+    <div class="card">
+      <div class="selected-league-badge">
+        <span>${leagueName}${isPartner?' · Partner':' · Individual'}</span>
+      </div>
+      <div class="info-row"><span class="lbl">Status</span><span class="val">Registered</span></div>
+      ${isPartner ? `<div class="info-row"><span class="lbl">Partner</span><span class="val">${m.partner_name||'—'}</span></div>` : ''}
+      ${regOpen ? `
+        <p style="font-size:13px;color:var(--muted);margin:1rem 0 .5rem">You can switch leagues or update your partner while registration is open.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" style="width:auto;flex:1;min-width:140px" onclick="startSwitchLeague()">Switch League</button>
+          ${isPartner ? `<button class="btn btn-green" style="width:auto;flex:1;min-width:140px" onclick="startEditPartner()">Edit Partner</button>` : ''}
+        </div>
+        <button class="btn" style="background:transparent;border-color:var(--border);color:var(--danger);margin-top:8px" onclick="leaveLeague()">Leave League</button>
+      ` : `
+        <p style="font-size:13px;color:var(--muted);margin-top:1rem">Registration is closed — your league is locked for this season.</p>
+      `}
+      <div class="msg" id="reg-msg"></div>
+    </div>`;
+}
+
+function startSwitchLeague(){
+  switchMode = true;
+  renderLeagueSelect();
+}
+
+async function startEditPartner(){
+  const m = myMembership;
+  const { data: profs } = await sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id);
+  partnerOptions = profs || [];
+  document.getElementById('page').innerHTML = `
+    <div class="page-header"><h1>Edit Partner</h1><p>${LEAGUE_NAMES[m.league_id]||m.league_id}</p></div>
+    <div class="card">
+      <div class="form-group">
+        <label>Select Your Partner</label>
+        <select id="partner-sel">
+          <option value="">— Choose your partner —</option>
+          ${partnerOptions.map(pp => `<option value="${pp.id}" ${pp.id===m.partner_user_id?'selected':''}>${pp.first_name||''} ${pp.last_name||''}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-green" onclick="savePartner()">Save Partner</button>
+      <button class="btn" style="background:transparent;border-color:var(--border);color:var(--muted);margin-top:8px" onclick="renderMyRegistration(true)">Cancel</button>
+      <div class="msg" id="reg-msg"></div>
+    </div>`;
+}
+
+async function savePartner(){
+  const sel = document.getElementById('partner-sel');
+  const partnerUserId = sel.value || null;
+  const pp = partnerOptions.find(x => x.id === partnerUserId);
+  const partnerName = pp ? `${pp.first_name||''} ${pp.last_name||''}`.trim() : null;
+  const msg = document.getElementById('reg-msg');
+  const { error } = await sb.from('league_members')
+    .update({ partner_user_id: partnerUserId, partner_name: partnerName })
+    .eq('id', myMembership.id);
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  myMembership.partner_user_id = partnerUserId;
+  myMembership.partner_name = partnerName;
+  showToast('Partner updated!');
+  renderMyRegistration(true);
+}
+
+async function leaveLeague(){
+  if(!confirm('Leave ' + (LEAGUE_NAMES[myMembership.league_id]||'this league') + '? You can register for a different league afterward.')) return;
+  const { error } = await sb.from('league_members').delete().eq('id', myMembership.id);
+  if(error){ showToast('Could not leave: ' + error.message); return; }
+  myMembership = null;
+  showToast('You have left the league');
+  renderLeagueSelect();
+}
 
 function renderClosed(){
   document.getElementById('page').innerHTML = `
@@ -172,11 +284,12 @@ function renderLeagueSelect(){
   ];
   document.getElementById('page').innerHTML = `
     <div class="page-header">
-      <h1>League Registration</h1>
-      <p>${activeSeasonName} — select a league to join</p>
+      <h1>${switchMode ? 'Switch League' : 'League Registration'}</h1>
+      <p>${activeSeasonName} — ${switchMode ? 'pick a different league' : 'select a league to join'}</p>
     </div>
+    ${switchMode ? '<p style="text-align:center;margin-bottom:1rem"><button class="btn" style="background:transparent;border:1.5px solid var(--border);color:var(--muted);width:auto;padding:6px 16px" onclick="renderMyRegistration(true)">← Cancel</button></p>' : ''}
     <div class="leagues-grid">
-      ${leagues.map(l => {
+      ${leagues.filter(l => !(switchMode && myMembership && l.id===myMembership.league_id)).map(l => {
         const type = leagueRegType(l.id);
         return `<div class="league-card" onclick='selectLeague(${JSON.stringify(l).replace(/'/g,"&#39;")})'>
           <span class="league-card-check">✓</span>
@@ -247,9 +360,21 @@ async function confirmRegistration(){
   }
 
   const btn = document.getElementById('confirm-btn');
-  btn.disabled = true; btn.textContent = 'Registering...';
+  btn.disabled = true; btn.textContent = switchMode ? 'Switching...' : 'Registering...';
 
   const p = currentProfile;
+
+  // If switching leagues, remove the existing membership first (clears partner link)
+  if(switchMode && myMembership){
+    const { error: delErr } = await sb.from('league_members').delete().eq('id', myMembership.id);
+    if(delErr){
+      btn.disabled=false; btn.textContent='Register for '+selectedLeague.name;
+      msg.className='msg error'; msg.textContent = 'Could not switch: ' + delErr.message;
+      return;
+    }
+    myMembership = null;
+  }
+
   const { error } = await sb.from('league_members').insert({
     league_id: selectedLeague.id,
     season_id: activeSeasonId,
@@ -288,7 +413,7 @@ async function confirmRegistration(){
       <p>You've joined <strong>${selectedLeague.name}</strong> for ${activeSeasonName}.${partnerName?` Your partner: <strong>${partnerName}</strong>.`:''}</p>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <a class="btn btn-primary" href="dev-dashboard.html" style="text-decoration:none;max-width:200px">My Dashboard</a>
-        <a class="btn btn-primary" href="dev-signup.html" style="text-decoration:none;max-width:200px;background:transparent;color:var(--navy)">Register Another</a>
+        <a class="btn btn-primary" href="dev-signup.html" style="text-decoration:none;max-width:200px;background:transparent;color:var(--navy)">Manage Registration</a>
       </div>
     </div>`;
 }
