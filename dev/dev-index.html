@@ -61,6 +61,10 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 </style>
 </head>
 <body>
+<nav id="main-nav" style="display:none">
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
 <div class="home-wrap">
   <div class="home-header">
     <img src="logo.png" onerror="this.style.display='none'" alt="NAC Pickleball"/>
@@ -74,17 +78,6 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
     <div class="actions">
       <a class="btn btn-navy" href="dev-auth.html">Sign In</a>
       <a class="btn btn-green" href="dev-auth.html">Create Account</a>
-    </div>
-  </div>
-
-  <!-- Logged-in card (signed-in only) -->
-  <div class="signin-card" id="member-card">
-    <h2 id="member-greeting">Welcome</h2>
-    <p>Register for a league or manage your profile.</p>
-    <div class="actions">
-      <a class="btn btn-green" href="dev-signup.html">Register / My League</a>
-      <a class="btn btn-navy" href="dev-dashboard.html">My Profile</a>
-      <button class="btn" style="background:transparent;border-color:var(--border);color:var(--muted);cursor:pointer" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 
@@ -126,22 +119,28 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await sb.auth.getSession();
   const signinCard = document.getElementById('signin-card');
-  const memberCard = document.getElementById('member-card');
+  const mainNav = document.getElementById('main-nav');
+  const navActions = document.getElementById('nav-actions');
 
   if(session){
-    // Logged in — show member card with greeting
+    // Logged in — show nav with greeting + actions
     let firstName = '';
     try{
       const { data } = await sb.from('profiles').select('first_name').eq('id', session.user.id).single();
       if(data && data.first_name) firstName = data.first_name;
     }catch(e){}
-    document.getElementById('member-greeting').textContent = firstName ? `Welcome, ${firstName}` : 'Welcome';
-    memberCard.style.display = 'block';
+
+    navActions.innerHTML = `
+      ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
+      <a class="nav-btn nav-btn-solid" href="dev-signup.html">Register</a>
+      <a class="nav-btn nav-btn-ghost" href="dev-dashboard.html">My Profile</a>
+      <button class="nav-btn nav-btn-ghost" onclick="doLogout()">Sign Out</button>`;
+    mainNav.style.display = 'flex';
     signinCard.style.display = 'none';
   } else {
-    // Logged out — show sign-in prompt
+    // Logged out — no nav, show sign-in prompt
+    mainNav.style.display = 'none';
     signinCard.style.display = 'block';
-    memberCard.style.display = 'none';
   }
 });
 
