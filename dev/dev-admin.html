@@ -334,6 +334,16 @@ async function initAdminLeague(league){
   await loadSeasons();
   viewingSeason = currentSeason;
   await loadData();
+  // If no saved schedule exists for this league/season, auto-load the registered
+  // players (or nobody if none have registered) — never the hardcoded defaults.
+  const hasSchedule = schedule && schedule.length && schedule.some(w => w.matches && w.matches.length);
+  if(!hasSchedule){
+    const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
+    PLAYERS = members
+      .map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim())
+      .filter(n => n && n !== '.');
+    schedule = [];
+  }
   scheduleWeek=findCurrentWeek();
 }
 
@@ -415,9 +425,9 @@ function addMatch(){
   if(!week||!schedule.find(w=>w.week===week)){showToast('Add a week first!');return;}
   const isDoubles=currentLeague?.type==='doubles';
   if(isDoubles){
-    schedule.find(w=>w.week===week).matches.push({p1a:PLAYERS[0],p1b:PLAYERS[1],p2a:PLAYERS[2]||PLAYERS[0],p2b:PLAYERS[3]||PLAYERS[1],games:[]});
+    schedule.find(w=>w.week===week).matches.push({p1a:PLAYERS[0]||'',p1b:PLAYERS[1]||'',p2a:PLAYERS[2]||PLAYERS[0]||'',p2b:PLAYERS[3]||PLAYERS[1]||'',games:[]});
   }else{
-    schedule.find(w=>w.week===week).matches.push({p1:PLAYERS[0],p2:PLAYERS[1],games:[]});
+    schedule.find(w=>w.week===week).matches.push({p1:PLAYERS[0]||'',p2:PLAYERS[1]||'',games:[]});
   }
   renderAdminMatches();
 }
@@ -517,13 +527,14 @@ async function createNewSeason(){
   });
   const deadline = document.getElementById('new-season-deadline').value || null;
   await startNewSeason(name, leagueTypes, deadline);
-  // Reset current league data to empty for new season
-  schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
-  PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
-  await saveData();
+  // New season: every league starts empty — players fill in as they register.
+  // Do NOT seed the hardcoded default schedule/players.
+  schedule = [];
+  PLAYERS = [];
   document.getElementById('new-season-name').value='';
   renderSeasonsAdmin();
   renderAdminPanel();
+  renderAdminRoster();
   showToast(`Season "${name}" started!`);
 }
 
@@ -535,10 +546,13 @@ async function saveAdmin(){
   showToast(ok?'Saved & synced!':'Save error — check DB connection');
 }
 async function resetToDefault(){
-  if(!confirm('Reset everything? All scores will be cleared.'))return;
-  schedule=JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
-  PLAYERS=['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
-  await saveData();renderAdminPanel();showToast('Reset complete!');
+  if(!confirm('Clear the schedule for this league? The roster will reload from registered players. Build a new schedule and Save to apply.'))return;
+  schedule=[];
+  const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
+  PLAYERS = members
+    .map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim())
+    .filter(n => n && n !== '.');
+  renderAdminPanel();renderAdminRoster();showToast('Schedule cleared & roster reloaded!');
 }
 function exportJSON(){
   const blob=new Blob([JSON.stringify({schedule,players:PLAYERS},null,2)],{type:'application/json'});
