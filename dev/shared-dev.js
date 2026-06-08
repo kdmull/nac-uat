@@ -257,7 +257,11 @@ async function loadLeagueMembers(leagueId, seasonId){
 
 // Has the admin generated a schedule for this league/season?
 function isScheduleGenerated(season, leagueId){
-  return !!(season && season.scheduleGenerated && season.scheduleGenerated[leagueId]);
+  if(!season) return true;
+  // Legacy seasons created before this feature have no scheduleGenerated field —
+  // treat them as already published so existing standings display normally.
+  if(!season.scheduleGenerated) return true;
+  return !!season.scheduleGenerated[leagueId];
 }
 function isViewingActiveSeason(){
   return viewingSeason && currentSeason && viewingSeason.id === currentSeason.id;
