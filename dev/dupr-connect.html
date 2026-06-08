@@ -66,6 +66,21 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 </nav>
 
 <div class="page">
+  <!-- Account mode: shown when a logged-in user connects (no league/player in URL) -->
+  <div class="card" id="account-card" style="display:none">
+    <h2>Connect Your DUPR Account</h2>
+    <p>Linking your DUPR account is required so your league matches count toward your rating. This is a one-time step.</p>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Click <strong>Connect DUPR</strong> below</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Log in with your DUPR credentials in the window that appears</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">You're linked — done!</div></div>
+    <div style="margin-top:1.5rem">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px">
+        Connecting as <strong id="account-name">your account</strong>
+      </div>
+      <button class="btn btn-primary" id="account-connect-btn" onclick="startConnect()" style="width:100%">Connect DUPR Account</button>
+    </div>
+  </div>
+
   <div class="card" id="setup-card">
     <h2>Connect Your DUPR Account</h2>
     <p>Link your DUPR account to your NAC Pickleball profile. Once connected, your match results will automatically count toward your DUPR rating.</p>
@@ -123,20 +138,31 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared-dev.js"></script>
 <script>
 const DUPR_CLIENT_KEY_B64 = 'dGVzdC1jay03ZWVhZDg2YS01NGU0LTRlN2MtZmEzZi02M2QyN2YzZmI3ODQ=';
 const DUPR_SSO_BASE = 'https://uat.dupr.gg/login-external-app/';
 
+const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let selectedLeague = null;
 let selectedPlayer = null;
+let accountMode = false;     // true when a logged-in user is linking to their profile
+let accountUser = null;      // the logged-in auth user
+let returnTo = null;         // where to send them after linking
 
 // Read league from URL if provided
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   const leagueId = params.get('league');
   const playerName = params.get('player');
+  returnTo = params.get('returnTo');
 
+  // Listen for DUPR SSO postMessage
+  window.addEventListener('message', handleDUPRMessage, false);
+
+  // Legacy league-based flow takes priority if league is in the URL
   if(leagueId){
     document.getElementById('league-sel').value = leagueId;
     await onLeagueChange();
@@ -144,11 +170,43 @@ window.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('player-sel').value = playerName;
       onPlayerChange();
     }
+    return;
   }
 
-  // Listen for DUPR SSO postMessage
-  window.addEventListener('message', handleDUPRMessage, false);
+  // Otherwise, if logged in, use account mode
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if(session){
+    accountUser = session.user;
+    accountMode = true;
+    // Load their profile for name + existing dupr link
+    const { data: prof } = await sbAuth.from('profiles').select('first_name,last_name,dupr_id').eq('id', accountUser.id).single();
+    if(prof && prof.dupr_id){
+      // Already linked — show success state directly
+      showAlreadyLinked(prof);
+      return;
+    }
+    const name = prof ? `${prof.first_name||''} ${prof.last_name||''}`.trim() : accountUser.email;
+    document.getElementById('account-name').textContent = name || 'your account';
+    document.getElementById('account-card').style.display = 'block';
+    document.getElementById('setup-card').style.display = 'none';
+    return;
+  }
+
+  // Not logged in and no league specified — send to auth
+  window.location.href = 'dev-auth.html';
 });
+
+function showAlreadyLinked(prof){
+  document.getElementById('account-card').style.display = 'none';
+  document.getElementById('setup-card').style.display = 'none';
+  const successCard = document.getElementById('success-card');
+  document.getElementById('success-name').textContent = `${prof.first_name||''} ${prof.last_name||''}`.trim();
+  document.getElementById('success-dupr-id').textContent = 'DUPR ID: ' + prof.dupr_id;
+  document.getElementById('back-league-link').href = returnTo || 'dev-dashboard.html';
+  document.getElementById('back-league-link').textContent = returnTo ? 'Continue' : 'Back to Dashboard';
+  document.querySelector('#success-card .btn-ghost').style.display = 'none'; // hide "connect another"
+  successCard.style.display = 'block';
+}
 
 async function onLeagueChange(){
   const leagueId = document.getElementById('league-sel').value;
@@ -212,7 +270,7 @@ async function loadLinkedPlayers(leagueId){
 }
 
 function startConnect(){
-  if(!selectedPlayer || !selectedLeague){ showToast('Select your name first!'); return; }
+  if(!accountMode && (!selectedPlayer || !selectedLeague)){ showToast('Select your name first!'); return; }
   const iframeWrap = document.getElementById('iframe-wrap');
   const iframe = document.getElementById('dupr-iframe');
   iframe.src = DUPR_SSO_BASE + DUPR_CLIENT_KEY_B64;
@@ -235,7 +293,33 @@ async function handleDUPRMessage(event){
   // Hide iframe
   cancelConnect();
 
-  // Save to Supabase
+  // ACCOUNT MODE: save the DUPR ID to the logged-in user's profile
+  if(accountMode && accountUser){
+    try{
+      const { error } = await sbAuth.from('profiles')
+        .update({ dupr_id: duprId })
+        .eq('id', accountUser.id);
+      if(error) throw error;
+
+      document.getElementById('account-card').style.display = 'none';
+      document.getElementById('iframe-wrap').style.display = 'none';
+      const successCard = document.getElementById('success-card');
+      const { data: prof } = await sbAuth.from('profiles').select('first_name,last_name').eq('id', accountUser.id).single();
+      document.getElementById('success-name').textContent = prof ? `${prof.first_name||''} ${prof.last_name||''}`.trim() : '';
+      document.getElementById('success-dupr-id').textContent = 'DUPR ID: ' + duprId;
+      document.getElementById('back-league-link').href = returnTo || 'dev-dashboard.html';
+      document.getElementById('back-league-link').textContent = returnTo ? 'Continue' : 'Back to Dashboard';
+      const ca = document.querySelector('#success-card .btn-ghost'); if(ca) ca.style.display = 'none';
+      successCard.style.display = 'block';
+      successCard.scrollIntoView({behavior:'smooth'});
+    }catch(e){
+      console.error('Failed to save DUPR to profile:', e);
+      showToast('Failed to save — please try again');
+    }
+    return;
+  }
+
+  // LEAGUE MODE (legacy): save to dupr_players
   try{
     const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_players`, {
       method: 'POST',

@@ -110,6 +110,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   const { data: prof } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
   currentProfile = prof || { id: currentUser.id, email: currentUser.email };
 
+  // HARD BLOCK: DUPR account must be linked before registering
+  if(!currentProfile.dupr_id){
+    renderDuprRequired();
+    return;
+  }
+
   // Load active season + per-league registration types
   await loadSeasonConfig();
 
@@ -241,6 +247,15 @@ function renderClosed(){
       <h2>Registration Closed</h2>
       <p>Registration for ${activeSeasonName} is closed.${currentProfile?' Check your dashboard for leagues you\'re in.':''}</p>
       <a class="btn btn-primary" href="dev-dashboard.html" style="display:inline-block;text-decoration:none;max-width:280px">My Dashboard</a>
+    </div>`;
+}
+
+function renderDuprRequired(){
+  document.getElementById('page').innerHTML = `
+    <div class="gate">
+      <h2>Connect DUPR First</h2>
+      <p>You must link your DUPR account before registering for a league. It only takes a moment.</p>
+      <a class="btn btn-green" href="dupr-connect.html?returnTo=dev-signup.html" style="display:inline-block;text-decoration:none;max-width:280px">Connect DUPR Account</a>
     </div>`;
 }
 

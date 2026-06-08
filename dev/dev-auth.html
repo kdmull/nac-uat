@@ -167,8 +167,8 @@ async function doSignup(){
   if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
 
   if(data.session){
-    // Logged in immediately (email confirmation off)
-    window.location.href = 'dev-index.html';
+    // Logged in immediately (email confirmation off) — require DUPR linking next
+    window.location.href = 'dupr-connect.html';
   } else {
     // Email confirmation required
     msg.className='msg success';
@@ -193,6 +193,15 @@ async function doLogin(){
   btn.disabled = false; btn.textContent = 'Sign In';
 
   if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+
+  // If their profile has no DUPR linked yet, require it before continuing
+  try{
+    const { data: prof } = await supabaseClient.from('profiles').select('dupr_id').eq('id', data.user.id).single();
+    if(!prof || !prof.dupr_id){
+      window.location.href = 'dupr-connect.html';
+      return;
+    }
+  }catch(e){ /* if check fails, fall through to index */ }
   window.location.href = 'dev-index.html';
 }
 </script>

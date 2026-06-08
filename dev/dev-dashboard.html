@@ -189,8 +189,11 @@ function render(){
              <span class="val">${p.dupr_id}</span>
              <span class="badge-linked">Connected</span>
            </div>`
-        : `<p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Connect your DUPR account so your league matches count toward your rating.</p>
-           <a class="btn btn-green" href="dupr-connect.html" style="display:inline-block;text-decoration:none">Connect DUPR Account</a>`
+        : `<div style="background:rgba(217,59,59,.08);border:1px solid rgba(217,59,59,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem">
+             <p style="color:var(--danger);font-size:14px;font-weight:600;margin-bottom:2px">DUPR connection required</p>
+             <p style="color:var(--muted);font-size:13px">You must link your DUPR account before you can register for a league.</p>
+           </div>
+           <a class="btn btn-green" href="dupr-connect.html?returnTo=dev-dashboard.html" style="display:inline-block;text-decoration:none">Connect DUPR Account</a>`
       }
     </div>
   `;
