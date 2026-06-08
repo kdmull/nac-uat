@@ -82,28 +82,15 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 </nav>
 
 <div class="page">
-  <!-- League selector (shown if no league in URL) -->
-  <div id="league-selector" style="display:none">
-    <div class="league-select-wrap">
-      <h3>Select League to Manage</h3>
-      <button class="league-btn" onclick="selectAdminLeague('beginner')">All Ages Beginner</button>
-      <button class="league-btn" onclick="selectAdminLeague('int1949')">19-49 Intermediate</button>
-      <button class="league-btn" onclick="selectAdminLeague('int50')">50+ Intermediate</button>
-      <button class="league-btn" onclick="selectAdminLeague('adv1949')">19-49 Advanced</button>
-      <button class="league-btn" onclick="selectAdminLeague('adv50')">50+ Advanced</button>
-      <button class="league-btn" onclick="selectAdminLeague('singles')">Singles</button>
-    </div>
-  </div>
-
-  <!-- Admin panel (shown after league selected and auth) -->
-  <div id="admin-wrap" style="display:none">
+  <!-- Admin panel (gate shows immediately; league chosen via dropdown after unlock) -->
+  <div id="admin-wrap" style="display:block">
     <div class="section-header">
       <div class="section-accent"></div>
-      <div class="section-header-text"><h2>Admin Panel</h2><p id="admin-league-label">Select a league</p></div>
+      <div class="section-header-text"><h2>Admin Panel</h2><p id="admin-league-label">Enter password to manage leagues</p></div>
     </div>
     <div class="admin-gate" id="admin-gate">
       <h3>League Admin</h3>
-      <p>Enter your admin password to manage this league</p>
+      <p>Enter your admin password to manage leagues</p>
       <div>
         <input type="password" id="admin-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkAdmin()"/>
         <button class="btn btn-primary" onclick="checkAdmin()">Enter</button>
@@ -111,6 +98,19 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
       <p class="err" id="admin-err"></p>
     </div>
     <div class="admin-content" id="admin-content">
+      <!-- League picker (shown after unlock) -->
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label for="admin-league-sel" style="font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)">Managing League:</label>
+        <select id="admin-league-sel" onchange="onAdminLeagueChange(this.value)" style="flex:1;min-width:200px;padding:9px 12px;font-size:15px;font-family:var(--font-body);border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--navy);outline:none;cursor:pointer">
+          <option value="beginner">All Ages Beginner</option>
+          <option value="int1949">19-49 Intermediate</option>
+          <option value="int50">50+ Intermediate</option>
+          <option value="adv1949">19-49 Advanced</option>
+          <option value="adv50">50+ Advanced</option>
+          <option value="singles">Singles</option>
+        </select>
+      </div>
+
       <div class="save-bar">
         <p>Managing <strong id="save-bar-league">—</strong></p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -303,28 +303,34 @@ async function checkAccountAdmin(){
   }catch(e){ return false; }
 }
 window.addEventListener('DOMContentLoaded', async ()=>{
-  currentLeague = getLeagueFromURL();
-  if(currentLeague){
-    await initAdminLeague(currentLeague);
-    // Auto-unlock if logged in as an admin account
-    const isAdmin = await checkAccountAdmin();
-    if(isAdmin){ unlockAdmin(); }
-  } else {
-    document.getElementById('league-selector').style.display='block';
-  }
+  // Determine starting league: URL param if present, otherwise the dropdown's first option
+  const urlLeague = getLeagueFromURL();
+  const startId = urlLeague ? urlLeague.id : document.getElementById('admin-league-sel').value;
+  document.getElementById('admin-league-sel').value = startId;
+  currentLeague = LEAGUES.find(l => l.id === startId);
+  await initAdminLeague(currentLeague);
+
+  // Auto-unlock if logged in as an admin account, otherwise the password gate is shown
+  const isAdmin = await checkAccountAdmin();
+  if(isAdmin){ unlockAdmin(); }
 });
 
-function selectAdminLeague(id){
-  window.location.href='dev-admin.html?league='+id;
+// Switch the managed league in-place (no page reload) once unlocked
+async function onAdminLeagueChange(id){
+  currentLeague = LEAGUES.find(l => l.id === id);
+  if(!currentLeague) return;
+  await initAdminLeague(currentLeague);
+  // Re-render everything for the newly selected league
+  renderAdminPanel();
+  renderAdminRoster();
+  loadScoreLog();
 }
 
 async function initAdminLeague(league){
   currentLeague=league;
-  document.title='Admin: '+league.name+' — NAC Pickleball';
+  document.title='Admin — NAC Pickleball';
   document.getElementById('admin-league-label').textContent='Managing: '+league.name;
-  document.getElementById('save-bar-league').textContent=league.name;
-  document.getElementById('league-selector').style.display='none';
-  document.getElementById('admin-wrap').style.display='block';
+  const sb1 = document.getElementById('save-bar-league'); if(sb1) sb1.textContent=league.name;
   await loadSeasons();
   viewingSeason = currentSeason;
   await loadData();
