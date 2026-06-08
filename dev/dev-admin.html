@@ -119,6 +119,92 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
           <button class="btn btn-green" id="admin-save-btn" onclick="saveAdmin()">Save All Changes</button>
         </div>
       </div>
+    <div class="admin-section" id="score-log-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Score Log</h3>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadScoreLog()">↻ Refresh Log</button>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Time</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Week</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Match</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Winner</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Games</th>
+            </tr>
+          </thead>
+          <tbody id="score-log-body">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load score history.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+      <div class="admin-section" id="roster-admin-section">
+        <h3>Players &amp; Registered Players</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Players who registered for this league this season. Load them in as the player list, then build the schedule below.</p>
+        <div id="admin-roster-list" style="margin-bottom:1rem"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">Load Registered Players</button>
+          <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule (Show Standings)</button>
+        </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:.5rem">"Publish Schedule" switches the league's public page from a roster list to full standings. Do this after you've built the schedule.</p>
+        <hr style="border:none;border-top:1px solid var(--border);margin:1.25rem 0"/>
+        <h4 style="font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.75rem">Player Names</h4>
+        <div id="admin-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+        <p style="color:var(--muted);font-size:13px">Names update everywhere in the schedule when you save.</p>
+      </div>
+      <div class="admin-section">
+        <h3>Schedule Editor</h3>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+          <label style="color:var(--muted);font-size:13px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Week:</label>
+          <select class="admin-input" style="width:120px" id="admin-week-sel" onchange="renderAdminMatches()"></select>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addMatch()">+ Add Match</button>
+        </div>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <div class="admin-match-header" style="min-width:480px">
+            <span>Match</span><span>Player 1</span><span class="vs-col"></span>
+            <span>Player 2</span><span colspan="2">Series Result</span><span></span>
+          </div>
+          <div id="admin-matches" style="min-width:480px"></div>
+        </div>
+      </div>
+    <div class="admin-section" id="registrations-section" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Registrations</h3>
+        <div style="display:flex;gap:8px">
+          <select id="reg-league-filter" class="admin-input" style="width:180px" onchange="loadRegistrations()">
+            <option value="">All Leagues</option>
+            <option value="beginner">All Ages Beginner</option>
+            <option value="int1949">19-49 Intermediate</option>
+            <option value="int50">50+ Intermediate</option>
+            <option value="adv1949">19-49 Advanced</option>
+            <option value="adv50">50+ Advanced</option>
+            <option value="singles">Singles</option>
+          </select>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadRegistrations()">↻ Refresh</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="width:100%;border-collapse:collapse;min-width:560px">
+          <thead>
+            <tr style="background:var(--surface2)">
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Name</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Email</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Phone</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+            </tr>
+          </thead>
+          <tbody id="registrations-body">
+            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load registrations.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
       <div class="admin-section" id="seasons-section">
         <h3>Seasons</h3>
         <div id="seasons-list" style="margin-bottom:1rem"></div>
@@ -180,95 +266,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
         <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
         <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved. Set whether each league is individual or partner signup.</p>
       </div>
-      <div class="admin-section">
-        <h3>Player Names</h3>
-        <div id="admin-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
-        <p style="color:var(--muted);font-size:13px">Names update everywhere in the schedule when you save.</p>
-      </div>
-      <div class="admin-section" id="roster-admin-section">
-        <h3>Registered Players (Current League)</h3>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Players who registered for this league this season. Load them in as the player list, then build the schedule below.</p>
-        <div id="admin-roster-list" style="margin-bottom:1rem"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">Load Registered Players</button>
-          <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule (Show Standings)</button>
-        </div>
-        <p style="color:var(--muted);font-size:12px;margin-top:.5rem">"Publish Schedule" switches the league's public page from a roster list to full standings. Do this after you've built the schedule.</p>
-      </div>
-      <div class="admin-section">
-        <h3>Schedule Editor</h3>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
-          <label style="color:var(--muted);font-size:13px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Week:</label>
-          <select class="admin-input" style="width:120px" id="admin-week-sel" onchange="renderAdminMatches()"></select>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="addMatch()">+ Add Match</button>
-        </div>
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-          <div class="admin-match-header" style="min-width:480px">
-            <span>Match</span><span>Player 1</span><span class="vs-col"></span>
-            <span>Player 2</span><span colspan="2">Series Result</span><span></span>
-          </div>
-          <div id="admin-matches" style="min-width:480px"></div>
-        </div>
-      </div>
-    </div>
-    <div class="admin-section" id="registrations-section" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-        <h3 style="margin:0">Registrations</h3>
-        <div style="display:flex;gap:8px">
-          <select id="reg-league-filter" class="admin-input" style="width:180px" onchange="loadRegistrations()">
-            <option value="">All Leagues</option>
-            <option value="beginner">All Ages Beginner</option>
-            <option value="int1949">19-49 Intermediate</option>
-            <option value="int50">50+ Intermediate</option>
-            <option value="adv1949">19-49 Advanced</option>
-            <option value="adv50">50+ Advanced</option>
-            <option value="singles">Singles</option>
-          </select>
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadRegistrations()">↻ Refresh</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;min-width:560px">
-          <thead>
-            <tr style="background:var(--surface2)">
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Name</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Email</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Phone</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
-            </tr>
-          </thead>
-          <tbody id="registrations-body">
-            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load registrations.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="admin-section" id="score-log-section" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-        <h3 style="margin:0">Score Log</h3>
-        <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadScoreLog()">↻ Refresh Log</button>
-      </div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;border-collapse:collapse;min-width:560px">
-          <thead>
-            <tr style="background:var(--surface2)">
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Time</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Week</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Match</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Winner</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Games</th>
-            </tr>
-          </thead>
-          <tbody id="score-log-body">
-            <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">Click Refresh to load score history.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div><!-- end admin-content -->
+    </div><!-- end admin-content -->
 </div><!-- end admin-wrap -->
 
 <div class="toast" id="toast"></div>
