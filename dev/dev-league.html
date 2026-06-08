@@ -189,7 +189,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <div class="section-header-text"><h2>Standings</h2><p id="standings-subtitle">Loading...</p></div>
   </div>
   <div class="stats-grid" id="league-stats"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
-  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+  <div id="standings-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
     <table class="standings-table" style="border:none;border-radius:0">
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
@@ -201,6 +201,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <tbody id="standings-body"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
   </div>
+  <div id="roster-area" style="display:none"></div>
 
 
 </div>
@@ -425,15 +426,12 @@ async function renderRoster(){
   const sub = document.getElementById('standings-subtitle');
   if(sub) sub.textContent = members.length + ' registered' + (isRegistrationOpen(viewingSeason) ? ' — registration open' : '');
 
-  // Hide the stats cards
+  // Clear the stats cards
   const statsEl = document.getElementById('league-stats');
   if(statsEl) statsEl.innerHTML = '';
 
-  const body = document.getElementById('standings-body');
   const isPartner = (viewingSeason.leagueTypes && viewingSeason.leagueTypes[currentLeague.id]) === 'partner';
 
-  // Replace the whole table area with a roster
-  const tableWrap = body ? body.closest('div[style*="overflow-x"]') : null;
   let html = '';
   if(!members.length){
     html = `<div style="text-align:center;padding:3rem 1rem;color:var(--muted)">
@@ -452,11 +450,11 @@ async function renderRoster(){
     <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:1rem">The schedule and standings will appear once the season begins.</p>`;
   }
 
-  if(tableWrap){ tableWrap.outerHTML = `<div id="roster-area">${html}</div>`; }
-  else {
-    const existing = document.getElementById('roster-area');
-    if(existing) existing.innerHTML = html;
-  }
+  // Toggle: show roster, hide the standings table (without destroying it)
+  const tableWrap = document.getElementById('standings-table-wrap');
+  const rosterArea = document.getElementById('roster-area');
+  if(tableWrap) tableWrap.style.display = 'none';
+  if(rosterArea){ rosterArea.innerHTML = html; rosterArea.style.display = 'block'; }
 }
 
 async function renderStandings(){
@@ -467,6 +465,11 @@ async function renderStandings(){
     await renderRoster();
     return;
   }
+  // Showing standings — make sure the table is visible and the roster area hidden
+  const _tw = document.getElementById('standings-table-wrap');
+  const _ra = document.getElementById('roster-area');
+  if(_tw) _tw.style.display = '';
+  if(_ra) _ra.style.display = 'none';
   const stats=getStats();
   const active=getActivePlayers();
   const rows=active.map(p=>{
