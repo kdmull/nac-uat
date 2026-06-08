@@ -93,6 +93,10 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
         <input type="email" id="signup-email" autocomplete="email" placeholder="your@email.com"/>
       </div>
       <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="signup-phone" autocomplete="tel" placeholder="(555) 555-5555" oninput="this.value=fmtPhone(this.value)"/>
+      </div>
+      <div class="form-group">
         <label>Password</label>
         <input type="password" id="signup-password" autocomplete="new-password" placeholder="At least 6 characters"/>
       </div>
@@ -126,10 +130,18 @@ function switchTab(tab){
   document.getElementById('section-signup').classList.toggle('active', tab==='signup');
 }
 
+function fmtPhone(v){
+  v = v.replace(/\D/g,'').slice(0,10);
+  if(v.length>=6) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
+  if(v.length>=3) return '('+v.slice(0,3)+') '+v.slice(3);
+  return v;
+}
+
 async function doSignup(){
   const first = document.getElementById('signup-first').value.trim();
   const last = document.getElementById('signup-last').value.trim();
   const email = document.getElementById('signup-email').value.trim();
+  const phone = document.getElementById('signup-phone').value.trim();
   const password = document.getElementById('signup-password').value;
   const msg = document.getElementById('signup-msg');
   msg.className = 'msg';
@@ -137,6 +149,7 @@ async function doSignup(){
 
   if(!first || !last){ msg.className='msg error'; msg.textContent='Enter your first and last name.'; return; }
   if(!email){ msg.className='msg error'; msg.textContent='Enter your email.'; return; }
+  if(phone.replace(/\D/g,'').length < 10){ msg.className='msg error'; msg.textContent='Enter a valid phone number.'; return; }
   if(password.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
   const password2 = document.getElementById('signup-password2').value;
   if(password !== password2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
@@ -146,7 +159,7 @@ async function doSignup(){
 
   const { data, error } = await supabaseClient.auth.signUp({
     email, password,
-    options: { data: { first_name: first, last_name: last } }
+    options: { data: { first_name: first, last_name: last, phone } }
   });
 
   btn.disabled = false; btn.textContent = 'Create Account';
