@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>My Profile — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.logout-btn{background:none;border:none;color:rgba(255,255,255,.7);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 0}
+.logout-btn:hover{color:var(--white)}
+.page{padding:2rem 1.5rem;max-width:640px;margin:0 auto}
+.profile-header{background:var(--navy);border-radius:var(--radius-lg);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem}
+.profile-avatar{width:60px;height:60px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--white);flex-shrink:0}
+.profile-header-info h1{font-family:var(--font-display);font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--white);line-height:1}
+.profile-header-info p{color:rgba(255,255,255,.7);font-size:14px;margin-top:2px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.5rem}
+.card h2{font-family:var(--font-display);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--green)}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:1rem}
+.form-group label{font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.form-group input{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-size:16px;font-family:var(--font-body);outline:none}
+.form-group input:focus{border-color:var(--navy);background:var(--white)}
+.form-group input:disabled{opacity:.6;cursor:not-allowed}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}
+.btn-green{background:var(--green);color:var(--white);border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.dupr-status{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-radius:var(--radius)}
+.dupr-status .label{font-size:13px;color:var(--muted)}
+.dupr-status .val{font-family:var(--font-display);font-weight:700;color:var(--navy);font-size:15px}
+.badge-linked{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px}
+.msg{font-size:13px;margin-top:8px;min-height:18px}
+.msg.error{color:var(--danger)}.msg.success{color:var(--green-dark)}
+.loading{text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;margin-right:10px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+.nav-links{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.nav-link-btn{flex:1;text-align:center;padding:12px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;transition:all .12s;min-width:120px}
+.nav-link-btn:hover{border-color:var(--navy);background:var(--surface)}
+@media(max-width:600px){.page{padding:1rem}.form-row{grid-template-columns:1fr}.profile-header{padding:1.2rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC"/></a>
+  <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+</nav>
+
+<div class="page" id="page">
+  <div class="loading"><span class="spinner"></span>Loading...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ window.location.href = 'dev-auth.html'; return; }
+  currentUser = session.user;
+  await loadProfile();
+  render();
+});
+
+async function loadProfile(){
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+  if(error){ console.warn('Profile load error:', error); }
+  currentProfile = data || { id: currentUser.id, email: currentUser.email };
+}
+
+function render(){
+  const p = currentProfile;
+  const initials = ((p.first_name||'')[0]||'') + ((p.last_name||'')[0]||'');
+  document.getElementById('page').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-avatar">${initials.toUpperCase()||'?'}</div>
+      <div class="profile-header-info">
+        <h1>${p.first_name||''} ${p.last_name||''}</h1>
+        <p>${p.email||''}</p>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <a class="nav-link-btn" href="dev-signup.html">Register for a League</a>
+      <a class="nav-link-btn" href="dev-index.html">View Leagues</a>
+    </div>
+
+    <div class="card">
+      <h2>My Profile</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="p-first" value="${p.first_name||''}"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="p-last" value="${p.last_name||''}"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="p-email" value="${p.email||''}" disabled/>
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input type="tel" id="p-phone" value="${p.phone||''}" placeholder="(555) 555-5555"/>
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+      <div class="msg" id="profile-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>DUPR Account</h2>
+      ${p.dupr_id
+        ? `<div class="dupr-status">
+             <span class="label">Linked DUPR ID:</span>
+             <span class="val">${p.dupr_id}</span>
+             <span class="badge-linked">Connected</span>
+           </div>`
+        : `<p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Connect your DUPR account so your league matches count toward your rating.</p>
+           <a class="btn btn-green" href="dupr-connect.html" style="display:inline-block;text-decoration:none">Connect DUPR Account</a>`
+      }
+    </div>
+  `;
+}
+
+function formatPhone(v){
+  v = v.replace(/\D/g,'').slice(0,10);
+  if(v.length>=6) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
+  if(v.length>=3) return '('+v.slice(0,3)+') '+v.slice(3);
+  return v;
+}
+
+async function saveProfile(){
+  const first = document.getElementById('p-first').value.trim();
+  const last = document.getElementById('p-last').value.trim();
+  const phone = document.getElementById('p-phone').value.trim();
+  const msg = document.getElementById('profile-msg');
+
+  const { error } = await supabaseClient
+    .from('profiles')
+    .update({ first_name: first, last_name: last, phone })
+    .eq('id', currentUser.id);
+
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  currentProfile.first_name = first;
+  currentProfile.last_name = last;
+  currentProfile.phone = phone;
+  showToast('Profile saved!');
+  render();
+}
+
+async function doLogout(){
+  await supabaseClient.auth.signOut();
+  window.location.href = 'dev-auth.html';
+}
+
+function showToast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
