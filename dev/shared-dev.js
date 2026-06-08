@@ -274,9 +274,15 @@ async function loadData(){
   console.log('Loading data from key:', key);
   const result=await dbGet(key);
   if(result.data){
-    if(result.data.schedule)schedule=result.data.schedule;
-    if(result.data.players)PLAYERS=result.data.players;
+    schedule = result.data.schedule || [];
+    PLAYERS = result.data.players || [];
+  } else if(result.empty){
+    // No saved schedule for this league/season — start empty.
+    // (Don't fall back to the hardcoded default players.)
+    schedule = [];
+    PLAYERS = [];
   }
+  // On a network error (result.error) keep whatever is currently loaded.
   lastSynced=new Date();
 }
 async function saveData(){

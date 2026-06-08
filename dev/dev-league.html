@@ -460,8 +460,10 @@ async function renderRoster(){
 }
 
 async function renderStandings(){
-  // If the admin hasn't generated a schedule for this league yet, show a roster list instead
-  if(!isScheduleGenerated(viewingSeason, currentLeague.id)){
+  // Show the roster (registered players) until a schedule actually exists for this league.
+  // Once the admin builds & saves a schedule, standings take over automatically.
+  const hasSchedule = schedule && schedule.length && schedule.some(w => w.matches && w.matches.length);
+  if(!hasSchedule){
     await renderRoster();
     return;
   }
