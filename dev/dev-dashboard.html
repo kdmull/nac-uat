@@ -56,7 +56,53 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .nav-links{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
 .nav-link-btn{flex:1;text-align:center;padding:12px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;transition:all .12s;min-width:120px}
 .nav-link-btn:hover{border-color:var(--navy);background:var(--surface)}
-@media(max-width:600px){.page{padding:1rem}.form-row{grid-template-columns:1fr}.profile-header{padding:1.2rem}}
+
+/* ===== My Schedule (Stage 3) ===== */
+.sched-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.sched-row:last-child{border-bottom:none}
+.sched-wk{flex-shrink:0;width:46px;text-align:center;font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);line-height:1.1}
+.sched-wk b{display:block;font-size:20px;font-weight:900;color:var(--navy);line-height:1}
+.sched-main{flex:1;min-width:0}
+.sched-matchup{font-size:14px;line-height:1.35}
+.sched-matchup .me{font-weight:700;color:var(--navy)}
+.sched-matchup .vs{color:var(--muted);font-family:var(--font-display);font-weight:700;font-size:12px;text-transform:uppercase;padding:0 4px}
+.sched-matchup .opp{color:var(--text)}
+.sched-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.sched-meta .win{color:var(--green-dark);font-weight:700}
+.sched-meta .loss{color:var(--danger);font-weight:700}
+.sched-action{flex-shrink:0}
+.sched-action .btn{padding:7px 14px;font-size:12px}
+.sched-bye{flex:1;font-size:13px;color:var(--muted);font-style:italic}
+.empty-note{color:var(--muted);font-size:14px}
+
+/* ===== Score modal (shared with league/admin pages) ===== */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,20,60,.6);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:1rem;padding-top:max(1rem,env(safe-area-inset-top));overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:440px;border-top:4px solid var(--navy);margin:auto}
+.modal h3{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:1.2rem;letter-spacing:.5px}
+.modal-players{display:flex;align-items:center;gap:12px;margin-bottom:1rem}
+.modal-player{flex:1;text-align:center}
+.modal-player-name{font-weight:600;font-size:14px;color:var(--navy)}
+.modal-vs{font-family:var(--font-display);font-weight:700;color:var(--muted)}
+.game-row{display:grid;grid-template-columns:60px 1fr 28px 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.game-row:last-child{border-bottom:none}
+.game-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.game-input{width:100%;text-align:center;font-family:var(--font-display);font-size:20px;font-weight:700;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--navy);padding:5px 4px;outline:none;min-height:44px}
+.game-input:focus{border-color:var(--navy)}.game-input.winner{border-color:var(--green);background:rgba(76,175,40,.06);color:var(--green-dark)}
+.game-dash{text-align:center;font-family:var(--font-display);font-weight:700;color:var(--muted);font-size:16px}
+.game-row-disabled .game-input{opacity:.35;pointer-events:none}
+.series-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.3px}
+.series-badge.complete{background:rgba(76,175,40,.12);color:var(--green-dark)}.series-badge.inprog{background:rgba(26,42,108,.08);color:var(--navy)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:1.2rem}
+
+@media(max-width:600px){
+  .page{padding:1rem}.form-row{grid-template-columns:1fr}.profile-header{padding:1.2rem}
+  .modal{padding:1.4rem;max-width:100%}
+  .modal h3{font-size:18px}
+  .game-input{font-size:17px;padding:5px 2px}
+  .game-row{grid-template-columns:50px 1fr 22px 1fr;gap:6px}
+  .game-label{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -69,60 +115,133 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
   <div class="loading"><span class="spinner"></span>Loading...</div>
 </div>
 
+<!-- Score modal (driven by shared-dev.js: openModal / submitScore) -->
+<div class="modal-overlay" id="score-modal">
+  <div class="modal">
+    <h3>Enter Series Scores</h3>
+    <div class="modal-players" style="margin-bottom:1rem">
+      <div class="modal-player"><div class="modal-player-name" id="modal-p1"></div></div>
+      <div class="modal-vs">vs</div>
+      <div class="modal-player"><div class="modal-player-name" id="modal-p2"></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:60px 1fr 28px 1fr;gap:8px;padding:0 0 4px 0;margin-bottom:2px">
+      <span></span>
+      <span style="text-align:center;font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)" id="col-p1-label"></span>
+      <span></span>
+      <span style="text-align:center;font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)" id="col-p2-label"></span>
+    </div>
+    <div id="modal-series-status" style="text-align:center;font-family:var(--font-display);font-size:13px;color:var(--muted);margin-bottom:1rem;min-height:18px"></div>
+    <div id="modal-games"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitScore()">Save Series</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- shared-dev.js provides: schedule data layer (loadData/saveData), seriesResult,
+     the score modal logic (openModal/submitScore/...), logScore, DUPR submit,
+     SUPABASE_URL/KEY, LEAGUES, season helpers, showToast. -->
+<script src="shared-dev.js"></script>
 <script>
-const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+// supabase-js client for auth/profiles (uses the shared SUPABASE_URL/KEY constants)
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 let currentProfile = null;
-
-window.addEventListener('DOMContentLoaded', async () => {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if(!session){ window.location.href = 'dev-auth.html'; return; }
-  currentUser = session.user;
-  await loadProfile();
-  await loadMySeasonMembership();
-  render();
-});
-
 let myMembership = null;
-let activeSeasonName = '';
+let myMatches = [];          // [{week, idx, m}]
+let myByes = [];             // [weekNumber]
+let myName = '';             // derived "First L." used to find the player in the schedule
+let scheduleReady = false;   // schedule published for this league/season?
+
 const LEAGUE_NAMES = {
   beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
   adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
 };
 
-async function loadMySeasonMembership(){
+window.addEventListener('DOMContentLoaded', async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(!session){ window.location.href = 'dev-auth.html'; return; }
+  currentUser = session.user;
+
+  await loadProfile();
+  await loadSeasons();          // shared-dev.js -> sets currentSeason / viewingSeason
+  await loadMyMembership();     // -> myMembership for the active season
+  await loadMySchedule();       // -> currentLeague + schedule + myMatches/myByes
+  render();
+
+  // After a self score entry, shared submitScore() calls renderScoreMatches(week)
+  // if it exists — point that at our own re-render so the card refreshes.
+  window.renderScoreMatches = function(){ recomputeMyMatches(); render(); };
+});
+
+// Build the player's schedule display name the SAME way the admin generates it:
+//   `${first_name} ${last_initial}.`  e.g. "Jordan C."
+function deriveMyName(p){
+  const f = (p.first_name||'').trim();
+  const li = ((p.last_name||'').trim()[0]) || '';
+  return `${f} ${li}.`.trim();
+}
+
+function nameMatches(a, b){
+  return (a||'').trim().toLowerCase() === (b||'').trim().toLowerCase();
+}
+
+// Is the player in this match? (singles p1/p2, doubles p1a/p1b/p2a/p2b)
+function playerInMatch(m){
+  const slots = m.p1a !== undefined ? [m.p1a,m.p1b,m.p2a,m.p2b] : [m.p1,m.p2];
+  return slots.some(s => nameMatches(s, myName));
+}
+
+async function loadProfile(){
+  const { data, error } = await supabaseClient
+    .from('profiles').select('*').eq('id', currentUser.id).single();
+  if(error){ console.warn('Profile load error:', error); }
+  currentProfile = data || { id: currentUser.id, email: currentUser.email };
+  myName = deriveMyName(currentProfile);
+}
+
+async function loadMyMembership(){
   try{
-    // Find the active season id from nac_seasons
-    const { data: seasonRow } = await supabaseClient
-      .from('pb_league').select('value').eq('key','nac_seasons').maybeSingle();
-    let activeSeasonId = 'spring2026';
-    if(seasonRow && seasonRow.value){
-      const v = typeof seasonRow.value === 'string' ? JSON.parse(seasonRow.value) : seasonRow.value;
-      activeSeasonId = v.active || activeSeasonId;
-      const s = (v.seasons||[]).find(x => x.id === activeSeasonId);
-      if(s) activeSeasonName = s.name || '';
-    }
+    const seasonId = currentSeason?.id || 'spring2026';
     const { data } = await supabaseClient.from('league_members')
-      .select('*').eq('user_id', currentUser.id).eq('season_id', activeSeasonId)
+      .select('*').eq('user_id', currentUser.id).eq('season_id', seasonId)
       .eq('status','active').maybeSingle();
     myMembership = data || null;
   }catch(e){ console.warn('membership load failed:', e); myMembership = null; }
 }
 
-async function loadProfile(){
-  const { data, error } = await supabaseClient
-    .from('profiles')
-    .select('*')
-    .eq('id', currentUser.id)
-    .single();
-  if(error){ console.warn('Profile load error:', error); }
-  currentProfile = data || { id: currentUser.id, email: currentUser.email };
+async function loadMySchedule(){
+  myMatches = []; myByes = []; scheduleReady = false;
+  if(!myMembership) return;
+
+  currentLeague = LEAGUES.find(l => l.id === myMembership.league_id) || null;
+  if(!currentLeague) return;
+
+  viewingSeason = currentSeason;
+
+  // Only show a schedule the admin has actually published.
+  if(!isScheduleGenerated(currentSeason, myMembership.league_id)) return;
+
+  await loadData();             // shared-dev.js -> fills `schedule` + `PLAYERS`
+  scheduleReady = true;
+  recomputeMyMatches();
+}
+
+function recomputeMyMatches(){
+  myMatches = []; myByes = [];
+  for(const w of (schedule||[])){
+    if(nameMatches(w.bye, myName)) myByes.push(w.week);
+    (w.matches||[]).forEach((m, idx) => {
+      if(playerInMatch(m)) myMatches.push({ week:w.week, idx, m });
+    });
+  }
+  myMatches.sort((a,b)=> a.week - b.week);
+  myByes.sort((a,b)=> a-b);
 }
 
 function render(){
@@ -143,7 +262,7 @@ function render(){
     </div>
 
     <div class="card">
-      <h2>My League${activeSeasonName?' — '+activeSeasonName:''}</h2>
+      <h2>My League${currentSeason?.name?' — '+currentSeason.name:''}</h2>
       ${myMembership ? `
         <div class="dupr-status" style="flex-wrap:wrap">
           <span class="val">${LEAGUE_NAMES[myMembership.league_id]||myMembership.league_id}</span>
@@ -156,6 +275,8 @@ function render(){
         <a class="btn btn-green" href="dev-signup.html" style="display:inline-block;text-decoration:none">Register Now</a>
       `}
     </div>
+
+    ${myScheduleCardHTML()}
 
     <div class="card">
       <h2>My Profile</h2>
@@ -199,6 +320,83 @@ function render(){
   `;
 }
 
+function myScheduleCardHTML(){
+  // No league, or not yet shown anything to score against.
+  if(!myMembership) return '';
+
+  let inner;
+  if(!scheduleReady){
+    inner = `<p class="empty-note">Your schedule hasn't been posted yet. Check back once the organizer publishes it.</p>`;
+  } else if(!myMatches.length && !myByes.length){
+    inner = `<p class="empty-note">We couldn't find you in the published schedule. Your name there may differ slightly from your profile — reach out to the organizer if this looks wrong.</p>`;
+  } else {
+    // Merge matches + byes into one week-ordered list.
+    const rows = [];
+    myMatches.forEach(x => rows.push({ week:x.week, type:'match', x }));
+    myByes.forEach(wk => rows.push({ week:wk, type:'bye' }));
+    rows.sort((a,b)=> a.week - b.week || (a.type==='bye'?1:-1));
+    inner = rows.map(r => r.type==='bye' ? byeRowHTML(r.week) : matchRowHTML(r.x)).join('');
+  }
+
+  return `<div class="card"><h2>My Schedule</h2>${inner}</div>`;
+}
+
+function byeRowHTML(week){
+  return `<div class="sched-row">
+    <div class="sched-wk">Wk<b>${week}</b></div>
+    <div class="sched-bye">Bye week — no match</div>
+  </div>`;
+}
+
+function matchRowHTML({week, idx, m}){
+  const r = seriesResult(m);
+  const isDoubles = r.isDoubles;
+
+  // Which side am I on? Build "my side" and "opponent side".
+  let mySide, oppSide;
+  if(isDoubles){
+    const team1 = [m.p1a, m.p1b], team2 = [m.p2a, m.p2b];
+    const onTeam1 = team1.some(s => nameMatches(s, myName));
+    const me = onTeam1 ? team1 : team2;
+    const opp = onTeam1 ? team2 : team1;
+    const partner = me.find(s => !nameMatches(s, myName)) || '';
+    mySide = `You${partner ? ' + ' + partner : ''}`;
+    oppSide = opp.filter(Boolean).join(' / ');
+    var mySideTeam = onTeam1 ? r.team1 : r.team2;
+  } else {
+    const onP1 = nameMatches(m.p1, myName);
+    mySide = 'You';
+    oppSide = onP1 ? m.p2 : m.p1;
+    var mySideTeam = onP1 ? r.team1 : r.team2;
+  }
+
+  // Result / status meta line.
+  let meta;
+  if(r.complete){
+    const iWon = r.winner === mySideTeam;
+    meta = `<span class="${iWon?'win':'loss'}">${iWon?'Won':'Lost'} ${Math.max(r.p1w,r.p2w)}-${Math.min(r.p1w,r.p2w)}</span>`;
+  } else {
+    const gamesPlayed = (m.games||[]).filter(g=>g.s1!==null).length;
+    meta = gamesPlayed>0 ? `In progress — game ${gamesPlayed+1}` : 'Not played yet';
+  }
+
+  const btnLabel = r.complete ? 'Edit' : 'Enter Scores';
+  const btnClass = r.complete ? 'btn btn-ghost' : 'btn btn-green';
+
+  return `<div class="sched-row">
+    <div class="sched-wk">Wk<b>${week}</b></div>
+    <div class="sched-main">
+      <div class="sched-matchup">
+        <span class="me">${mySide}</span><span class="vs">vs</span><span class="opp">${oppSide}</span>
+      </div>
+      <div class="sched-meta">${meta}</div>
+    </div>
+    <div class="sched-action">
+      <button class="${btnClass}" onclick="openModal(${week},${idx})">${btnLabel}</button>
+    </div>
+  </div>`;
+}
+
 function formatPhone(v){
   v = v.replace(/\D/g,'').slice(0,10);
   if(v.length>=6) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
@@ -221,6 +419,9 @@ async function saveProfile(){
   currentProfile.first_name = first;
   currentProfile.last_name = last;
   currentProfile.phone = phone;
+  // Name change could change which schedule entries match — recompute.
+  myName = deriveMyName(currentProfile);
+  if(scheduleReady) recomputeMyMatches();
   showToast('Profile saved!');
   render();
 }
@@ -228,12 +429,6 @@ async function saveProfile(){
 async function doLogout(){
   await supabaseClient.auth.signOut();
   window.location.href = 'dev-auth.html';
-}
-
-function showToast(m){
-  const t=document.getElementById('toast');
-  t.textContent=m;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
 }
 </script>
 </body>
