@@ -46,6 +46,12 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .dupr-status .label{font-size:13px;color:var(--muted)}
 .dupr-status .val{font-family:var(--font-display);font-weight:700;color:var(--navy);font-size:15px}
 .badge-linked{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px}
+.ratings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1rem}
+.rating-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center}
+.rating-box .rating-label{display:block;font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px}
+.rating-box .rating-val{display:block;font-family:var(--font-display);font-size:30px;font-weight:900;color:var(--navy);line-height:1}
+.rating-box .rating-val.unrated{font-size:15px;font-weight:700;color:var(--muted);padding:8px 0}
+.rating-loading{grid-column:1 / -1;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;color:var(--muted);font-family:var(--font-display);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
 .msg{font-size:13px;margin-top:8px;min-height:18px}
 .msg.error{color:var(--danger)}.msg.success{color:var(--green-dark)}
 .loading{text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px}
@@ -157,6 +163,10 @@ let myMatches = [];          // [{week, idx, m}]
 let myByes = [];             // [weekNumber]
 let myName = '';             // derived "First L." used to find the player in the schedule
 let scheduleReady = false;   // schedule published for this league/season?
+let myRatings = null;        // {singles, doubles} from DUPR, or null
+let ratingsLoading = false;
+
+const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-get-ratings';
 
 const LEAGUE_NAMES = {
   beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
@@ -172,7 +182,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadSeasons();          // shared-dev.js -> sets currentSeason / viewingSeason
   await loadMyMembership();     // -> myMembership for the active season
   await loadMySchedule();       // -> currentLeague + schedule + myMatches/myByes
+  ratingsLoading = !!(currentProfile && currentProfile.dupr_id);
   render();
+
+  // Pull the player's live DUPR rating (if linked) and refresh the card when it lands.
+  if(currentProfile && currentProfile.dupr_id) loadMyDuprRatings();
 
   // After a self score entry, shared submitScore() calls renderScoreMatches(week)
   // if it exists — point that at our own re-render so the card refreshes.
@@ -309,7 +323,8 @@ function render(){
              <span class="label">Linked DUPR ID:</span>
              <span class="val">${p.dupr_id}</span>
              <span class="badge-linked">Connected</span>
-           </div>`
+           </div>
+           ${duprRatingsHTML()}`
         : `<div style="background:rgba(217,59,59,.08);border:1px solid rgba(217,59,59,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem">
              <p style="color:var(--danger);font-size:14px;font-weight:600;margin-bottom:2px">DUPR connection required</p>
              <p style="color:var(--muted);font-size:13px">You must link your DUPR account before you can register for a league.</p>
@@ -395,6 +410,55 @@ function matchRowHTML({week, idx, m}){
       <button class="${btnClass}" onclick="openModal(${week},${idx})">${btnLabel}</button>
     </div>
   </div>`;
+}
+
+async function loadMyDuprRatings(){
+  const id = currentProfile && currentProfile.dupr_id;
+  if(!id) return;
+  ratingsLoading = true;
+  try{
+    const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ duprIds: [id] })
+    });
+    if(rr.ok){
+      const data = await rr.json();
+      const byId = data.ratings || {};
+      const r = byId[id];
+      myRatings = r ? { singles: r.singles, doubles: r.doubles } : { singles:null, doubles:null };
+    } else {
+      console.warn('Ratings fetch failed:', rr.status, await rr.text());
+      myRatings = null;
+    }
+  }catch(e){ console.warn('Could not load DUPR rating:', e); myRatings = null; }
+  ratingsLoading = false;
+  render();
+}
+
+// DUPR returns a number, a numeric string, or null (unrated). Normalize to 2 decimals.
+function fmtRating(v){
+  if(v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return isNaN(n) ? null : n.toFixed(3);
+}
+
+function duprRatingsHTML(){
+  if(ratingsLoading){
+    return `<div class="ratings-grid"><div class="rating-loading"><span class="spinner"></span>Fetching live rating…</div></div>`;
+  }
+  if(!myRatings) return '';   // fetch failed or not attempted
+  const d = fmtRating(myRatings.doubles);
+  const s = fmtRating(myRatings.singles);
+  const cell = (label, val) => `<div class="rating-box">
+      <span class="rating-label">${label}</span>
+      <span class="rating-val${val?'':' unrated'}">${val || 'Not rated'}</span>
+    </div>`;
+  return `<div class="ratings-grid">${cell('Doubles', d)}${cell('Singles', s)}</div>`;
 }
 
 function formatPhone(v){
