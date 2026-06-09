@@ -42,6 +42,15 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 .profile-name{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--white);line-height:1}
 .profile-league{font-size:13px;color:rgba(255,255,255,.6);margin-top:4px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px}
 .profile-rank{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--green);margin-top:6px}
+/* DUPR rating pills in header */
+.profile-dupr{display:flex;gap:10px;flex-shrink:0;align-items:center}
+.dupr-pill{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:var(--radius);padding:8px 16px;text-align:center;min-width:84px}
+.dupr-pill .dl{display:block;font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.6);margin-bottom:2px}
+.dupr-pill .dv{display:block;font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--white);line-height:1}
+.dupr-pill .dv.unrated{font-size:13px;font-weight:700;color:rgba(255,255,255,.55);padding:6px 0}
+.profile-dupr-note{flex-shrink:0;font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.45)}
+.profile-dupr-loading{flex-shrink:0;display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.5)}
+.profile-dupr-loading .spinner{border-color:rgba(255,255,255,.25);border-top-color:var(--white)}
 /* Stat cards */
 .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:1.5rem}
 .stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem;box-shadow:0 1px 3px rgba(26,42,108,.05);text-align:center}
@@ -148,6 +157,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   await loadData();
   renderProfile(playerName, leagueId);
+  loadPlayerRating(playerName, leagueId);
 });
 
 function renderProfile(playerName, leagueId) {
@@ -215,6 +225,9 @@ function renderProfile(playerName, leagueId) {
         <div class="profile-league">${currentLeague.name}</div>
         <div class="profile-rank">${rank ? rankLabel : '—'}</div>
       </div>
+      <div class="profile-dupr" id="profile-dupr">
+        <div class="profile-dupr-loading"><div class="spinner"></div>DUPR…</div>
+      </div>
     </div>
 
     <div class="stats-row">
@@ -260,6 +273,54 @@ function renderProfile(playerName, leagueId) {
 
 
   `;
+}
+
+const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-get-ratings';
+
+// DUPR returns a number, a numeric string, or null (unrated). Normalize to 3 decimals.
+function fmtRating(v){
+  if(v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return isNaN(n) ? null : n.toFixed(3);
+}
+
+// Look up this player's DUPR id (by name, in this league) and fetch their live rating.
+async function loadPlayerRating(playerName, leagueId){
+  const box = document.getElementById('profile-dupr');
+  if(!box) return;
+  try{
+    // 1. name -> dupr_id from the dupr_players table
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&player_name=eq.${encodeURIComponent(playerName)}&select=dupr_id`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    const rows = r.ok ? await r.json() : [];
+    const duprId = rows.length ? rows[0].dupr_id : null;
+    if(!duprId){ box.innerHTML = `<span class="profile-dupr-note">Not linked to DUPR</span>`; return; }
+
+    // 2. dupr_id -> live ratings via the Edge Function
+    const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY,'apikey':SUPABASE_KEY},
+      body: JSON.stringify({ duprIds: [duprId] })
+    });
+    if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status); box.innerHTML=''; return; }
+    const data = await rr.json();
+    const rt = (data.ratings || {})[duprId] || {};
+    renderRatingPills(box, rt.doubles, rt.singles);
+  }catch(e){ console.warn('Could not load player rating:', e); box.innerHTML=''; }
+}
+
+function renderRatingPills(box, doubles, singles){
+  const d = fmtRating(doubles), s = fmtRating(singles);
+  const pill = (label, val) => `<div class="dupr-pill">
+      <span class="dl">${label}</span>
+      <span class="dv${val?'':' unrated'}">${val || 'NR'}</span>
+    </div>`;
+  // Lead with the league-relevant discipline.
+  box.innerHTML = currentLeague?.type === 'singles'
+    ? pill('Singles', s) + pill('Doubles', d)
+    : pill('Doubles', d) + pill('Singles', s);
 }
 
 function showToast(msg){
