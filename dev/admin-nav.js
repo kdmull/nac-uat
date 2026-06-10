@@ -72,9 +72,60 @@
     });
   }
 
+  // Inject account buttons (My Profile + Sign Out) on pages that don't build their
+  // own. Pages with a #nav-actions container manage their own account buttons.
+  function styleNavBtn(a){
+    a.style.cssText = 'font-family:var(--font-display);font-size:13px;font-weight:700;'
+      + 'text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:8px;'
+      + 'cursor:pointer;text-decoration:none;white-space:nowrap;border:1.5px solid rgba(255,255,255,.4);'
+      + 'color:#fff;background:none;margin-right:8px';
+    a.addEventListener('mouseover', function(){ a.style.background='rgba(255,255,255,.1)'; a.style.borderColor='#fff'; });
+    a.addEventListener('mouseout',  function(){ a.style.background='none'; a.style.borderColor='rgba(255,255,255,.4)'; });
+  }
+
+  function signOut(){
+    try{
+      for(var i=localStorage.length-1;i>=0;i--){
+        var k=localStorage.key(i);
+        if(/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k);
+      }
+      sessionStorage.removeItem('nac_admin_unlocked');
+      localStorage.removeItem('nac_admin_unlocked');
+    }catch(e){}
+    window.location.href = 'dev-index.html';
+  }
+
+  function injectAccountButtons(){
+    var nav = document.querySelector('nav');
+    if(!nav) return;
+    if(nav.querySelector('#nav-actions')) return;        // page builds its own account buttons
+    if(nav.querySelector('[data-account-nav]')) return;  // already injected
+    var current = (location.pathname.split('/').pop() || '').toLowerCase();
+
+    var group = document.createElement('div');
+    group.setAttribute('data-account-nav','1');
+    group.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap';
+
+    if(current !== 'dev-dashboard.html'){
+      var prof = document.createElement('a');
+      prof.href = 'dev-dashboard.html'; prof.textContent = 'My Profile';
+      styleNavBtn(prof); group.appendChild(prof);
+    }
+    var out = document.createElement('a');
+    out.href = '#'; out.textContent = 'Sign Out';
+    styleNavBtn(out);
+    out.addEventListener('click', function(e){ e.preventDefault(); signOut(); });
+    group.appendChild(out);
+
+    var brand = nav.querySelector('.nav-brand');
+    if(brand) nav.insertBefore(group, brand.nextSibling);
+    else nav.insertBefore(group, nav.firstChild);
+  }
+
   function run(){
     var sess = getSession();
     if(!sess) return;                 // not signed in → nothing to add
+    injectAccountButtons();           // My Profile + Sign Out for any logged-in user
     checkAdmin(sess).then(function(isAdmin){ if(isAdmin) injectLinks(); });
   }
 
