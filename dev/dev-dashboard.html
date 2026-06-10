@@ -20,11 +20,13 @@
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
 .nav-logo{height:44px;width:auto}
-.logout-btn{background:none;border:none;color:rgba(255,255,255,.7);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 0}
-.logout-btn:hover{color:var(--white)}
+.nav-link{color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0;margin-right:1.2rem}
+.nav-link:hover{text-decoration:underline}
+.logout-btn{background:none;border:1.5px solid rgba(255,255,255,.4);color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:7px 14px;border-radius:var(--radius)}
+.logout-btn:hover{border-color:#fff;background:rgba(255,255,255,.1)}
 .page{padding:2rem 1.5rem;max-width:640px;margin:0 auto}
 .profile-header{background:var(--navy);border-radius:var(--radius-lg);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem}
 .profile-avatar{width:60px;height:60px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--white);flex-shrink:0}
@@ -114,6 +116,9 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 <body>
 <nav>
   <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC"/></a>
+  <a class="nav-link" href="dev-index.html">Leagues</a>
+  <a class="nav-link" href="dev-rules.html">Rules</a>
+  <a class="nav-link" href="dev-signup.html">Register</a>
   <button class="logout-btn" onclick="doLogout()">Sign Out</button>
 </nav>
 
