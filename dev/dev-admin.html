@@ -23,6 +23,7 @@
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
 nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
 .nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
 .nav-logo{height:44px;width:auto}
 .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none}
 .back-btn:hover{color:var(--green)}
@@ -79,9 +80,11 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex
   <a class="nav-brand" href="dev-index.html">
     <img src="naclogo.png" class="nav-logo" alt="NAC"/>
   </a>
-  <a href="dev-index.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0;margin-right:1.2rem">Leagues</a>
-  <a href="dev-rules.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0;margin-right:1.2rem">Rules</a>
-  <a href="dev-accounts.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0">Accounts</a>
+  <div class="nav-right" id="nav-links">
+    <a href="dev-index.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0;margin-right:1.2rem">Leagues</a>
+    <a href="dev-rules.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0;margin-right:1.2rem">Rules</a>
+    <a href="dev-accounts.html" style="color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0">Accounts</a>
+  </div>
 </nav>
 
 <div class="page">
