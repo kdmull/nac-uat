@@ -20,10 +20,10 @@
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;border-bottom:3px solid var(--green)}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
 .nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
 .nav-logo{height:44px;width:auto}
-.nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.nav-actions{display:flex;align-items:center;flex-wrap:wrap}
 .nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
 .nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
 .nav-link:hover{color:#fff}
@@ -166,10 +166,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     }catch(e){}
     navActions.innerHTML = `
       ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
-      <a class="nav-btn nav-btn-ghost" href="dev-dashboard.html">My Profile</a>
-      <button class="nav-btn nav-btn-ghost" onclick="doLogout()">Sign Out</button>`;
+      <a class="nav-link" href="dev-dashboard.html">My Profile</a>
+      <a class="nav-link" href="#" onclick="doLogout();return false;">Sign Out</a>`;
   } else {
-    navActions.innerHTML = `<a class="nav-btn nav-btn-solid" href="dev-auth.html">Sign In</a>`;
+    navActions.innerHTML = `<a class="nav-link" href="dev-auth.html">Sign In</a>`;
   }
 });
 

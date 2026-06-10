@@ -73,12 +73,11 @@
   // Inject account buttons (My Profile + Sign Out) on pages that don't build their
   // own. Pages with a #nav-actions container manage their own account buttons.
   function styleNavBtn(a){
-    a.style.cssText = 'font-family:var(--font-display);font-size:13px;font-weight:700;'
-      + 'text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:8px;'
-      + 'cursor:pointer;text-decoration:none;white-space:nowrap;border:1.5px solid rgba(255,255,255,.4);'
-      + 'color:#fff;background:none;margin-right:8px';
-    a.addEventListener('mouseover', function(){ a.style.background='rgba(255,255,255,.1)'; a.style.borderColor='#fff'; });
-    a.addEventListener('mouseout',  function(){ a.style.background='none'; a.style.borderColor='rgba(255,255,255,.4)'; });
+    a.style.cssText = 'padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;'
+      + 'letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;'
+      + 'border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer;background:none';
+    a.addEventListener('mouseover', function(){ a.style.color='#fff'; });
+    a.addEventListener('mouseout',  function(){ a.style.color='rgba(255,255,255,.6)'; });
   }
 
   function signOut(){
