@@ -410,6 +410,31 @@ async function confirmRegistration(){
     return;
   }
 
+  // Keep dupr_players in sync with the player's profile. DUPR is linked at connect time
+  // (which writes profiles.dupr_id), but the league features — player page rating,
+  // standings ratings, and DUPR match submission — resolve players by their schedule
+  // name through dupr_players. Mirror the id into that name-keyed table for this league,
+  // deriving player_name exactly as the admin schedule generator does ("First L.").
+  if(p.dupr_id){
+    const scheduleName = `${p.first_name||''} ${(p.last_name||'')[0]||''}.`.trim();
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/dupr_players`, {
+        method:'POST',
+        headers:{
+          'apikey':SUPABASE_KEY,
+          'Authorization':'Bearer '+SUPABASE_KEY,
+          'Content-Type':'application/json',
+          'Prefer':'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          league_key: selectedLeague.id,
+          player_name: scheduleName,
+          dupr_id: p.dupr_id
+        })
+      });
+    }catch(e){ console.warn('Could not sync dupr_players on registration:', e); }
+  }
+
   // Email notification (reuse registration-notification function)
   fetch('https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/registration-notification', {
     method:'POST',
