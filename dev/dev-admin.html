@@ -79,6 +79,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
   <a class="nav-brand" href="dev-index.html">
     <img src="naclogo.png" class="nav-logo" alt="NAC"/>
   </a>
+  <a href="dev-accounts.html" style="color:rgba(255,255,255,.75);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;padding:.7rem 0">Accounts →</a>
 </nav>
 
 <div class="page">
@@ -311,7 +312,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
 
   // Auto-unlock if logged in as an admin account, otherwise the password gate is shown
   const isAdmin = await checkAccountAdmin();
-  if(isAdmin){ unlockAdmin(); }
+  if(isAdmin){ sessionStorage.setItem('nac_admin_unlocked','1'); unlockAdmin(); }
 });
 
 // Switch the managed league in-place (no page reload) once unlocked
@@ -348,6 +349,7 @@ async function initAdminLeague(league){
 
 function checkAdmin(){
   if(document.getElementById('admin-pw').value===ADMIN_PW){
+    sessionStorage.setItem('nac_admin_unlocked','1');
     unlockAdmin();
   } else {
     document.getElementById('admin-err').textContent='Incorrect password.';

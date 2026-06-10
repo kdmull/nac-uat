@@ -51,7 +51,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .count-pill{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
 /* Table */
 .table-wrap{overflow-x:auto}
-.acct-table{width:100%;border-collapse:collapse;min-width:680px}
+.acct-table{width:100%;border-collapse:collapse;min-width:760px}
 .acct-table th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
 .acct-table th:hover{color:var(--navy)}
 .acct-table th .arrow{opacity:.5;font-size:10px}
@@ -70,6 +70,28 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;margin-right:10px;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 .notice{background:rgba(217,59,59,.07);border:1px solid rgba(217,59,59,.25);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--danger);margin-bottom:1rem}
+/* Edit button + modal */
+.btn-edit{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:6px 14px;cursor:pointer}
+.btn-edit:hover{border-color:var(--navy);background:var(--surface2)}
+.acct-modal-overlay{position:fixed;inset:0;background:rgba(10,20,60,.6);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:1rem;padding-top:max(1rem,env(safe-area-inset-top));overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s}
+.acct-modal-overlay.open{opacity:1;pointer-events:all}
+.acct-modal{background:var(--white);border-radius:var(--radius-lg);padding:1.75rem;width:100%;max-width:420px;border-top:4px solid var(--navy);margin:auto}
+.acct-modal h3{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:1.2rem;letter-spacing:.5px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:.9rem}
+.fg label{font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.fg input{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 13px;font-size:16px;font-family:var(--font-body);outline:none}
+.fg input:focus{border-color:var(--navy);background:var(--white)}
+.fg input:disabled{opacity:.6;cursor:not-allowed}
+.fg-check{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:14px;color:var(--navy);font-weight:600;cursor:pointer}
+.fg-check input{width:18px;height:18px;accent-color:var(--navy)}
+.edit-msg{font-size:13px;min-height:18px;margin-bottom:.5rem}
+.edit-msg.error{color:var(--danger)}.edit-msg.success{color:var(--green-dark)}
+.acct-modal-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn-ghost-sm,.btn-primary-sm{padding:9px 18px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent}
+.btn-ghost-sm{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost-sm:hover{border-color:var(--navy);color:var(--navy)}
+.btn-primary-sm{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary-sm:hover{background:var(--navy-dark)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
 @media(max-width:600px){
   .page{padding:1rem}.stats-row{grid-template-columns:1fr 1fr 1fr;gap:8px}
   .stat-card{padding:.8rem}.stat-card .v{font-size:24px}.stat-card .l{font-size:10px}
@@ -117,6 +139,25 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
   </div>
 </div>
 
+<!-- Edit profile modal -->
+<div class="acct-modal-overlay" id="edit-modal">
+  <div class="acct-modal">
+    <h3>Edit Profile</h3>
+    <div class="fg"><label>First name</label><input id="e-first" type="text"/></div>
+    <div class="fg"><label>Last name</label><input id="e-last" type="text"/></div>
+    <div class="fg"><label>Email (read-only)</label><input id="e-email" type="email" disabled/></div>
+    <div class="fg"><label>Phone</label><input id="e-phone" type="tel"/></div>
+    <div class="fg"><label>DUPR ID</label><input id="e-dupr" type="text"/></div>
+    <label class="fg-check"><input type="checkbox" id="e-admin"/> <span>Admin access</span></label>
+    <div class="edit-msg" id="edit-msg"></div>
+    <div class="acct-modal-actions">
+      <button class="btn-ghost-sm" onclick="closeEdit()">Cancel</button>
+      <button class="btn-primary-sm" id="edit-save-btn" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared-dev.js"></script>
 <script>
@@ -143,7 +184,7 @@ async function isAdminAccount(){
 }
 function checkAdmin(){
   const pw = document.getElementById('admin-pw').value;
-  if(pw === ADMIN_PW){ unlock(); }
+  if(pw === ADMIN_PW){ sessionStorage.setItem('nac_admin_unlocked','1'); unlock(); }
   else { document.getElementById('admin-err').textContent = 'Incorrect password'; }
 }
 function unlock(){
@@ -153,7 +194,7 @@ function unlock(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  if(await isAdminAccount()) unlock();
+  if(sessionStorage.getItem('nac_admin_unlocked')==='1' || await isAdminAccount()) unlock();
   else document.getElementById('gate-section').style.display = 'block';
 });
 
@@ -265,6 +306,7 @@ function renderRows(){
           <th>Phone</th>
           <th onclick="setSort('dupr')">DUPR ${arrow('dupr')}</th>
           <th onclick="setSort('league')">League (this season) ${arrow('league')}</th>
+          <th>Edit</th>
         </tr></thead>
         <tbody>
           ${rows.map(a => `
@@ -278,10 +320,72 @@ function renderRows(){
               <td>${a.leagueId
                 ? `<span class="badge league">${LEAGUE_NAMES[a.leagueId]||a.leagueId}</span>${a.partner?` <span class="muted">+ ${a.partner}</span>`:''}`
                 : `<span class="badge none muted">—</span>`}</td>
+              <td><button class="btn-edit" onclick="openEdit('${a.id}')">Edit</button></td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>`;
+}
+// ---- Edit profile ----
+let editingId = null;
+
+function openEdit(id){
+  const a = accounts.find(x => x.id === id);
+  if(!a) return;
+  editingId = id;
+  document.getElementById('e-first').value = a.first || '';
+  document.getElementById('e-last').value  = a.last  || '';
+  document.getElementById('e-email').value = a.email || '';
+  document.getElementById('e-phone').value = a.phone || '';
+  document.getElementById('e-dupr').value  = a.duprId || '';
+  document.getElementById('e-admin').checked = a.isAdmin;
+  const m = document.getElementById('edit-msg'); m.textContent=''; m.className='edit-msg';
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEdit(){
+  document.getElementById('edit-modal').classList.remove('open');
+  editingId = null;
+}
+
+async function saveEdit(){
+  if(!editingId) return;
+  const btn = document.getElementById('edit-save-btn');
+  const msg = document.getElementById('edit-msg');
+  const patch = {
+    first_name: document.getElementById('e-first').value.trim(),
+    last_name:  document.getElementById('e-last').value.trim(),
+    phone:      document.getElementById('e-phone').value.trim(),
+    dupr_id:    document.getElementById('e-dupr').value.trim() || null,
+    is_admin:   document.getElementById('e-admin').checked
+  };
+  btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent=''; msg.className='edit-msg';
+  try{
+    const { error } = await sbAuth.from('profiles').update(patch).eq('id', editingId);
+    if(error) throw error;
+    const a = accounts.find(x => x.id === editingId);
+    if(a){
+      a.first = patch.first_name; a.last = patch.last_name;
+      a.name = `${patch.first_name} ${patch.last_name}`.trim() || '(no name)';
+      a.phone = patch.phone; a.duprId = patch.dupr_id || ''; a.isAdmin = patch.is_admin;
+    }
+    renderStats(); renderRows();
+    closeEdit();
+    showToast('Profile updated');
+  }catch(e){
+    console.error('Profile update failed:', e);
+    msg.className = 'edit-msg error';
+    msg.textContent = (e && e.message) ? e.message
+      : 'Update failed — your account may not have permission to edit other profiles (RLS).';
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+function showToast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
 }
 </script>
 </body>
