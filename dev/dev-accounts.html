@@ -90,6 +90,9 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .btn-ghost-sm,.btn-primary-sm{padding:9px 18px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent}
 .btn-ghost-sm{background:transparent;border-color:var(--border);color:var(--muted)}.btn-ghost-sm:hover{border-color:var(--navy);color:var(--navy)}
 .btn-primary-sm{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary-sm:hover{background:var(--navy-dark)}
+.btn-danger-sm{padding:9px 18px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;background:transparent;border:1.5px solid rgba(217,59,59,.5);color:var(--danger)}
+.btn-danger-sm:hover{background:var(--danger);color:var(--white);border-color:var(--danger)}
+.btn-danger-sm:disabled{opacity:.5;cursor:not-allowed}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
 .toast.show{transform:translateY(0);opacity:1}
 @media(max-width:600px){
@@ -150,9 +153,12 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
     <div class="fg"><label>DUPR ID (read-only)</label><input id="e-dupr" type="text" disabled/></div>
     <label class="fg-check"><input type="checkbox" id="e-admin"/> <span>Admin access</span></label>
     <div class="edit-msg" id="edit-msg"></div>
-    <div class="acct-modal-actions">
-      <button class="btn-ghost-sm" onclick="closeEdit()">Cancel</button>
-      <button class="btn-primary-sm" id="edit-save-btn" onclick="saveEdit()">Save</button>
+    <div class="acct-modal-actions" style="justify-content:space-between">
+      <button class="btn-danger-sm" id="edit-delete-btn" onclick="deleteAccount()">Delete</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost-sm" onclick="closeEdit()">Cancel</button>
+        <button class="btn-primary-sm" id="edit-save-btn" onclick="saveEdit()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -172,6 +178,7 @@ let accounts = [];          // merged profile + league rows
 let sortKey = 'name';
 let sortDir = 1;            // 1 asc, -1 desc
 let loadNotice = '';
+let myUserId = null;       // logged-in admin's own id, to prevent self-deletion
 
 // ---- Auth gate (mirrors dev-admin.html) ----
 async function isAdminAccount(){
@@ -202,6 +209,8 @@ window.addEventListener('DOMContentLoaded', async () => {
 async function loadAccounts(){
   loadNotice = '';
   try{
+    const { data:{ session: mySession } } = await sbAuth.auth.getSession();
+    myUserId = mySession?.user?.id || null;
     await loadSeasons();   // shared-dev.js -> currentSeason
     const seasonId = currentSeason?.id || 'spring2026';
     document.getElementById('season-label').textContent =
@@ -384,6 +393,41 @@ async function saveEdit(){
       : 'Update failed — your account may not have permission to edit other profiles (RLS).';
   }finally{
     btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+async function deleteAccount(){
+  if(!editingId) return;
+  const msg = document.getElementById('edit-msg');
+  if(editingId === myUserId){
+    msg.className='edit-msg error';
+    msg.textContent="You can't delete your own account while signed in as it.";
+    return;
+  }
+  const a = accounts.find(x => x.id === editingId);
+  const label = a ? `${a.name}${a.email?` (${a.email})`:''}` : 'this account';
+  if(!confirm(`Delete ${label}?\n\nThis removes their profile and all league registrations and cannot be undone.`)) return;
+
+  const delBtn = document.getElementById('edit-delete-btn');
+  const saveBtn = document.getElementById('edit-save-btn');
+  delBtn.disabled = true; saveBtn.disabled = true; delBtn.textContent = 'Deleting…';
+  msg.textContent=''; msg.className='edit-msg';
+  try{
+    // Remove league registrations first (all seasons), then the profile row.
+    await sbAuth.from('league_members').delete().eq('user_id', editingId);
+    const { error } = await sbAuth.from('profiles').delete().eq('id', editingId);
+    if(error) throw error;
+    accounts = accounts.filter(x => x.id !== editingId);
+    renderStats(); renderRows();
+    closeEdit();
+    showToast('Account removed');
+  }catch(e){
+    console.error('Delete failed:', e);
+    msg.className = 'edit-msg error';
+    msg.textContent = (e && e.message) ? e.message
+      : 'Delete failed — your account may not have permission (RLS).';
+  }finally{
+    delBtn.disabled = false; saveBtn.disabled = false; delBtn.textContent = 'Delete';
   }
 }
 
