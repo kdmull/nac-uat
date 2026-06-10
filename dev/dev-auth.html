@@ -94,7 +94,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
       </div>
       <div class="form-group">
         <label>Phone Number</label>
-        <input type="tel" id="signup-phone" autocomplete="tel" placeholder="(555)555-5555" oninput="this.value=fmtPhone(this.value)"/>
+        <input type="tel" id="signup-phone" autocomplete="tel" placeholder="(555) 555-5555" oninput="this.value=fmtPhone(this.value)"/>
       </div>
       <div class="form-group">
         <label>Password</label>
@@ -132,8 +132,8 @@ function switchTab(tab){
 
 function fmtPhone(v){
   v = (v||'').replace(/\D/g,'').slice(0,10);
-  if(v.length>=7) return '('+v.slice(0,3)+')'+v.slice(3,6)+'-'+v.slice(6);
-  if(v.length>=4) return '('+v.slice(0,3)+')'+v.slice(3);
+  if(v.length>=7) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
+  if(v.length>=4) return '('+v.slice(0,3)+') '+v.slice(3);
   if(v.length>=1) return '('+v;
   return '';
 }
@@ -150,7 +150,7 @@ async function doSignup(){
 
   if(!first || !last){ msg.className='msg error'; msg.textContent='Enter your first and last name.'; return; }
   if(!email){ msg.className='msg error'; msg.textContent='Enter your email.'; return; }
-  if(!/^\(\d{3}\)\d{3}-\d{4}$/.test(phone)){ msg.className='msg error'; msg.textContent='Enter your phone as (xxx)xxx-xxxx.'; return; }
+  if(!/^\(\d{3}\) \d{3}-\d{4}$/.test(phone)){ msg.className='msg error'; msg.textContent='Enter your phone as (xxx) xxx-xxxx.'; return; }
   if(password.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
   const password2 = document.getElementById('signup-password2').value;
   if(password !== password2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
