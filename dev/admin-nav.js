@@ -52,7 +52,10 @@
   function injectLinks(){
     var nav = document.querySelector('nav');
     if(!nav || nav.querySelector('[data-admin-nav]')) return;
-    var rightGroup = nav.querySelector('#nav-links'); // text-link group on the right, if any
+    var tabs = nav.querySelector('.nav-tabs');       // league pages
+    var rightGroup = nav.querySelector('#nav-links'); // other pages
+    var container = tabs || rightGroup || nav;
+    var cls = tabs ? 'nav-tab' : 'nav-link';
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
     ADMIN_LINKS.forEach(function(l){
       if(l.href.toLowerCase() === current) return;   // don't link to the page we're on
@@ -61,14 +64,9 @@
       a.href = l.href;
       a.textContent = l.label;
       a.setAttribute('data-admin-nav','1');
-      a.className = rightGroup ? 'nav-link' : '';
-      a.style.cssText = 'color:rgba(255,255,255,.85);font-family:var(--font-display);font-size:13px;'
-        + 'font-weight:700;text-transform:uppercase;letter-spacing:.5px;text-decoration:none;'
-        + 'padding:.7rem 0;margin-right:1.2rem;white-space:nowrap';
-      a.addEventListener('mouseover', function(){ a.style.color='#fff'; });
-      a.addEventListener('mouseout',  function(){ a.style.color='rgba(255,255,255,.85)'; });
-      if(rightGroup) rightGroup.appendChild(a);
-      else nav.appendChild(a);
+      a.className = cls;
+      a.style.textDecoration = 'none';
+      container.appendChild(a);
     });
   }
 
