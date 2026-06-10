@@ -406,26 +406,41 @@ async function deleteAccount(){
   }
   const a = accounts.find(x => x.id === editingId);
   const label = a ? `${a.name}${a.email?` (${a.email})`:''}` : 'this account';
-  if(!confirm(`Delete ${label}?\n\nThis removes their profile and all league registrations and cannot be undone.`)) return;
+  if(!confirm(`Permanently delete ${label}?\n\nThis removes their login, profile, and all league registrations. This cannot be undone.`)) return;
+
+  // Permanent deletion runs server-side (service role) and requires the admin's
+  // own session — it can't be done from the password-only gate.
+  const { data:{ session } } = await sbAuth.auth.getSession();
+  if(!session){
+    msg.className='edit-msg error';
+    msg.textContent='Permanent delete requires signing in as an admin account (not the password gate).';
+    return;
+  }
 
   const delBtn = document.getElementById('edit-delete-btn');
   const saveBtn = document.getElementById('edit-save-btn');
   delBtn.disabled = true; saveBtn.disabled = true; delBtn.textContent = 'Deleting…';
   msg.textContent=''; msg.className='edit-msg';
   try{
-    // Remove league registrations first (all seasons), then the profile row.
-    await sbAuth.from('league_members').delete().eq('user_id', editingId);
-    const { error } = await sbAuth.from('profiles').delete().eq('id', editingId);
-    if(error) throw error;
+    const r = await fetch(SUPABASE_URL + '/functions/v1/admin-delete-account', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization':'Bearer '+session.access_token
+      },
+      body: JSON.stringify({ userId: editingId })
+    });
+    const data = await r.json().catch(()=>({}));
+    if(!r.ok || !data.success) throw new Error(data.error || ('Delete failed ('+r.status+')'));
     accounts = accounts.filter(x => x.id !== editingId);
     renderStats(); renderRows();
     closeEdit();
-    showToast('Account removed');
+    showToast('Account permanently deleted');
   }catch(e){
     console.error('Delete failed:', e);
     msg.className = 'edit-msg error';
-    msg.textContent = (e && e.message) ? e.message
-      : 'Delete failed — your account may not have permission (RLS).';
+    msg.textContent = (e && e.message) ? e.message : 'Delete failed.';
   }finally{
     delBtn.disabled = false; saveBtn.disabled = false; delBtn.textContent = 'Delete';
   }
