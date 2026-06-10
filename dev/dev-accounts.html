@@ -145,9 +145,9 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
     <h3>Edit Profile</h3>
     <div class="fg"><label>First name</label><input id="e-first" type="text"/></div>
     <div class="fg"><label>Last name</label><input id="e-last" type="text"/></div>
-    <div class="fg"><label>Email (read-only)</label><input id="e-email" type="email" disabled/></div>
-    <div class="fg"><label>Phone</label><input id="e-phone" type="tel"/></div>
-    <div class="fg"><label>DUPR ID</label><input id="e-dupr" type="text"/></div>
+    <div class="fg"><label>Email</label><input id="e-email" type="email"/></div>
+    <div class="fg"><label>Phone</label><input id="e-phone" type="tel" placeholder="(555)555-5555" oninput="this.value=fmtPhone(this.value)"/></div>
+    <div class="fg"><label>DUPR ID (read-only)</label><input id="e-dupr" type="text" disabled/></div>
     <label class="fg-check"><input type="checkbox" id="e-admin"/> <span>Admin access</span></label>
     <div class="edit-msg" id="edit-msg"></div>
     <div class="acct-modal-actions">
@@ -355,10 +355,15 @@ async function saveEdit(){
   const patch = {
     first_name: document.getElementById('e-first').value.trim(),
     last_name:  document.getElementById('e-last').value.trim(),
-    phone:      document.getElementById('e-phone').value.trim(),
-    dupr_id:    document.getElementById('e-dupr').value.trim() || null,
+    email:      document.getElementById('e-email').value.trim(),
+    phone:      fmtPhone(document.getElementById('e-phone').value),
     is_admin:   document.getElementById('e-admin').checked
   };
+  if(patch.phone && !/^\(\d{3}\)\d{3}-\d{4}$/.test(patch.phone)){
+    document.getElementById('edit-msg').className='edit-msg error';
+    document.getElementById('edit-msg').textContent='Phone must be (xxx)xxx-xxxx.';
+    return;
+  }
   btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent=''; msg.className='edit-msg';
   try{
     const { error } = await sbAuth.from('profiles').update(patch).eq('id', editingId);
@@ -367,7 +372,7 @@ async function saveEdit(){
     if(a){
       a.first = patch.first_name; a.last = patch.last_name;
       a.name = `${patch.first_name} ${patch.last_name}`.trim() || '(no name)';
-      a.phone = patch.phone; a.duprId = patch.dupr_id || ''; a.isAdmin = patch.is_admin;
+      a.email = patch.email; a.phone = patch.phone; a.isAdmin = patch.is_admin;
     }
     renderStats(); renderRows();
     closeEdit();
@@ -386,6 +391,15 @@ function showToast(m){
   const t = document.getElementById('toast');
   t.textContent = m; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// Canonical phone format used across the site: (xxx)xxx-xxxx
+function fmtPhone(v){
+  v = (v||'').replace(/\D/g,'').slice(0,10);
+  if(v.length>=7) return '('+v.slice(0,3)+')'+v.slice(3,6)+'-'+v.slice(6);
+  if(v.length>=4) return '('+v.slice(0,3)+')'+v.slice(3);
+  if(v.length>=1) return '('+v;
+  return '';
 }
 </script>
 </body>
