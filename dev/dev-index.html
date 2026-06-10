@@ -21,13 +21,14 @@
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;border-bottom:3px solid var(--green)}
 .nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
 .nav-logo{height:44px;width:auto}
-.nav-actions{display:flex;align-items:center;gap:8px}
+.nav-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .nav-btn{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:all .12s;border:1.5px solid transparent;white-space:nowrap}
 .nav-btn-ghost{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3)}
 .nav-btn-ghost:hover{border-color:#fff;color:#fff}
+.nav-btn-ghost.current{border-color:var(--green);color:#fff}
 .nav-btn-solid{background:var(--green);color:#fff;border-color:var(--green)}
 .nav-btn-solid:hover{background:var(--green-dark);border-color:var(--green-dark)}
 .nav-greeting{color:rgba(255,255,255,.85);font-size:14px;font-weight:600;margin-right:4px}
@@ -132,14 +133,20 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     navActions.innerHTML = `
       ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
+      <a class="nav-btn nav-btn-ghost current" href="dev-index.html">Leagues</a>
+      <a class="nav-btn nav-btn-ghost" href="dev-rules.html">Rules</a>
       <a class="nav-btn nav-btn-solid" href="dev-signup.html">Register</a>
       <a class="nav-btn nav-btn-ghost" href="dev-dashboard.html">My Profile</a>
       <button class="nav-btn nav-btn-ghost" onclick="doLogout()">Sign Out</button>`;
     mainNav.style.display = 'flex';
     signinCard.style.display = 'none';
   } else {
-    // Logged out — no nav, show sign-in prompt
-    mainNav.style.display = 'none';
+    // Logged out — still show the nav (Leagues / Rules / Sign In) plus the sign-in prompt
+    navActions.innerHTML = `
+      <a class="nav-btn nav-btn-ghost current" href="dev-index.html">Leagues</a>
+      <a class="nav-btn nav-btn-ghost" href="dev-rules.html">Rules</a>
+      <a class="nav-btn nav-btn-solid" href="dev-auth.html">Sign In</a>`;
+    mainNav.style.display = 'flex';
     signinCard.style.display = 'block';
   }
 });
