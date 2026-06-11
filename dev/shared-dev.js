@@ -19,13 +19,54 @@ const LEAGUES = [
 let schedule = [];
 let PLAYERS = [];
 
-// Display-only name formatting: strips the trailing period from the canonical
-// "First L." identity format (so standings/cards show "First L"). NEVER use
-// the result for lookups or comparisons — stored names keep the period.
+// ---- Display names -------------------------------------------------------
+// The canonical player identity everywhere (schedules, PLAYERS, DUPR keys) is
+// "First L." — that must never change, or matching against saved data breaks.
+// For DISPLAY we map those identities to full names ("Jordan C." -> "Jordan
+// Cooper") using the league's registrations. loadData() refreshes the map.
+// NEVER use displayName() output for lookups or comparisons.
+let FULL_NAMES = {};        // "jordan c." -> "Jordan Cooper"
+
 function displayName(n){
-  // Only strip the period from a single-letter initial (" C." -> " C"),
+  if(!n) return '';
+  // Team strings like "Alice A. / Bob B." or "Alice A. & Bob B." — resolve each side.
+  if(n.includes(' / ')) return n.split(' / ').map(displayName).join(' / ');
+  if(n.includes(' & ')) return n.split(' & ').map(displayName).join(' & ');
+  const full = FULL_NAMES[n.trim().toLowerCase()];
+  if(full) return full;
+  // Fallback: strip the period from a single-letter initial (" C." -> " C"),
   // leaving legitimate periods in names like "St. John" untouched.
-  return (n||'').replace(/(\s[A-Za-z])\.(?=\s|$)/g, '$1');
+  return n.replace(/(\s[A-Za-z])\.(?=\s|$)/g, '$1');
+}
+
+function deriveScheduleName(first, last){
+  return `${(first||'').trim()} ${(((last||'').trim())[0]||'')}.`.trim();
+}
+
+async function buildFullNameMap(seasonId){
+  FULL_NAMES = {};
+  if(!currentLeague) return;
+  try{
+    const members = await loadLeagueMembers(currentLeague.id, seasonId);
+    const ambiguous = new Set();
+    const add = (key, full) => {
+      key = (key||'').toLowerCase(); full = (full||'').trim();
+      if(!key || !full) return;
+      if(ambiguous.has(key)) return;
+      if(FULL_NAMES[key] && FULL_NAMES[key] !== full){
+        // Two different people derive the same "First L." — can't safely map.
+        delete FULL_NAMES[key]; ambiguous.add(key); return;
+      }
+      FULL_NAMES[key] = full;
+    };
+    for(const m of (members||[])){
+      add(deriveScheduleName(m.first_name, m.last_name), `${m.first_name||''} ${m.last_name||''}`);
+      if(m.partner_name){
+        const parts = m.partner_name.trim().split(/\s+/);
+        if(parts.length > 1) add(`${parts[0]} ${parts[parts.length-1][0]}.`, m.partner_name);
+      }
+    }
+  }catch(e){ console.warn('full-name map failed:', e); }
 }
 let scheduleWeek=1, scoresWeek=1, currentModalMatch=null, lastSynced=null;
 let scoreAuthed=false;
@@ -282,6 +323,7 @@ async function loadData(){
     PLAYERS = [];
   }
   // On a network error (result.error) keep whatever is currently loaded.
+  await buildFullNameMap(seasonId);   // "First L." -> full name (display only)
   lastSynced=new Date();
 }
 async function saveData(){

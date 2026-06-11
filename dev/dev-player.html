@@ -159,6 +159,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   await loadData();
+  document.title = `${displayName(playerName)} — NAC Pickleball`;
   renderProfile(playerName, leagueId);
   loadPlayerRating(playerName, leagueId);
 });
