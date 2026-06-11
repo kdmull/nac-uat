@@ -192,7 +192,7 @@ function renderMyRegistration(regOpen){
         <span>${leagueName}${isPartner?' · Partner':' · Individual'}</span>
       </div>
       <div class="info-row"><span class="lbl">Status</span><span class="val">Registered</span></div>
-      ${isPartner ? `<div class="info-row"><span class="lbl">Partner</span><span class="val">${m.partner_name||'—'}</span></div>` : ''}
+      ${isPartner ? `<div class="info-row"><span class="lbl">Partner</span><span class="val">${m.partner_name||'—'}${m.partner_status==='pending'?' <span style="color:#b8860b;font-size:12px;font-weight:600">(pending acceptance)</span>':''}${m.partner_status==='accepted'&&m.partner_name?' <span style="color:var(--green-dark);font-size:12px;font-weight:600">✓</span>':''}</span></div>${m.partner_status==='declined'?'<p style="color:var(--danger);font-size:13px;margin-top:4px">Your previous partner invite was declined — choose a new partner below.</p>':''}` : ''}
       ${regOpen ? `
         <p style="font-size:13px;color:var(--muted);margin:1rem 0 .5rem">You can switch leagues or update your partner while registration is open.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -238,13 +238,30 @@ async function savePartner(){
   const pp = partnerOptions.find(x => x.id === partnerUserId);
   const partnerName = pp ? `${pp.first_name||''} ${pp.last_name||''}`.trim() : null;
   const msg = document.getElementById('reg-msg');
+
+  // Mutual: they already invited me to this league — accept instead of re-inviting.
+  if(partnerUserId){
+    const mutual = await fetchInviteFrom(partnerUserId, myMembership.league_id);
+    if(mutual){
+      const ok = await respondPartnerInvite(partnerUserId, 'accept');
+      if(!ok.success){ msg.className='msg error'; msg.textContent = ok.error || 'Could not accept invite.'; return; }
+      myMembership.partner_user_id = partnerUserId;
+      myMembership.partner_name = partnerName;
+      myMembership.partner_status = 'accepted';
+      showToast('Partners confirmed — they had already chosen you!');
+      renderMyRegistration(true);
+      return;
+    }
+  }
+
   const { error } = await sb.from('league_members')
-    .update({ partner_user_id: partnerUserId, partner_name: partnerName })
+    .update({ partner_user_id: partnerUserId, partner_name: partnerName, partner_status: partnerUserId ? 'pending' : null })
     .eq('id', myMembership.id);
   if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
   myMembership.partner_user_id = partnerUserId;
   myMembership.partner_name = partnerName;
-  showToast('Partner updated!');
+  myMembership.partner_status = partnerUserId ? 'pending' : null;
+  showToast(partnerUserId ? 'Partner invited — pending their acceptance' : 'Partner removed');
   renderMyRegistration(true);
 }
 
@@ -406,6 +423,23 @@ async function confirmRegistration(){
     myMembership = null;
   }
 
+  // If the chosen partner already invited ME to this same league, this is a
+  // mutual choice — accept their invite instead of creating a competing one.
+  // (The edge function creates my membership row as part of accepting.)
+  if(partnerUserId){
+    const mutual = await fetchInviteFrom(partnerUserId, selectedLeague.id);
+    if(mutual){
+      const ok = await respondPartnerInvite(partnerUserId, 'accept');
+      if(!ok.success){
+        btn.disabled=false; btn.textContent='Register for '+selectedLeague.name;
+        msg.className='msg error'; msg.textContent = ok.error || 'Could not accept partner invite.';
+        return;
+      }
+      showRegSuccess(`You and <strong>${partnerName}</strong> are now partners — they had already chosen you!`);
+      return;
+    }
+  }
+
   const { error } = await sb.from('league_members').insert({
     league_id: selectedLeague.id,
     season_id: activeSeasonId,
@@ -416,6 +450,7 @@ async function confirmRegistration(){
     email: p.email,
     phone: p.phone,
     partner_name: partnerName,
+    partner_status: partnerUserId ? 'pending' : null,
     status: 'active'
   });
 
@@ -462,16 +497,48 @@ async function confirmRegistration(){
     })
   }).catch(()=>{});
 
+  showRegSuccess(partnerName ? `Your partner: <strong>${partnerName}</strong> — they'll be asked to accept next time they sign in.` : '');
+}
+
+function showRegSuccess(partnerLine){
   document.getElementById('page').innerHTML = `
     <div class="success-wrap" style="display:block">
       <div class="success-icon">🎉</div>
       <h2>You're Registered!</h2>
-      <p>You've joined <strong>${selectedLeague.name}</strong> for ${activeSeasonName}.${partnerName?` Your partner: <strong>${partnerName}</strong>.`:''}</p>
+      <p>You've joined <strong>${selectedLeague.name}</strong> for ${activeSeasonName}.${partnerLine ? ' ' + partnerLine : ''}</p>
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <a class="btn btn-primary" href="dev-dashboard.html" style="text-decoration:none;max-width:200px">My Dashboard</a>
         <a class="btn btn-primary" href="dev-signup.html" style="text-decoration:none;max-width:200px;background:transparent;color:var(--navy)">Manage Registration</a>
       </div>
     </div>`;
+}
+
+// Does `otherUserId` have an active registration in `leagueId` that names ME
+// as their (pending) partner?
+async function fetchInviteFrom(otherUserId, leagueId){
+  try{
+    const { data } = await sb.from('league_members').select('id,partner_status')
+      .eq('user_id', otherUserId).eq('season_id', activeSeasonId)
+      .eq('league_id', leagueId).eq('status','active')
+      .eq('partner_user_id', currentUser.id).maybeSingle();
+    return data || null;
+  }catch(e){ return null; }
+}
+
+// Accept/decline a partner invite via the self-service edge function.
+async function respondPartnerInvite(fromUserId, action){
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session) return { success:false, error:'Not signed in' };
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/respond-partner-invite`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+session.access_token },
+      body: JSON.stringify({ fromUserId, seasonId: activeSeasonId, action })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.success) return { success:false, error: j.error || 'Request failed' };
+    return j;
+  }catch(e){ return { success:false, error: e.message }; }
 }
 
 async function doLogout(){

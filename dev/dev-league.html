@@ -445,15 +445,16 @@ async function renderRoster(){
     for(const m of members){
       if(consumed.has(m.user_id)) continue;
       consumed.add(m.user_id);
+      const isPending = m.partner_status === 'pending';
       let partnerLabel = m.partner_name || '';
-      if(m.partner_user_id){
+      if(m.partner_user_id && !isPending){
         const pRow = members.find(x => x.user_id === m.partner_user_id);
         if(pRow && (!pRow.partner_user_id || pRow.partner_user_id === m.user_id)){
           consumed.add(pRow.user_id);
           partnerLabel = `${pRow.first_name||''} ${pRow.last_name||''}`.trim() || partnerLabel;
         }
       }
-      rows.push({ main: `${m.first_name||''} ${m.last_name||''}`.trim(), partner: partnerLabel });
+      rows.push({ main: `${m.first_name||''} ${m.last_name||''}`.trim(), partner: isPending ? '' : partnerLabel, pending: isPending, pendingName: isPending ? partnerLabel : '' });
     }
     if(sub) sub.textContent = rows.length + (rows.length===1?' team':' teams') + (isRegistrationOpen(viewingSeason) ? ' — registration open' : '');
   } else {
@@ -472,7 +473,7 @@ async function renderRoster(){
       ${rows.map((r,i)=>`
         <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
           <span style="font-family:var(--font-display);font-weight:700;color:var(--muted);width:24px">${i+1}</span>
-          <span style="font-weight:600;color:var(--navy);flex:1">${r.main}${r.partner?` <span style="color:var(--muted);font-weight:400">/ ${r.partner}</span>`:isPartner?` <span style="color:var(--danger);font-weight:400;font-size:12px">— needs partner</span>`:''}</span>
+          <span style="font-weight:600;color:var(--navy);flex:1">${r.main}${r.partner?` <span style="color:var(--muted);font-weight:400">/ ${r.partner}</span>`:r.pending?` <span style="color:#b8860b;font-weight:400;font-size:12px">— partner invite pending${r.pendingName?` (${r.pendingName})`:''}</span>`:isPartner?` <span style="color:var(--danger);font-weight:400;font-size:12px">— needs partner</span>`:''}</span>
         </div>`).join('')}
     </div>
     <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:1rem">The schedule and standings will appear once the season begins.</p>`;

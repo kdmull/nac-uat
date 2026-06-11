@@ -486,7 +486,7 @@ async function renderAdminRoster(){
   if(isPartner){
     const teams = buildPartnerUnits(members);
     el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${teams.map(t=>
-      `<span style="background:${t.complete?'var(--surface)':'rgba(217,59,59,.08)'};padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:${t.complete?'var(--navy)':'var(--danger)'}">${t.label}${t.complete?'':' — needs partner'}</span>`
+      `<span style="background:${t.complete?'var(--surface)':t.pending?'rgba(184,134,11,.1)':'rgba(217,59,59,.08)'};padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:${t.complete?'var(--navy)':t.pending?'#b8860b':'var(--danger)'}">${t.label}${t.complete?'':t.pending?' — invite pending':' — needs partner'}</span>`
     ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${teams.length} team${teams.length!==1?'s':''} · ${members.length} registration${members.length!==1?'s':''}</p>`;
     return;
   }
@@ -552,8 +552,12 @@ function buildPartnerUnits(members){
     if(consumed.has(m.user_id)) continue;
     consumed.add(m.user_id);
     const a = initialOf(m);
-    let b = '', complete = false;
-    if(m.partner_user_id){
+    let b = '', complete = false, pending = false;
+    if(m.partner_user_id && m.partner_status === 'pending'){
+      // Invite not yet accepted — don't pair, don't consume the invitee's row
+      b = fromFull(m.partner_name);
+      pending = true; complete = false;
+    } else if(m.partner_user_id){
       const pRow = members.find(x => x.user_id === m.partner_user_id);
       if(pRow && !consumed.has(pRow.user_id) &&
          (!pRow.partner_user_id || pRow.partner_user_id === m.user_id)){
@@ -569,7 +573,7 @@ function buildPartnerUnits(members){
     } else if(m.partner_name){
       b = fromFull(m.partner_name); complete = !!b;
     }
-    teams.push({ a, b, complete, label: b ? `${a} / ${b}` : a });
+    teams.push({ a, b, complete, pending, label: b ? `${a} / ${b}` : a });
   }
   return teams;
 }

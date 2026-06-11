@@ -189,6 +189,82 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null;
 let currentProfile = null;
 let myMembership = null;
+let pendingInvites = [];     // league_members rows where someone chose ME as partner (pending)
+
+async function loadPartnerInvites(){
+  pendingInvites = [];
+  try{
+    const seasonId = currentSeason?.id || 'spring2026';
+    const { data } = await supabaseClient.from('league_members')
+      .select('user_id,first_name,last_name,league_id')
+      .eq('season_id', seasonId).eq('status','active')
+      .eq('partner_user_id', currentUser.id).eq('partner_status','pending');
+    pendingInvites = data || [];
+  }catch(e){ console.warn('invite load failed:', e); }
+}
+
+async function respondInvite(fromUserId, action, btnEl){
+  if(btnEl){ btnEl.disabled = true; btnEl.textContent = action==='accept' ? 'Accepting…' : 'Declining…'; }
+  try{
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    if(!session) throw new Error('Not signed in');
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/respond-partner-invite`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+session.access_token },
+      body: JSON.stringify({ fromUserId, seasonId: currentSeason?.id || 'spring2026', action })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || !j.success) throw new Error(j.error || 'Request failed');
+    // Reload everything the response may have changed (membership, schedule, invites)
+    await loadMyMembership();
+    await loadPartnerInvites();
+    await loadMySchedule();
+    recomputeMyMatches && recomputeMyMatches();
+    render();
+  }catch(e){
+    alert((action==='accept'?'Could not accept: ':'Could not decline: ') + (e.message || 'unknown error'));
+    if(btnEl){ btnEl.disabled = false; btnEl.textContent = action==='accept' ? 'Accept' : 'Decline'; }
+  }
+}
+
+// Inviter-side notice: my own invite was declined — clear it once seen.
+async function dismissDeclineNotice(){
+  try{
+    await supabaseClient.from('league_members')
+      .update({ partner_status: null }).eq('id', myMembership.id);
+    myMembership.partner_status = null;
+    render();
+  }catch(e){ console.warn(e); }
+}
+
+function inviteBannersHtml(){
+  let html = '';
+  for(const inv of pendingInvites){
+    const name = `${inv.first_name||''} ${inv.last_name||''}`.trim() || 'A player';
+    const lg = LEAGUE_NAMES[inv.league_id] || inv.league_id;
+    html += `
+    <div style="background:rgba(76,175,40,.08);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:20px">🤝</span>
+      <span style="flex:1;min-width:200px;font-size:14px;color:var(--navy)"><strong>${name}</strong> chose you as their doubles partner in <strong>${lg}</strong>. Accepting registers you as a team.</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-green" style="padding:7px 16px;font-size:13px" onclick="respondInvite('${inv.user_id}','accept',this)">Accept</button>
+        <button class="btn btn-ghost" style="padding:7px 16px;font-size:13px" onclick="respondInvite('${inv.user_id}','decline',this)">Decline</button>
+      </div>
+    </div>`;
+  }
+  if(myMembership && myMembership.partner_status === 'declined'){
+    html += `
+    <div style="background:rgba(217,59,59,.06);border:1.5px solid var(--danger);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:20px">⚠️</span>
+      <span style="flex:1;min-width:200px;font-size:14px;color:var(--navy)">Your partner invite was <strong>declined</strong>. Pick a new partner so you can be scheduled.</span>
+      <div style="display:flex;gap:8px">
+        <a class="btn btn-primary" href="dev-signup.html" style="padding:7px 16px;font-size:13px;text-decoration:none">Choose Partner</a>
+        <button class="btn btn-ghost" style="padding:7px 16px;font-size:13px" onclick="dismissDeclineNotice()">Dismiss</button>
+      </div>
+    </div>`;
+  }
+  return html;
+}
 let myMatches = [];          // [{week, idx, m}]
 let myByes = [];             // [weekNumber]
 let myName = '';             // derived "First L." used to find the player in the schedule
@@ -211,6 +287,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   await loadProfile();
   await loadSeasons();          // shared-dev.js -> sets currentSeason / viewingSeason
   await loadMyMembership();     // -> myMembership for the active season
+  await loadPartnerInvites();   // -> pendingInvites (people who chose me as partner)
   await loadMySchedule();       // -> currentLeague + schedule + myMatches/myByes
   ratingsLoading = !!(currentProfile && currentProfile.dupr_id);
   render();
@@ -292,6 +369,7 @@ function render(){
   const p = currentProfile;
   const initials = ((p.first_name||'')[0]||'') + ((p.last_name||'')[0]||'');
   document.getElementById('page').innerHTML = `
+    ${inviteBannersHtml()}
     <div class="profile-header">
       <div class="profile-avatar">${initials.toUpperCase()||'?'}</div>
       <div class="profile-header-info">
@@ -310,7 +388,7 @@ function render(){
       ${myMembership ? `
         <div class="dupr-status" style="flex-wrap:wrap">
           <span class="val">${LEAGUE_NAMES[myMembership.league_id]||myMembership.league_id}</span>
-          ${myMembership.partner_name ? `<span class="label">Partner: ${myMembership.partner_name}</span>` : ''}
+          ${myMembership.partner_name ? `<span class="label">Partner: ${myMembership.partner_name}${myMembership.partner_status==='pending'?' (pending acceptance)':''}</span>` : ''}
           <span class="badge-linked">Registered</span>
         </div>
         <a class="btn btn-ghost" href="dev-signup.html" style="display:inline-block;text-decoration:none;margin-top:1rem">Switch / Edit</a>
