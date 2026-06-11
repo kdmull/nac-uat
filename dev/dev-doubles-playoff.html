@@ -106,6 +106,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 @keyframes spin{to{transform:rotate(360deg)}}
 
 @media(max-width:768px){
+  [data-account-nav]{width:100%;justify-content:center}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important}
   nav{flex-wrap:wrap}
   .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
   .nav-logo{height:36px}

@@ -79,6 +79,8 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
 .toast.show{transform:translateY(0);opacity:1}
 @media(max-width:768px){
+  [data-account-nav]{width:100%;justify-content:center}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important}
   nav{flex-wrap:wrap}
   .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
   .nav-logo{height:36px}
