@@ -186,6 +186,10 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <option value="singles">Singles League</option>
       </select>
     </div>
+    <div class="fg" id="e-partner-wrap" style="display:none"><label>Partner (this league)</label>
+      <select id="e-partner"></select>
+      <small style="color:var(--muted);font-size:12px;margin-top:4px">Admin pairing applies immediately, no acceptance needed. Both players' links update. Partner must be in the same league.</small>
+    </div>
     <label class="fg-check"><input type="checkbox" id="e-admin"/> <span>Admin access</span></label>
     <div class="edit-msg" id="edit-msg"></div>
     <div class="acct-modal-actions" style="justify-content:space-between">
@@ -215,6 +219,7 @@ let sortDir = 1;            // 1 asc, -1 desc
 let loadNotice = '';
 let myUserId = null;       // logged-in admin's own id, to prevent self-deletion
 let activeSeasonId = 'spring2026';  // season the League column / edits apply to
+let seasonLeagueTypes = {};         // { leagueId: 'individual' | 'partner' }
 
 // ---- Auth gate (mirrors dev-admin.html) ----
 async function isAdminAccount(){
@@ -267,6 +272,7 @@ async function loadAccounts(){
     await loadSeasons();   // shared-dev.js -> currentSeason
     const seasonId = currentSeason?.id || 'spring2026';
     activeSeasonId = seasonId;
+    seasonLeagueTypes = (currentSeason && currentSeason.leagueTypes) || {};
     document.getElementById('season-label').textContent =
       `League column reflects ${currentSeason?.name || seasonId}`;
 
@@ -286,7 +292,9 @@ async function loadAccounts(){
         duprId: p.dupr_id || '',
         isAdmin: !!p.is_admin,
         leagueId: m ? m.league_id : '',
-        partner: m ? (m.partner_name || '') : ''
+        partner: m ? (m.partner_name || '') : '',
+        partnerUserId: m ? (m.partner_user_id || '') : '',
+        partnerStatus: m ? (m.partner_status || '') : ''
       };
     });
 
@@ -366,7 +374,7 @@ function renderRows(){
                 ? `<span class="badge linked">${a.duprId}</span>`
                 : `<span class="badge unlinked">Not linked</span>`}</td>
               <td>${a.leagueId
-                ? `<span class="badge league">${LEAGUE_NAMES[a.leagueId]||a.leagueId}</span>${a.partner?` <span class="muted">+ ${a.partner}</span>`:''}`
+                ? `<span class="badge league">${LEAGUE_NAMES[a.leagueId]||a.leagueId}</span>${a.partner?` <span class="muted">+ ${a.partner}${a.partnerStatus==='pending'?' (pending)':''}</span>`:''}`
                 : `<span class="badge none muted">—</span>`}</td>
               <td><button class="btn-edit" onclick="openEdit('${a.id}')">Edit</button></td>
             </tr>`).join('')}
@@ -376,6 +384,26 @@ function renderRows(){
 }
 // ---- Edit profile ----
 let editingId = null;
+
+// Show/populate the Partner dropdown based on the league chosen in the modal.
+// Options = other accounts currently registered in that league this season.
+function refreshPartnerSelect(){
+  const wrap = document.getElementById('e-partner-wrap');
+  const sel = document.getElementById('e-partner');
+  const lid = document.getElementById('e-league').value;
+  const isPartnerLeague = lid && seasonLeagueTypes[lid] === 'partner';
+  if(!isPartnerLeague){ wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+
+  const a = accounts.find(x => x.id === editingId);
+  const sameLeague = accounts.filter(x => x.leagueId === lid && x.id !== editingId);
+  const currentPid = (a && a.leagueId === lid) ? (a.partnerUserId || '') : '';
+  sel.innerHTML = `<option value="">— No partner —</option>` +
+    sameLeague.map(x => {
+      const taken = x.partnerUserId && x.partnerUserId !== editingId;
+      return `<option value="${x.id}" ${x.id===currentPid?'selected':''}>${x.name}${taken?` (paired w/ ${x.partner||'someone'})`:''}</option>`;
+    }).join('');
+  wrap.style.display = '';
+}
 
 function openEdit(id){
   const a = accounts.find(x => x.id === id);
@@ -387,6 +415,8 @@ function openEdit(id){
   document.getElementById('e-phone').value = a.phone || '';
   document.getElementById('e-dupr').value  = a.duprId || '';
   document.getElementById('e-league').value = a.leagueId || '';
+  refreshPartnerSelect();
+  document.getElementById('e-league').onchange = refreshPartnerSelect;
   document.getElementById('e-admin').checked = a.isAdmin;
   const m = document.getElementById('edit-msg'); m.textContent=''; m.className='edit-msg';
   document.getElementById('edit-modal').classList.add('open');
@@ -416,19 +446,40 @@ async function saveEdit(){
   const newLeague = document.getElementById('e-league').value;
   const a0 = accounts.find(x => x.id === editingId);
   const origLeague = a0 ? (a0.leagueId || '') : '';
+  const partnerWrapVisible = document.getElementById('e-partner-wrap').style.display !== 'none';
+  const newPartner = partnerWrapVisible ? (document.getElementById('e-partner').value || '') : '';
+  const origPartner = (a0 && origLeague === newLeague) ? (a0.partnerUserId || '') : '';
 
   btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent=''; msg.className='edit-msg';
   try{
     await callAdminFn('admin-update-profile', { userId: editingId, patch });
-    if(newLeague !== origLeague){
+    const leagueChanged = newLeague !== origLeague;
+    if(leagueChanged){
       await callAdminFn('admin-manage-membership', { userId: editingId, seasonId: activeSeasonId, leagueId: newLeague || null });
+    }
+    // Partner applies when: it changed, or the league changed and a partner was picked
+    // (a league move clears the old pairing server-side).
+    let partnerResult = null;
+    if(newLeague && partnerWrapVisible && (newPartner !== origPartner || (leagueChanged && newPartner))){
+      partnerResult = await callAdminFn('admin-set-partner', { userId: editingId, seasonId: activeSeasonId, partnerUserId: newPartner || null });
     }
     const a = accounts.find(x => x.id === editingId);
     if(a){
       a.first = patch.first_name; a.last = patch.last_name;
       a.name = `${patch.first_name} ${patch.last_name}`.trim() || '(no name)';
       a.email = patch.email; a.phone = patch.phone; a.isAdmin = patch.is_admin;
-      if(newLeague !== origLeague){ a.leagueId = newLeague; a.partner = ''; }
+      if(leagueChanged){ a.leagueId = newLeague; a.partner = ''; a.partnerUserId = ''; a.partnerStatus = ''; }
+      if(partnerResult){
+        a.partnerUserId = newPartner;
+        a.partner = newPartner ? (partnerResult.partnerName || (accounts.find(x=>x.id===newPartner)||{}).name || '') : '';
+        a.partnerStatus = newPartner ? 'accepted' : '';
+        // Reflect the change on the other accounts involved (new partner + any ex-partners)
+        accounts.forEach(x => {
+          if(x.id === newPartner){ x.partnerUserId = editingId; x.partner = a.name; x.partnerStatus = 'accepted'; }
+          else if(x.id !== editingId && x.partnerUserId === editingId){ x.partnerUserId=''; x.partner=''; x.partnerStatus=''; }
+          else if(newPartner && x.id !== editingId && x.id !== newPartner && x.partnerUserId === newPartner){ x.partnerUserId=''; x.partner=''; x.partnerStatus=''; }
+        });
+      }
     }
     renderStats(); renderRows();
     closeEdit();
