@@ -251,6 +251,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="beginner" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
             <span style="flex:1;font-size:13px;font-weight:600">19-49 Intermediate</span>
@@ -258,6 +260,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="int1949" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
             <span style="flex:1;font-size:13px;font-weight:600">50+ Intermediate</span>
@@ -265,6 +269,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="int50" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
             <span style="flex:1;font-size:13px;font-weight:600">19-49 Advanced</span>
@@ -272,6 +278,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="adv1949" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
             <span style="flex:1;font-size:13px;font-weight:600">50+ Advanced</span>
@@ -279,6 +287,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="adv50" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
             <span style="flex:1;font-size:13px;font-weight:600">Singles</span>
@@ -286,6 +296,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
               <option value="individual">Individual</option>
               <option value="partner">Partner</option>
             </select>
+            <input class="admin-input reg-weeks-inp" data-league="singles" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+            <span style="font-size:11px;color:var(--muted)">wks</span>
           </div>
         </div>
         <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
@@ -535,7 +547,11 @@ async function generateTeamRoundRobin(){
   const teams = all.filter(t => t.complete && t.a && t.b);
   const skipped = all.length - teams.length;
   if(teams.length < 2){ showToast('Need at least 2 complete teams'); return; }
-  let warn = `Generate a full round robin for ${teams.length} teams (${teams.length-1} weeks, every team plays every other team once)?`;
+  const weeks = leagueWeekCount(currentSeason, currentLeague.id);
+  const cycleLen = (teams.length % 2 ? teams.length : teams.length - 1);  // rounds per full round robin
+  let warn = `Generate a ${weeks}-week schedule for ${teams.length} teams?`;
+  if(weeks <= cycleLen) warn += `\n\nEach team plays a different opponent each week (full round robin is ${cycleLen} weeks).`;
+  else warn += `\n\nA full round robin is ${cycleLen} weeks, so some matchups will repeat to fill ${weeks} weeks.`;
   if(skipped) warn += `\n\n${skipped} registration(s) without a partner will be left out.`;
   if(schedule.length) warn += `\n\nThis REPLACES the current schedule (existing scores will be lost until you Save — cancel now if unsure).`;
   if(!confirm(warn)) return;
@@ -548,12 +564,12 @@ async function generateTeamRoundRobin(){
   partnerTeams = teams;
   rebuildPartnerMap(teams);
 
-  // Circle method
+  // Circle method, repeating the rotation if weeks > one full round robin
   const arr = teams.slice();
   if(arr.length % 2) arr.push(null);   // bye slot
-  const n = arr.length, rounds = n - 1;
+  const n = arr.length;
   schedule = [];
-  for(let r = 0; r < rounds; r++){
+  for(let r = 0; r < weeks; r++){
     const matches = [];
     for(let i = 0; i < n/2; i++){
       const t1 = arr[i], t2 = arr[n-1-i];
@@ -563,7 +579,7 @@ async function generateTeamRoundRobin(){
     arr.splice(1, 0, arr.pop());       // rotate, first team fixed
   }
   renderAdminPanel();
-  showToast(`${rounds}-week round robin generated — review & hit Save to sync`);
+  showToast(`${weeks}-week schedule generated — review & hit Save to sync`);
 }
 
 // Build deduped team units from league_members rows (partner leagues).// Each registrant has their own row pointing at their partner via
@@ -670,18 +686,32 @@ function renderSeasonsAdmin(){
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
             ${LEAGUES.map(l => {
               const t = (s.leagueTypes && s.leagueTypes[l.id]) || 'individual';
+              const wk = leagueWeekCount(s, l.id);
               return `<div style="display:flex;align-items:center;gap:8px;background:var(--white);padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border)">
                 <span style="flex:1;font-size:13px;font-weight:600;color:var(--navy)">${l.name}</span>
                 <select class="admin-input" style="width:auto;font-size:12px" onchange="updateLeagueType('${s.id}','${l.id}',this.value)">
                   <option value="individual"${t==='individual'?' selected':''}>Individual</option>
                   <option value="partner"${t==='partner'?' selected':''}>Partner</option>
                 </select>
+                <input class="admin-input" type="number" min="1" max="30" value="${wk}" title="Weeks" style="width:58px;font-size:12px" onchange="updateLeagueWeeks('${s.id}','${l.id}',this.value)"/>
+                <span style="font-size:11px;color:var(--muted)">wks</span>
               </div>`;
             }).join('')}
           </div>
         </div>` : ''}
     </div>`;
   }).join('');
+}
+
+async function updateLeagueWeeks(seasonId, leagueId, value){
+  const s = allSeasons.find(x => x.id === seasonId);
+  if(!s) return;
+  const n = parseInt(value, 10);
+  if(!(n >= 1 && n <= 30)){ showToast('Weeks must be 1-30'); renderSeasonsAdmin(); return; }
+  const leagueWeeks = Object.assign({}, s.leagueWeeks || {});
+  leagueWeeks[leagueId] = n;
+  await updateSeasonField(seasonId, { leagueWeeks });
+  showToast(LEAGUES.find(l=>l.id===leagueId)?.name + ' set to ' + n + ' weeks');
 }
 
 async function updateLeagueType(seasonId, leagueId, type){
@@ -709,8 +739,13 @@ async function createNewSeason(){
   document.querySelectorAll('.reg-type-sel').forEach(sel => {
     leagueTypes[sel.dataset.league] = sel.value;
   });
+  const leagueWeeks = {};
+  document.querySelectorAll('.reg-weeks-inp').forEach(inp => {
+    const n = parseInt(inp.value, 10);
+    leagueWeeks[inp.dataset.league] = (n >= 1 && n <= 30) ? n : 8;
+  });
   const deadline = document.getElementById('new-season-deadline').value || null;
-  await startNewSeason(name, leagueTypes, deadline);
+  await startNewSeason(name, leagueTypes, deadline, leagueWeeks);
   // New season: every league starts empty — players fill in as they register.
   // Do NOT seed the hardcoded default schedule/players.
   schedule = [];

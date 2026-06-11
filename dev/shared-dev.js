@@ -247,12 +247,13 @@ async function loadSeasons(){
 async function saveSeasons(activeId){
   await dbSet('nac_seasons', {active: activeId, seasons: allSeasons});
 }
-async function startNewSeason(name, leagueTypes, regDeadline){
+async function startNewSeason(name, leagueTypes, regDeadline, leagueWeeks){
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
   const newSeason = {
     id, name,
     created: new Date().toISOString(),
     leagueTypes: leagueTypes || {},
+    leagueWeeks: leagueWeeks || {},   // weeks per league (default 8 when unset)
     regDeadline: regDeadline || null,
     regOpen: true,
     scheduleGenerated: {}
@@ -303,6 +304,12 @@ function isScheduleGenerated(season, leagueId){
   if(!season.scheduleGenerated) return true;
   return !!season.scheduleGenerated[leagueId];
 }
+function leagueWeekCount(season, leagueId){
+  const w = season && season.leagueWeeks && season.leagueWeeks[leagueId];
+  const n = parseInt(w, 10);
+  return (n >= 1 && n <= 30) ? n : 8;   // default 8 weeks
+}
+
 function isViewingActiveSeason(){
   return viewingSeason && currentSeason && viewingSeason.id === currentSeason.id;
 }
