@@ -18,6 +18,15 @@ const LEAGUES = [
 // data yet or a fetch failed.)
 let schedule = [];
 let PLAYERS = [];
+
+// Display-only name formatting: strips the trailing period from the canonical
+// "First L." identity format (so standings/cards show "First L"). NEVER use
+// the result for lookups or comparisons — stored names keep the period.
+function displayName(n){
+  // Only strip the period from a single-letter initial (" C." -> " C"),
+  // leaving legitimate periods in names like "St. John" untouched.
+  return (n||'').replace(/(\s[A-Za-z])\.(?=\s|$)/g, '$1');
+}
 let scheduleWeek=1, scoresWeek=1, currentModalMatch=null, lastSynced=null;
 let scoreAuthed=false;
 let currentLeague=null; // full league object from LEAGUES array
@@ -351,24 +360,24 @@ function matchCardHTML(m,i,showScoreBtn){
   const r=seriesResult(m);
   const gamesPlayed=(m.games||[]).filter(g=>g.s1!==null).length;
   const scoreStr=r.complete
-    ?`<span style="color:var(--green-dark);font-size:13px;font-weight:700">${r.winner}</span> wins ${r.p1w>r.p2w?r.p1w+'-'+r.p2w:r.p2w+'-'+r.p1w}`
+    ?`<span style="color:var(--green-dark);font-size:13px;font-weight:700">${displayName(r.winner)}</span> wins ${r.p1w>r.p2w?r.p1w+'-'+r.p2w:r.p2w+'-'+r.p1w}`
     :(gamesPlayed>0?`Game ${gamesPlayed+1}`:'—');
   const playersHTML=r.isDoubles
     ?`<div class="doubles-match-layout">
         <div class="doubles-team${r.winner===r.team1?' winner':''}">
-          <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1a}</span>
-          <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1b}</span>
+          <span class="match-player${r.winner===r.team1?' winner':''}">${displayName(m.p1a)}</span>
+          <span class="match-player${r.winner===r.team1?' winner':''}">${displayName(m.p1b)}</span>
         </div>
         <span class="vs-badge">vs</span>
         <div class="doubles-team${r.winner===r.team2?' winner':''}">
-          <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2a}</span>
-          <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2b}</span>
+          <span class="match-player${r.winner===r.team2?' winner':''}">${displayName(m.p2a)}</span>
+          <span class="match-player${r.winner===r.team2?' winner':''}">${displayName(m.p2b)}</span>
         </div>
       </div>`
     :`<div class="match-players">
-        <span class="match-player${r.winner===r.team1?' winner':''}">${m.p1}</span>
+        <span class="match-player${r.winner===r.team1?' winner':''}">${displayName(m.p1)}</span>
         <span class="vs-badge">vs</span>
-        <span class="match-player${r.winner===r.team2?' winner':''}">${m.p2}</span>
+        <span class="match-player${r.winner===r.team2?' winner':''}">${displayName(m.p2)}</span>
       </div>`;
   const actionHTML=showScoreBtn
     ?`<button class="score-btn" onclick="openModal(${m._week},${i})">${r.complete?'Edit':'Enter Scores'}</button>`
@@ -383,7 +392,7 @@ function matchCardHTML(m,i,showScoreBtn){
 
 function byeCardHTML(byePlayer){
   if(!byePlayer)return'';
-  return`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:10px 18px;display:flex;align-items:center;gap:16px;color:var(--muted)"><div class="match-num">BYE</div><div style="flex:1;font-size:14px"><span style="font-weight:600;color:var(--navy)">${byePlayer}</span> has a bye this week</div></div>`;
+  return`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:10px 18px;display:flex;align-items:center;gap:16px;color:var(--muted)"><div class="match-num">BYE</div><div style="flex:1;font-size:14px"><span style="font-weight:600;color:var(--navy)">${displayName(byePlayer)}</span> has a bye this week</div></div>`;
 }
 
 function showToast(msg){
@@ -399,8 +408,8 @@ function openModal(week,idx){
   m._week=week;
   currentModalMatch={week,idx};
   const r=seriesResult(m);
-  document.getElementById('modal-p1').textContent=r.team1;
-  document.getElementById('modal-p2').textContent=r.team2;
+  document.getElementById('modal-p1').textContent=displayName(r.team1);
+  document.getElementById('modal-p2').textContent=displayName(r.team2);
   const r2=seriesResult(m);
   const lbl1=document.getElementById('col-p1-label');
   if(lbl1)lbl1.textContent=r2.isDoubles?m.p1a.split(' ')[0]+'/'+m.p1b.split(' ')[0]:m.p1.split(' ')[0];

@@ -145,7 +145,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Update back button
 
-  document.title = `${playerName} — NAC Pickleball`;
+  document.title = `${displayName(playerName)} — NAC Pickleball`;
   document.getElementById('league-banner').textContent = currentLeague?.name || '';
 
   // Wire up nav tabs
@@ -224,7 +224,7 @@ function renderProfile(playerName, leagueId) {
     <div class="profile-header">
       <div class="profile-avatar">${initials}</div>
       <div class="profile-info">
-        <div class="profile-name">${playerName}</div>
+        <div class="profile-name">${displayName(playerName)}</div>
         <div class="profile-league">${currentLeague.name}</div>
         <div class="profile-rank">${rank ? rankLabel : '—'}</div>
       </div>

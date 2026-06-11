@@ -517,7 +517,7 @@ async function renderStandings(){
   document.getElementById('standings-subtitle').textContent=`${played} matches played this season`;
   document.getElementById('league-stats').innerHTML=[
     ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
-    ['Leader',rows[0]?.p||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+    ['Leader',displayName(rows[0]?.p)||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
   ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
   document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
     const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
@@ -539,7 +539,7 @@ async function renderStandings(){
         const ratingNum = typeof rating === 'number' ? rating.toFixed(2) : rating;
         return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${ratingNum}</a>`;
       })()}</td>
-      <td><a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${r.p}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
+      <td><a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(r.p)}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
       <td class="num">${r.w}</td><td class="num">${r.l}</td>
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
@@ -593,7 +593,7 @@ function renderTeamStandings(){
     `${rows.length} teams · ${played} matches played this season`;
   document.getElementById('league-stats').innerHTML=[
     ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
-    ['Leader',rows[0]?.label||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+    ['Leader',displayName(rows[0]?.label)||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
   ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
 
   const ratingHtml = (name)=>{
@@ -604,7 +604,7 @@ function renderTeamStandings(){
     const num = typeof rating === 'number' ? rating.toFixed(2) : rating;
     return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${num}</a>`;
   };
-  const playerLink = (name)=>`<a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(name)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${name}</span></a>`;
+  const playerLink = (name)=>`<a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(name)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(name)}</span></a>`;
 
   document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
     const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';

@@ -484,13 +484,13 @@ function matchRowHTML({week, idx, m}){
     const me = onTeam1 ? team1 : team2;
     const opp = onTeam1 ? team2 : team1;
     const partner = me.find(s => !nameMatches(s, myName)) || '';
-    mySide = `You${partner ? ' + ' + partner : ''}`;
-    oppSide = opp.filter(Boolean).join(' / ');
+    mySide = `You${partner ? ' + ' + displayName(partner) : ''}`;
+    oppSide = opp.filter(Boolean).map(displayName).join(' / ');
     var mySideTeam = onTeam1 ? r.team1 : r.team2;
   } else {
     const onP1 = nameMatches(m.p1, myName);
     mySide = 'You';
-    oppSide = onP1 ? m.p2 : m.p1;
+    oppSide = displayName(onP1 ? m.p2 : m.p1);
     var mySideTeam = onP1 ? r.team1 : r.team2;
   }
 
