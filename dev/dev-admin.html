@@ -415,16 +415,16 @@ function renderAdminMatches(){
     const r=seriesResult(m);
     const t1=isDoubles
       ?`<div style="display:flex;flex-direction:column;gap:3px">
-          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1a=this.value">${playerOpts(m.p1a)}</select>
-          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1b=this.value">${playerOpts(m.p1b)}</select>
+          <select class="admin-input" onchange="setMatchPlayer(${week},${i},'p1a',this.value)">${playerOpts(m.p1a)}</select>
+          <select class="admin-input" onchange="setMatchPlayer(${week},${i},'p1b',this.value)">${playerOpts(m.p1b)}</select>
         </div>`
-      :`<select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p1=this.value">${playerOpts(m.p1)}</select>`;
+      :`<select class="admin-input" onchange="setMatchPlayer(${week},${i},'p1',this.value)">${playerOpts(m.p1)}</select>`;
     const t2=isDoubles
       ?`<div style="display:flex;flex-direction:column;gap:3px">
-          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2a=this.value">${playerOpts(m.p2a)}</select>
-          <select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2b=this.value">${playerOpts(m.p2b)}</select>
+          <select class="admin-input" onchange="setMatchPlayer(${week},${i},'p2a',this.value)">${playerOpts(m.p2a)}</select>
+          <select class="admin-input" onchange="setMatchPlayer(${week},${i},'p2b',this.value)">${playerOpts(m.p2b)}</select>
         </div>`
-      :`<select class="admin-input" onchange="schedule.find(w=>w.week===${week}).matches[${i}].p2=this.value">${playerOpts(m.p2)}</select>`;
+      :`<select class="admin-input" onchange="setMatchPlayer(${week},${i},'p2',this.value)">${playerOpts(m.p2)}</select>`;
     return`<div class="admin-match-row">
       <span style="color:var(--muted);font-family:var(--font-display);font-size:12px;text-transform:uppercase">M${i+1}</span>
       ${t1}
@@ -479,12 +479,15 @@ async function renderAdminRoster(){
   const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
   const rrBtn = document.getElementById('gen-rr-btn');
   if(rrBtn) rrBtn.style.display = isPartner ? '' : 'none';
+  if(!isPartner) rebuildPartnerMap([]);
   if(!members.length){
     el.innerHTML = '<p style="color:var(--muted);font-size:13px">No players registered for this league yet.</p>';
     return;
   }
   if(isPartner){
     const teams = buildPartnerUnits(members);
+    partnerTeams = teams;
+    rebuildPartnerMap(teams);
     el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${teams.map(t=>
       `<span style="background:${t.complete?'var(--surface)':t.pending?'rgba(184,134,11,.1)':'rgba(217,59,59,.08)'};padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:${t.complete?'var(--navy)':t.pending?'#b8860b':'var(--danger)'}">${t.label}${t.complete?'':t.pending?' — invite pending':' — needs partner'}</span>`
     ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${teams.length} team${teams.length!==1?'s':''} · ${members.length} registration${members.length!==1?'s':''}</p>`;
@@ -496,6 +499,31 @@ async function renderAdminRoster(){
 }
 
 let partnerTeams = [];  // [{a, b, complete, label}] for partner leagues
+let partnerByName = {}; // lowercase name -> partner's display name (complete teams only)
+
+function rebuildPartnerMap(teams){
+  partnerByName = {};
+  for(const t of (teams||[])){
+    if(t.complete && t.a && t.b){
+      partnerByName[t.a.toLowerCase()] = t.b;
+      partnerByName[t.b.toLowerCase()] = t.a;
+    }
+  }
+}
+
+// Schedule editor select handler. In partner leagues, picking a player on a
+// doubles slot auto-fills their partner into the adjacent slot.
+function setMatchPlayer(week, idx, slot, value){
+  const m = schedule.find(w=>w.week===week).matches[idx];
+  m[slot] = value;
+  const companion = { p1a:'p1b', p1b:'p1a', p2a:'p2b', p2b:'p2a' }[slot];
+  if(companion){
+    const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
+    const partner = isPartner ? partnerByName[(value||'').toLowerCase()] : null;
+    if(partner && PLAYERS.includes(partner)) m[companion] = partner;
+  }
+  renderAdminMatches();
+}
 
 // Full team round robin for partner leagues: every team plays every other team
 // once, one round per week (circle method; odd team count = one bye per week).
@@ -518,6 +546,7 @@ async function generateTeamRoundRobin(){
     if(!seen.has(n.toLowerCase())){ seen.add(n.toLowerCase()); PLAYERS.push(n); }
   }
   partnerTeams = teams;
+  rebuildPartnerMap(teams);
 
   // Circle method
   const arr = teams.slice();
@@ -594,6 +623,7 @@ async function loadRosterIntoPlayers(){
       }
     }
     partnerTeams = teams;
+    rebuildPartnerMap(teams);
     const incomplete = teams.filter(t=>!t.complete).length;
     renderAdminPanel();
     showToast(`${teams.length} team${teams.length!==1?'s':''} (${PLAYERS.length} players) loaded` +

@@ -197,7 +197,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
         <th class="num" style="width:72px">DUPR</th>
-        <th>Player</th>
+        <th id="standings-name-th">Player</th>
         <th class="num">W</th><th class="num">L</th>
         <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
       </tr></thead>
@@ -499,6 +499,13 @@ async function renderStandings(){
   const _ra = document.getElementById('roster-area');
   if(_tw) _tw.style.display = '';
   if(_ra) _ra.style.display = 'none';
+
+  // PARTNER leagues: standings by TEAM — one row per partnership ("A & B").
+  const isPartnerLeague = currentLeague.type === 'doubles' &&
+    (viewingSeason.leagueTypes && viewingSeason.leagueTypes[currentLeague.id]) === 'partner';
+  if(isPartnerLeague){ renderTeamStandings(); return; }
+  const _th = document.getElementById('standings-name-th');
+  if(_th) _th.textContent = 'Player';
   const stats=getStats();
   const active=getActivePlayers();
   const rows=active.map(p=>{
@@ -541,8 +548,87 @@ async function renderStandings(){
   }).join('');
 }
 
-async function renderMatchLog(){
-  const el = document.getElementById('match-log-body');
+// Team standings for fixed-partner leagues: one row per partnership.
+// Teams are identified by the (unordered) pair of names appearing together
+// on a side of a scheduled match — which is exactly how partners are kept
+// together by the schedule generator.
+function renderTeamStandings(){
+  const th = document.getElementById('standings-name-th');
+  if(th) th.textContent = 'Team';
+
+  const teamStats = {};   // key (sorted pair) -> {label, a, b, w, l, pts, opp, streak}
+  const teamOf = (x, y) => {
+    const key = [x, y].filter(Boolean).map(s=>s.toLowerCase()).sort().join('|');
+    if(!key) return null;
+    if(!teamStats[key]) teamStats[key] = { label:[x,y].filter(Boolean).join(' & '), a:x, b:y, w:0,l:0,pts:0,opp:0,streak:[] };
+    return teamStats[key];
+  };
+  // Register every team that appears anywhere in the schedule (so 0-0 teams show)
+  for(const w of schedule)for(const m of w.matches){
+    if(m.p1a===undefined) continue;
+    teamOf(m.p1a, m.p1b); teamOf(m.p2a, m.p2b);
+  }
+  // Tally completed series
+  for(const w of schedule)for(const m of w.matches){
+    if(m.p1a===undefined) continue;
+    const r = seriesResult(m);
+    if(!r.complete) continue;
+    const t1 = teamOf(m.p1a, m.p1b), t2 = teamOf(m.p2a, m.p2b);
+    if(!t1 || !t2) continue;
+    const t1won = r.p1w > r.p2w;
+    const wt = t1won ? t1 : t2, lt = t1won ? t2 : t1;
+    const wpts = t1won ? r.pts1 : r.pts2, lpts = t1won ? r.pts2 : r.pts1;
+    wt.w++; wt.pts += wpts; wt.opp += lpts; wt.streak.push('W');
+    lt.l++; lt.pts += lpts; lt.opp += wpts; lt.streak.push('L');
+  }
+
+  const rows = Object.values(teamStats).map(s=>{
+    const tot = s.w + s.l;
+    return {...s, pct: tot ? s.w/tot : 0, diff: s.pts - s.opp,
+      streakStr: s.streak.slice(-3).join('')||'—', last: s.streak[s.streak.length-1]||null};
+  }).sort((a,b)=> b.pct-a.pct || b.diff-a.diff);
+
+  const played = schedule.reduce((a,w)=>a+w.matches.filter(m=>seriesResult(m).complete).length,0);
+  document.getElementById('standings-subtitle').textContent =
+    `${rows.length} teams · ${played} matches played this season`;
+  document.getElementById('league-stats').innerHTML=[
+    ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
+    ['Leader',rows[0]?.label||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+  ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
+
+  const ratingHtml = (name)=>{
+    const dr = duprRatings[name];
+    if(!dr || !dr.duprId) return null;
+    const rating = dr.doubles;
+    if(rating === undefined || rating === null) return null;
+    const num = typeof rating === 'number' ? rating.toFixed(2) : rating;
+    return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${num}</a>`;
+  };
+  const playerLink = (name)=>`<a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(name)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${name}</span></a>`;
+
+  document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
+    const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const dc=r.diff>0?'pos':r.diff<0?'neg':'';
+    const sc=r.last==='W'?'streak-w':'streak-l';
+    const playoff=i<4,cutline=i===4;
+    const r1 = ratingHtml(r.a), r2 = r.b ? ratingHtml(r.b) : null;
+    const ratingCell = (r1||r2)
+      ? `${r1||'<span style="font-size:11px;color:var(--muted)">—</span>'}<span style="color:var(--muted);font-size:11px"> / </span>${r2||'<span style="font-size:11px;color:var(--muted)">—</span>'}`
+      : `<span style="font-size:11px;color:var(--muted)">—</span>`;
+    const nameCell = r.b ? `${playerLink(r.a)} <span style="color:var(--muted)">&amp;</span> ${playerLink(r.b)}` : playerLink(r.a);
+    return`<tr class="${playoff?'playoff-row':''}${cutline?' cutline-row':''}">
+      <td><span class="rank ${rc}">${i+1}</span></td>
+      <td class="num" style="white-space:nowrap">${ratingCell}</td>
+      <td>${nameCell}${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
+      <td class="num">${r.w}</td><td class="num">${r.l}</td>
+      <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
+      <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
+      <td class="num">${r.streakStr!=='—'?`<span class="streak-badge ${sc}">${r.streakStr}</span>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderMatchLog(){  const el = document.getElementById('match-log-body');
   if(!el) return;
   el.innerHTML='<div class="loading-overlay"><div class="spinner"></div>Loading...</div>';
 
