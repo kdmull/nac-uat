@@ -118,6 +118,21 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
   .game-row{grid-template-columns:50px 1fr 22px 1fr;gap:6px}
   .game-label{font-size:11px}
 }
+/* --- mobile nav (responsive, matches league pages) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap}
+  .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
+  .nav-logo{height:36px}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none;border-top:none}
+  .nav-actions,.nav-right,[data-account-nav]{width:100%;margin-left:0;justify-content:center;overflow-x:auto;scrollbar-width:none;border-top:1px solid rgba(255,255,255,.08)}
+  .nav-actions::-webkit-scrollbar,.nav-right::-webkit-scrollbar,[data-account-nav]::-webkit-scrollbar{display:none}
+  .nav-link{flex:1 1 auto;padding:.7rem .5rem;font-size:13px;text-align:center;min-width:64px;white-space:nowrap}
+  [data-account-nav] a{flex:1 1 auto;padding:.7rem .5rem!important;font-size:13px!important;text-align:center;min-width:64px}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.65rem .35rem!important;min-width:56px}
+}
 </style>
 </head>
 <body>
@@ -460,25 +475,18 @@ async function loadMyDuprRatings(){
 async function unlinkDupr(){
   if(!confirm("Unlink your DUPR account? You'll need to reconnect it before you can register for a league.")) return;
   try{
-    // Clear the link on your own profile (allowed under row-level security).
-    const { error } = await supabaseClient.from('profiles').update({ dupr_id: null }).eq('id', currentUser.id);
-    if(error) throw error;
-
-    // Best-effort: clear the name-keyed dupr_players rows for your leagues so the
-    // league pages don't keep using the old DUPR id. Player name is derived exactly
-    // as registration does ("First L.").
-    try{
-      const scheduleName = `${(currentProfile.first_name||'')} ${((currentProfile.last_name||'')[0]||'')}.`.trim();
-      const { data: mems } = await supabaseClient
-        .from('league_members').select('league_id').eq('user_id', currentUser.id);
-      const leagueIds = [...new Set((mems||[]).map(m => m.league_id))];
-      for(const lid of leagueIds){
-        await fetch(`${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(lid)}&player_name=eq.${encodeURIComponent(scheduleName)}`, {
-          method:'DELETE',
-          headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }
-        });
-      }
-    }catch(e){ console.warn('dupr_players cleanup skipped:', e); }
+    // Route through the self-service edge function so the dupr_players cleanup
+    // runs with the service role (RLS-independent). It only touches your own
+    // account — identified from your session token, not anything we pass in.
+    const { data:{ session } } = await supabaseClient.auth.getSession();
+    if(!session) throw new Error('Not signed in');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/dupr-unlink`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+session.access_token },
+      body:'{}'
+    });
+    const j = await res.json().catch(()=>({}));
+    if(!res.ok || !j.success) throw new Error(j.error || 'Unlink failed');
 
     currentProfile.dupr_id = null;
     myRatings = null;
