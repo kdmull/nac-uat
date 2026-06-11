@@ -381,8 +381,8 @@ async function switchSeason(seasonId){
   const found = allSeasons.find(s=>s.id===seasonId);
   if(!found) return;
   viewingSeason = found;
-  schedule = JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
-  PLAYERS = ['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+  schedule = [];
+  PLAYERS = [];
   await loadData();
   scheduleWeek = scoresWeek = findCurrentWeek();
   renderSeasonSelector();

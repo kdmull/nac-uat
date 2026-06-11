@@ -12,22 +12,12 @@ const LEAGUES = [
   {id:'singles',   name:'Singles League',     key:'league_singles',   type:'singles', sub:'Open singles league'},
 ];
 
-const SCHEDULE_DEFAULT = [
-  {week:1,bye:'Jordan C.',matches:[{p1:'Cordel B.',p2:'Cam P.',games:[]},{p1:'Ethan V.',p2:'Tanner B.',games:[]},{p1:'Elias V.',p2:'Jordan M.',games:[]},{p1:'Marcus T.',p2:'Riley S.',games:[]},{p1:'Devon W.',p2:'Chase H.',games:[]}]},
-  {week:2,bye:'Cordel B.',matches:[{p1:'Ethan V.',p2:'Jordan C.',games:[]},{p1:'Elias V.',p2:'Cam P.',games:[]},{p1:'Marcus T.',p2:'Tanner B.',games:[]},{p1:'Devon W.',p2:'Jordan M.',games:[]},{p1:'Chase H.',p2:'Riley S.',games:[]}]},
-  {week:3,bye:'Ethan V.',matches:[{p1:'Elias V.',p2:'Cordel B.',games:[]},{p1:'Marcus T.',p2:'Jordan C.',games:[]},{p1:'Devon W.',p2:'Cam P.',games:[]},{p1:'Chase H.',p2:'Tanner B.',games:[]},{p1:'Riley S.',p2:'Jordan M.',games:[]}]},
-  {week:4,bye:'Elias V.',matches:[{p1:'Marcus T.',p2:'Ethan V.',games:[]},{p1:'Devon W.',p2:'Cordel B.',games:[]},{p1:'Chase H.',p2:'Jordan C.',games:[]},{p1:'Riley S.',p2:'Cam P.',games:[]},{p1:'Jordan M.',p2:'Tanner B.',games:[]}]},
-  {week:5,bye:'Marcus T.',matches:[{p1:'Devon W.',p2:'Elias V.',games:[]},{p1:'Chase H.',p2:'Ethan V.',games:[]},{p1:'Riley S.',p2:'Cordel B.',games:[]},{p1:'Jordan M.',p2:'Jordan C.',games:[]},{p1:'Tanner B.',p2:'Cam P.',games:[]}]},
-  {week:6,bye:'Devon W.',matches:[{p1:'Chase H.',p2:'Marcus T.',games:[]},{p1:'Riley S.',p2:'Elias V.',games:[]},{p1:'Jordan M.',p2:'Ethan V.',games:[]},{p1:'Tanner B.',p2:'Cordel B.',games:[]},{p1:'Cam P.',p2:'Jordan C.',games:[]}]},
-  {week:7,bye:'Chase H.',matches:[{p1:'Riley S.',p2:'Devon W.',games:[]},{p1:'Jordan M.',p2:'Marcus T.',games:[]},{p1:'Tanner B.',p2:'Elias V.',games:[]},{p1:'Cam P.',p2:'Ethan V.',games:[]},{p1:'Jordan C.',p2:'Cordel B.',games:[]}]},
-  {week:8,bye:'Riley S.',matches:[{p1:'Jordan M.',p2:'Chase H.',games:[]},{p1:'Tanner B.',p2:'Devon W.',games:[]},{p1:'Cam P.',p2:'Marcus T.',games:[]},{p1:'Jordan C.',p2:'Elias V.',games:[]},{p1:'Cordel B.',p2:'Ethan V.',games:[]}]},
-  {week:9,bye:'Jordan M.',matches:[{p1:'Tanner B.',p2:'Riley S.',games:[]},{p1:'Cam P.',p2:'Chase H.',games:[]},{p1:'Jordan C.',p2:'Devon W.',games:[]},{p1:'Cordel B.',p2:'Marcus T.',games:[]},{p1:'Ethan V.',p2:'Elias V.',games:[]}]},
-  {week:10,bye:'Tanner B.',matches:[{p1:'Cam P.',p2:'Jordan M.',games:[]},{p1:'Jordan C.',p2:'Riley S.',games:[]},{p1:'Cordel B.',p2:'Chase H.',games:[]},{p1:'Ethan V.',p2:'Devon W.',games:[]},{p1:'Elias V.',p2:'Marcus T.',games:[]}]},
-  {week:11,bye:'Cam P.',matches:[{p1:'Jordan C.',p2:'Tanner B.',games:[]},{p1:'Cordel B.',p2:'Jordan M.',games:[]},{p1:'Ethan V.',p2:'Riley S.',games:[]},{p1:'Elias V.',p2:'Chase H.',games:[]},{p1:'Marcus T.',p2:'Devon W.',games:[]}]},
-];
-
-let schedule = JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
-let PLAYERS = ['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+// League data always starts EMPTY and is filled from the database by loadData().
+// (The old hardcoded demo schedule/players that used to live here caused fake
+// players like "Jordan C." to appear — and get saved — when a league had no
+// data yet or a fetch failed.)
+let schedule = [];
+let PLAYERS = [];
 let scheduleWeek=1, scoresWeek=1, currentModalMatch=null, lastSynced=null;
 let scoreAuthed=false;
 let currentLeague=null; // full league object from LEAGUES array
