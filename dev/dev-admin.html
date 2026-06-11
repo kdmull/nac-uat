@@ -172,6 +172,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <div id="admin-roster-list" style="margin-bottom:1rem"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">Load Registered Players</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;display:none" id="gen-rr-btn" onclick="generateTeamRoundRobin()">Generate Team Round Robin</button>
           <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule (Show Standings)</button>
         </div>
         <p style="color:var(--muted);font-size:12px;margin-top:.5rem">"Publish Schedule" switches the league's public page from a roster list to full standings. Do this after you've built the schedule.</p>
@@ -476,13 +477,101 @@ async function renderAdminRoster(){
   el.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading...</p>';
   const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
   const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
+  const rrBtn = document.getElementById('gen-rr-btn');
+  if(rrBtn) rrBtn.style.display = isPartner ? '' : 'none';
   if(!members.length){
     el.innerHTML = '<p style="color:var(--muted);font-size:13px">No players registered for this league yet.</p>';
     return;
   }
+  if(isPartner){
+    const teams = buildPartnerUnits(members);
+    el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${teams.map(t=>
+      `<span style="background:${t.complete?'var(--surface)':'rgba(217,59,59,.08)'};padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:${t.complete?'var(--navy)':'var(--danger)'}">${t.label}${t.complete?'':' — needs partner'}</span>`
+    ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${teams.length} team${teams.length!==1?'s':''} · ${members.length} registration${members.length!==1?'s':''}</p>`;
+    return;
+  }
   el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${members.map(m=>
-    `<span style="background:var(--surface);padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--navy)">${m.first_name||''} ${m.last_name||''}${isPartner&&m.partner_name?' / '+m.partner_name:''}</span>`
+    `<span style="background:var(--surface);padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--navy)">${m.first_name||''} ${m.last_name||''}</span>`
   ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${members.length} registered</p>`;
+}
+
+let partnerTeams = [];  // [{a, b, complete, label}] for partner leagues
+
+// Full team round robin for partner leagues: every team plays every other team
+// once, one round per week (circle method; odd team count = one bye per week).
+async function generateTeamRoundRobin(){
+  const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
+  if(!isPartner){ showToast('Only for partner-signup leagues'); return; }
+  const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
+  const all = buildPartnerUnits(members);
+  const teams = all.filter(t => t.complete && t.a && t.b);
+  const skipped = all.length - teams.length;
+  if(teams.length < 2){ showToast('Need at least 2 complete teams'); return; }
+  let warn = `Generate a full round robin for ${teams.length} teams (${teams.length-1} weeks, every team plays every other team once)?`;
+  if(skipped) warn += `\n\n${skipped} registration(s) without a partner will be left out.`;
+  if(schedule.length) warn += `\n\nThis REPLACES the current schedule (existing scores will be lost until you Save — cancel now if unsure).`;
+  if(!confirm(warn)) return;
+
+  // PLAYERS = all individuals on complete teams
+  const seen = new Set(); PLAYERS = [];
+  for(const t of teams) for(const n of [t.a,t.b]){
+    if(!seen.has(n.toLowerCase())){ seen.add(n.toLowerCase()); PLAYERS.push(n); }
+  }
+  partnerTeams = teams;
+
+  // Circle method
+  const arr = teams.slice();
+  if(arr.length % 2) arr.push(null);   // bye slot
+  const n = arr.length, rounds = n - 1;
+  schedule = [];
+  for(let r = 0; r < rounds; r++){
+    const matches = [];
+    for(let i = 0; i < n/2; i++){
+      const t1 = arr[i], t2 = arr[n-1-i];
+      if(t1 && t2) matches.push({ p1a:t1.a, p1b:t1.b, p2a:t2.a, p2b:t2.b, games:[] });
+    }
+    schedule.push({ week: r+1, matches });
+    arr.splice(1, 0, arr.pop());       // rotate, first team fixed
+  }
+  renderAdminPanel();
+  showToast(`${rounds}-week round robin generated — review & hit Save to sync`);
+}
+
+// Build deduped team units from league_members rows (partner leagues).// Each registrant has their own row pointing at their partner via
+// partner_user_id / partner_name — so a mutual pair = TWO rows, and a partner
+// who never registered themselves exists only as partner_name on one row.
+function buildPartnerUnits(members){
+  const initialOf = m => `${(m.first_name||'').trim()} ${((m.last_name||'').trim()[0]||'')}.`.trim();
+  const fromFull = full => {
+    const p = (full||'').trim().split(/\s+/);
+    return p.length>1 ? `${p[0]} ${p[p.length-1][0]}.` : (p[0]||'');
+  };
+  const consumed = new Set();   // user_ids already placed in a team
+  const teams = [];
+  for(const m of members){
+    if(consumed.has(m.user_id)) continue;
+    consumed.add(m.user_id);
+    const a = initialOf(m);
+    let b = '', complete = false;
+    if(m.partner_user_id){
+      const pRow = members.find(x => x.user_id === m.partner_user_id);
+      if(pRow && !consumed.has(pRow.user_id) &&
+         (!pRow.partner_user_id || pRow.partner_user_id === m.user_id)){
+        consumed.add(pRow.user_id);          // mutual (or partner registered solo)
+        b = initialOf(pRow); complete = true;
+      } else if(!pRow){
+        b = fromFull(m.partner_name);        // partner has no row of their own
+        complete = !!b;
+      } else {
+        b = fromFull(m.partner_name);        // conflict: partner points elsewhere
+        complete = false;
+      }
+    } else if(m.partner_name){
+      b = fromFull(m.partner_name); complete = !!b;
+    }
+    teams.push({ a, b, complete, label: b ? `${a} / ${b}` : a });
+  }
+  return teams;
 }
 
 async function loadRosterIntoPlayers(){
@@ -490,13 +579,26 @@ async function loadRosterIntoPlayers(){
   if(!members.length){ showToast('No registered players to load'); return; }
   const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
   if(isPartner){
-    // For partner leagues, each "player" entry is the team; use the member's name as primary
-    PLAYERS = members.map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim());
+    // Both halves of every team become individual PLAYERS entries (matches use
+    // four individual slots), deduped across mutual registrations.
+    const teams = buildPartnerUnits(members);
+    const seen = new Set();
+    PLAYERS = [];
+    for(const t of teams){
+      for(const n of [t.a, t.b]){
+        if(n && !seen.has(n.toLowerCase())){ seen.add(n.toLowerCase()); PLAYERS.push(n); }
+      }
+    }
+    partnerTeams = teams;
+    const incomplete = teams.filter(t=>!t.complete).length;
+    renderAdminPanel();
+    showToast(`${teams.length} team${teams.length!==1?'s':''} (${PLAYERS.length} players) loaded` +
+      (incomplete ? ` — ${incomplete} without a partner` : '') + ' — build the schedule & save');
   } else {
     PLAYERS = members.map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim());
+    renderAdminPanel();
+    showToast(members.length + ' players loaded — now build the schedule & save');
   }
-  renderAdminPanel();
-  showToast(members.length + ' players loaded — now build the schedule & save');
 }
 
 async function markScheduleGenerated(){
