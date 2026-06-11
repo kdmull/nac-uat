@@ -405,6 +405,17 @@ function renderAdminPanel(){
     addWeekBtn.onclick=addWeek;
     sel.parentNode.appendChild(addWeekBtn);
   }
+  let delWeekBtn=document.getElementById('del-week-btn');
+  if(!delWeekBtn){
+    delWeekBtn=document.createElement('button');
+    delWeekBtn.id='del-week-btn';
+    delWeekBtn.className='btn btn-danger';
+    delWeekBtn.style.cssText='font-size:12px;padding:6px 12px';
+    delWeekBtn.textContent='Delete Week';
+    delWeekBtn.onclick=deleteWeek;
+    sel.parentNode.appendChild(delWeekBtn);
+  }
+  delWeekBtn.style.display = schedule.length ? '' : 'none';
   document.getElementById('admin-players').innerHTML=PLAYERS.map((p,i)=>
     `<div style="display:flex;align-items:center;gap:4px">
       <input class="admin-input" style="width:110px" value="${p}" onchange="PLAYERS[${i}]=this.value"/>
@@ -456,6 +467,25 @@ function addWeek(){
   document.getElementById('admin-week-sel').value=next;
   renderAdminMatches();
   showToast('Week '+next+' added');
+}
+
+function deleteWeek(){
+  const week=parseInt(document.getElementById('admin-week-sel').value);
+  const wd=schedule.find(w=>w.week===week);
+  if(!wd){ showToast('No week selected'); return; }
+  const scored=wd.matches.filter(m=>seriesResult(m).complete).length;
+  let warn=`Delete Week ${week}`+(wd.matches.length?` and its ${wd.matches.length} match${wd.matches.length!==1?'es':''}`:'')+`?`;
+  if(scored) warn+=`\n\n${scored} match${scored!==1?'es have':' has'} scores entered — those results will be lost.`;
+  warn+=`\n\nLater weeks will be renumbered to stay sequential. Remember to hit Save to sync.`;
+  if(!confirm(warn)) return;
+  schedule = schedule.filter(w=>w.week!==week);
+  // Renumber so weeks stay 1..N in order
+  schedule.sort((a,b)=>a.week-b.week).forEach((w,i)=>{ w.week=i+1; });
+  renderAdminPanel();
+  const sel=document.getElementById('admin-week-sel');
+  if(schedule.length) sel.value=Math.min(week, schedule.length);
+  renderAdminMatches();
+  showToast('Week '+week+' deleted — hit Save to sync');
 }
 function addMatch(){
   const week=parseInt(document.getElementById('admin-week-sel').value);
