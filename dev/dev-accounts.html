@@ -211,6 +211,23 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ---- Data ----
+async function callAdminFn(name, body){
+  const { data:{ session } } = await sbAuth.auth.getSession();
+  if(!session) throw new Error('Sign in as an admin account to manage accounts.');
+  const r = await fetch(SUPABASE_URL + '/functions/v1/' + name, {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization':'Bearer '+session.access_token
+    },
+    body: JSON.stringify(body || {})
+  });
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error || ('Request failed ('+r.status+')'));
+  return data;
+}
+
 async function loadAccounts(){
   loadNotice = '';
   try{
@@ -221,17 +238,7 @@ async function loadAccounts(){
     document.getElementById('season-label').textContent =
       `League column reflects ${currentSeason?.name || seasonId}`;
 
-    const { data: profiles, error: pErr } = await sbAuth
-      .from('profiles')
-      .select('id,first_name,last_name,email,phone,dupr_id,is_admin');
-    if(pErr) throw pErr;
-
-    const { data: members, error: mErr } = await sbAuth
-      .from('league_members')
-      .select('user_id,league_id,partner_name,status')
-      .eq('season_id', seasonId)
-      .eq('status', 'active');
-    if(mErr) console.warn('league_members read failed:', mErr);
+    const { profiles, members } = await callAdminFn('admin-list-accounts', { seasonId });
 
     const byUser = {};
     (members || []).forEach(m => { byUser[m.user_id] = m; });
@@ -250,11 +257,6 @@ async function loadAccounts(){
         partner: m ? (m.partner_name || '') : ''
       };
     });
-
-    // If we can only see our own profile, RLS is blocking the full read.
-    if(accounts.length <= 1){
-      loadNotice = 'Only your own account is visible. The profiles table is likely restricting reads to the signed-in user (row-level security). To list every account here, profiles needs to allow admin reads — I can set that up with a secure server-side function if you want.';
-    }
 
     renderStats();
     renderRows();
@@ -380,8 +382,7 @@ async function saveEdit(){
   }
   btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent=''; msg.className='edit-msg';
   try{
-    const { error } = await sbAuth.from('profiles').update(patch).eq('id', editingId);
-    if(error) throw error;
+    await callAdminFn('admin-update-profile', { userId: editingId, patch });
     const a = accounts.find(x => x.id === editingId);
     if(a){
       a.first = patch.first_name; a.last = patch.last_name;

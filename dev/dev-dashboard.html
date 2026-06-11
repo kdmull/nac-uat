@@ -340,7 +340,8 @@ function render(){
              <span class="val">${p.dupr_id}</span>
              <span class="badge-linked">Connected</span>
            </div>
-           ${duprRatingsHTML()}`
+           ${duprRatingsHTML()}
+           <button onclick="unlinkDupr()" style="margin-top:14px;background:none;border:1.5px solid var(--border);color:var(--muted);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 16px;border-radius:var(--radius);cursor:pointer">Unlink DUPR Account</button>`
         : `<div style="background:rgba(217,59,59,.08);border:1px solid rgba(217,59,59,.3);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem">
              <p style="color:var(--danger);font-size:14px;font-weight:600;margin-bottom:2px">DUPR connection required</p>
              <p style="color:var(--muted);font-size:13px">You must link your DUPR account before you can register for a league.</p>
@@ -454,6 +455,37 @@ async function loadMyDuprRatings(){
   }catch(e){ console.warn('Could not load DUPR rating:', e); myRatings = null; }
   ratingsLoading = false;
   render();
+}
+
+async function unlinkDupr(){
+  if(!confirm("Unlink your DUPR account? You'll need to reconnect it before you can register for a league.")) return;
+  try{
+    // Clear the link on your own profile (allowed under row-level security).
+    const { error } = await supabaseClient.from('profiles').update({ dupr_id: null }).eq('id', currentUser.id);
+    if(error) throw error;
+
+    // Best-effort: clear the name-keyed dupr_players rows for your leagues so the
+    // league pages don't keep using the old DUPR id. Player name is derived exactly
+    // as registration does ("First L.").
+    try{
+      const scheduleName = `${(currentProfile.first_name||'')} ${((currentProfile.last_name||'')[0]||'')}.`.trim();
+      const { data: mems } = await supabaseClient
+        .from('league_members').select('league_id').eq('user_id', currentUser.id);
+      const leagueIds = [...new Set((mems||[]).map(m => m.league_id))];
+      for(const lid of leagueIds){
+        await fetch(`${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(lid)}&player_name=eq.${encodeURIComponent(scheduleName)}`, {
+          method:'DELETE',
+          headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }
+        });
+      }
+    }catch(e){ console.warn('dupr_players cleanup skipped:', e); }
+
+    currentProfile.dupr_id = null;
+    myRatings = null;
+    render();
+  }catch(e){
+    alert('Could not unlink DUPR: ' + (e.message || 'unknown error'));
+  }
 }
 
 // DUPR returns a number, a numeric string, or null (unrated). Normalize to 2 decimals.
