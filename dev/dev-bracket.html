@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
-<title>Playoff Bracket — NAC Singles</title>
+<title>Playoff Bracket — NAC Pickleball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -133,21 +133,21 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
     <img src="naclogo.png" class="nav-logo" alt="NAC"/>
   </a>
   <div class="nav-tabs">
-    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Standings</a>
-    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Schedule</a>
-    <a class="nav-tab" href="dev-league.html?league=singles" style="text-decoration:none">Scores</a>
-    <a class="nav-tab active" href="dev-bracket.html" style="text-decoration:none">Bracket</a>
+    <a class="nav-tab" href="dev-league.html" style="text-decoration:none">Standings</a>
+    <a class="nav-tab" href="dev-league.html" style="text-decoration:none">Schedule</a>
+    <a class="nav-tab" href="dev-league.html" style="text-decoration:none">Scores</a>
+    <a class="nav-tab active" href="#" style="text-decoration:none">Bracket</a>
     <a class="nav-tab" href="dev-rules.html" style="text-decoration:none">Rules</a>
   </div>
 </nav>
 
-<div class="league-banner">Singles League</div>
+<div class="league-banner"></div>
 <div class="page">
   <div class="section-header">
     <div class="section-accent"></div>
     <div class="section-header-text">
       <h2>Playoff Bracket</h2>
-      <p>Singles League — Top 4 Seeds</p>
+      <p>Top 4 Seeds</p>
     </div>
   </div>
 
@@ -209,7 +209,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
     const banner = document.querySelector('.league-banner');
     if(banner) banner.textContent = currentLeague.name;
-    const sub = document.querySelector('.page-header p');
+    const sub = document.querySelector('.section-header-text p');
     if(sub) sub.textContent = `${currentLeague.name} — Top 4 ${isTeamBracket?'Teams':'Seeds'}`;
 
     await loadData(); // load regular season data for seedings
