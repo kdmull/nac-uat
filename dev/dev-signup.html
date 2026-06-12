@@ -79,6 +79,20 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
 .toast.show{transform:translateY(0);opacity:1}
 @media(max-width:600px){.page{padding:1rem}.leagues-grid{grid-template-columns:1fr}.card{padding:1.2rem}}
+/* --- mobile nav (responsive: logo centered on top, links centered below) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap;justify-content:center}
+  .nav-brand{width:100%;display:flex;justify-content:center;margin-right:0;padding:.5rem 0 .25rem}
+  .nav-logo{height:56px}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none}
+  .nav-actions,.nav-right,[data-account-nav]{display:flex;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}
+  .nav-link{flex:0 1 auto;padding:.7rem .6rem;font-size:13px;text-align:center;white-space:nowrap}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important;text-align:center}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
+}
 </style>
 </head>
 <body>

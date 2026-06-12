@@ -46,6 +46,20 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
 .hint{text-align:center;font-size:13px;color:var(--muted);margin-top:1rem}
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* --- mobile nav (responsive: logo centered on top, links centered below) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap;justify-content:center}
+  .nav-brand{width:100%;display:flex;justify-content:center;margin-right:0;padding:.5rem 0 .25rem}
+  .nav-logo{height:56px}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none}
+  .nav-actions,.nav-right,[data-account-nav]{display:flex;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}
+  .nav-link{flex:0 1 auto;padding:.7rem .6rem;font-size:13px;text-align:center;white-space:nowrap}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important;text-align:center}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
+}
 </style>
 </head>
 <body>
