@@ -136,12 +136,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
   <div class="section" id="gate-section" style="display:none">
     <div class="admin-gate">
       <h3>Accounts</h3>
-      <p>Enter your admin password to view registered accounts</p>
-      <div>
-        <input type="password" id="admin-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkAdmin()"/>
-        <button class="btn btn-primary" onclick="checkAdmin()">Unlock</button>
-      </div>
-      <div class="err" id="admin-err"></div>
+      <p id="gate-msg">Checking access…</p>
+      <div id="gate-actions"></div>
     </div>
   </div>
 
@@ -220,10 +216,18 @@ async function isAdminAccount(){
     return !!(data && data.is_admin);
   }catch(e){ return false; }
 }
-function checkAdmin(){
-  const pw = document.getElementById('admin-pw').value;
-  if(pw === ADMIN_PW){ sessionStorage.setItem('nac_admin_unlocked','1'); unlock(); }
-  else { document.getElementById('admin-err').textContent = 'Incorrect password'; }
+async function showDenied(){
+  const msg = document.getElementById('gate-msg');
+  const actions = document.getElementById('gate-actions');
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if(!session){
+    msg.textContent = 'This page is for league admins. Sign in with an admin account to continue.';
+    actions.innerHTML = '<a class="btn btn-primary" href="dev-auth.html" style="display:inline-block;text-decoration:none;width:auto;padding:10px 24px">Sign In</a>';
+  } else {
+    msg.textContent = "Your account doesn't have admin access.";
+    actions.innerHTML = '<a class="btn btn-primary" href="dev-index.html" style="display:inline-block;text-decoration:none;width:auto;padding:10px 24px">Back to Leagues</a>';
+  }
+  document.getElementById('gate-section').style.display = 'block';
 }
 function unlock(){
   document.getElementById('gate-section').style.display = 'none';
@@ -232,8 +236,9 @@ function unlock(){
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
-  if(sessionStorage.getItem('nac_admin_unlocked')==='1' || await isAdminAccount()) unlock();
-  else document.getElementById('gate-section').style.display = 'block';
+  // Account-based access only — no password gate.
+  if(await isAdminAccount()) unlock();
+  else await showDenied();
 });
 
 // ---- Data ----

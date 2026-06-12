@@ -110,16 +110,12 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
   <div id="admin-wrap" style="display:block">
     <div class="section-header">
       <div class="section-accent"></div>
-      <div class="section-header-text"><h2>Admin Panel</h2><p id="admin-league-label">Enter password to manage leagues</p></div>
+      <div class="section-header-text"><h2>Admin Panel</h2><p id="admin-league-label">Manage leagues, seasons, and scores</p></div>
     </div>
     <div class="admin-gate" id="admin-gate">
       <h3>League Admin</h3>
-      <p>Enter your admin password to manage leagues</p>
-      <div>
-        <input type="password" id="admin-pw" placeholder="Password" onkeydown="if(event.key==='Enter')checkAdmin()"/>
-        <button class="btn btn-primary" onclick="checkAdmin()">Enter</button>
-      </div>
-      <p class="err" id="admin-err"></p>
+      <p id="gate-msg">Checking access…</p>
+      <div id="gate-actions"></div>
     </div>
     <div class="admin-content" id="admin-content">
       <!-- League picker (shown after unlock) -->
@@ -302,6 +298,10 @@ function populateAdminLeagueSel(){
 }
 
 window.addEventListener('DOMContentLoaded', async ()=>{
+  // Account-based access only — no password gate. Non-admins stop here.
+  const isAdmin = await checkAccountAdmin();
+  if(!isAdmin){ await showAdminDenied(); return; }
+
   // League catalog lives in the DB now — load it before resolving anything
   await loadSeasons();
   populateAdminLeagueSel();
@@ -315,10 +315,7 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   document.getElementById('admin-league-sel').value = startId;
   currentLeague = LEAGUES.find(l => l.id === startId);
   await initAdminLeague(currentLeague);
-
-  // Auto-unlock if logged in as an admin account, otherwise the password gate is shown
-  const isAdmin = await checkAccountAdmin();
-  if(isAdmin){ sessionStorage.setItem('nac_admin_unlocked','1'); unlockAdmin(); }
+  unlockAdmin();
 });
 
 // Switch the managed league in-place (no page reload) once unlocked
@@ -353,12 +350,17 @@ async function initAdminLeague(league){
   scheduleWeek=findCurrentWeek();
 }
 
-function checkAdmin(){
-  if(document.getElementById('admin-pw').value===ADMIN_PW){
-    sessionStorage.setItem('nac_admin_unlocked','1');
-    unlockAdmin();
+// Access is account-based only: signed-in admins get in, everyone else sees why not.
+async function showAdminDenied(){
+  const msg = document.getElementById('gate-msg');
+  const actions = document.getElementById('gate-actions');
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if(!session){
+    msg.textContent = 'This page is for league admins. Sign in with an admin account to continue.';
+    actions.innerHTML = '<a class="btn btn-primary" href="dev-auth.html" style="display:inline-block;text-decoration:none;width:auto;padding:10px 24px">Sign In</a>';
   } else {
-    document.getElementById('admin-err').textContent='Incorrect password.';
+    msg.textContent = "Your account doesn't have admin access.";
+    actions.innerHTML = '<a class="btn btn-primary" href="dev-index.html" style="display:inline-block;text-decoration:none;width:auto;padding:10px 24px">Back to Leagues</a>';
   }
 }
 
