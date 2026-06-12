@@ -178,7 +178,8 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 
 <script src="shared-dev.js"></script>
 <script>
-const BRACKET_KEY = 'bracket_singles';
+let BRACKET_KEY = 'bracket_singles';   // set per league + season at init
+let isTeamBracket = false;             // partner-doubles = bracket of TEAMS
 let bracketData = null;
 let bracketAuthed = false;
 let currentModalSlot = null; // {round, matchIndex}
@@ -186,7 +187,31 @@ let currentModalSlot = null; // {round, matchIndex}
 window.addEventListener('DOMContentLoaded', async () => {
   try {
     await loadSeasons();   // loads the league catalog too
-    currentLeague = LEAGUES.find(l => l.id === 'singles');
+    const leagueId = new URLSearchParams(window.location.search).get('league') || 'singles';
+    currentLeague = LEAGUES.find(l => l.id === leagueId);
+    if(!currentLeague){ window.location.href = 'dev-index.html'; return; }
+
+    // Brackets are for singles + partner-signup doubles. Individual-signup
+    // doubles leagues use the round-robin playoff page instead.
+    const isPartnerLg = currentLeague.type === 'doubles' &&
+      (currentSeason.leagueTypes || {})[currentLeague.id] === 'partner';
+    if(currentLeague.type === 'doubles' && !isPartnerLg){
+      window.location.href = `dev-doubles-playoff.html?league=${currentLeague.id}`;
+      return;
+    }
+    isTeamBracket = isPartnerLg;
+    BRACKET_KEY = `bracket_${currentLeague.id}_${currentSeason.id}`;
+
+    // Dynamic page chrome
+    document.title = `Playoff Bracket — ${currentLeague.name}`;
+    document.querySelectorAll('.nav-tab[href^="dev-league.html"]').forEach(a => {
+      a.href = `dev-league.html?league=${currentLeague.id}`;
+    });
+    const banner = document.querySelector('.league-banner');
+    if(banner) banner.textContent = currentLeague.name;
+    const sub = document.querySelector('.page-header p');
+    if(sub) sub.textContent = `${currentLeague.name} — Top 4 ${isTeamBracket?'Teams':'Seeds'}`;
+
     await loadData(); // load regular season data for seedings
   } catch(e) {
     console.warn('Could not load season data:', e);
@@ -207,7 +232,12 @@ document.getElementById('score-modal').addEventListener('click', e => {
 // ── BRACKET DATA ──────────────────────────────────────
 async function loadBracket() {
   try {
-    const result = await dbGet(BRACKET_KEY);
+    let result = await dbGet(BRACKET_KEY);
+    // Legacy: the singles bracket used to live under a season-less key
+    if((!result || !result.data || !result.data.seeds) && currentLeague.id === 'singles'){
+      const legacy = await dbGet('bracket_singles');
+      if(legacy && legacy.data && legacy.data.seeds) result = legacy;
+    }
     if(result && result.data && result.data.seeds) {
       bracketData = result.data;
     } else {
@@ -225,13 +255,41 @@ async function saveBracket() {
 }
 
 function initBracketFromStandings() {
-  const stats = getStats();
-  const active = getActivePlayers();
-  const seeds = active.map(p => {
-    const s = stats[p] || {w:0,l:0,pts:0,opp:0};
-    const tot = s.w + s.l;
-    return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
-  }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
+  let seeds;
+  if(isTeamBracket){
+    // Partner doubles: seed TEAMS (pairs appearing together on a match side)
+    const teamStats = {};
+    const teamOf = (x, y) => {
+      const key = [x, y].filter(Boolean).map(v=>v.toLowerCase()).sort().join('|');
+      if(!key) return null;
+      if(!teamStats[key]) teamStats[key] = { name:[x,y].filter(Boolean).join(' & '), w:0,l:0,pts:0,opp:0 };
+      return teamStats[key];
+    };
+    for(const w of schedule)for(const m of w.matches){
+      if(m.p1a===undefined) continue;
+      teamOf(m.p1a, m.p1b); teamOf(m.p2a, m.p2b);
+      const r = seriesResult(m);
+      if(!r.complete) continue;
+      const t1 = teamOf(m.p1a, m.p1b), t2 = teamOf(m.p2a, m.p2b);
+      if(!t1 || !t2) continue;
+      const t1won = r.p1w > r.p2w;
+      const wt = t1won ? t1 : t2, lt = t1won ? t2 : t1;
+      wt.w++; wt.pts += t1won ? r.pts1 : r.pts2; wt.opp += t1won ? r.pts2 : r.pts1;
+      lt.l++; lt.pts += t1won ? r.pts2 : r.pts1; lt.opp += t1won ? r.pts1 : r.pts2;
+    }
+    seeds = Object.values(teamStats).map(s => {
+      const tot = s.w + s.l;
+      return {name:s.name, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+    }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
+  } else {
+    const stats = getStats();
+    const active = getActivePlayers();
+    seeds = active.map(p => {
+      const s = stats[p] || {w:0,l:0,pts:0,opp:0};
+      const tot = s.w + s.l;
+      return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+    }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
+  }
 
   return {
     seeds: seeds.map((s,i) => ({...s, seed:i+1})),
@@ -296,7 +354,7 @@ function render() {
     const tbd = !name || name==='TBD';
     return `<div class="bracket-slot${isWinner?' winner':''}">
       ${seed?`<span class="slot-seed">${seed}</span>`:'<span class="slot-seed"></span>'}
-      <span class="slot-name${tbd?' tbd':''}">${tbd?'TBD':name}</span>
+      <span class="slot-name${tbd?' tbd':''}">${tbd?'TBD':displayName(name)}</span>
       <span class="slot-score">${score!==null&&score!==undefined?score:''}</span>
     </div>`;
   }
@@ -337,7 +395,7 @@ function render() {
         ${(bracketData.seeds||[]).map(s=>`
           <div class="seed-row">
             <span class="seed-num">#${s.seed}</span>
-            <span class="seed-name">${s.name}</span>
+            <span class="seed-name">${displayName(s.name)}</span>
             <span class="seed-record">${s.w}-${s.l}</span>
           </div>`).join('')}
       </div>
@@ -382,7 +440,7 @@ function render() {
         <div class="champion-wrap">
           <div class="champion-card">
             <div class="champion-label">Champion</div>
-            <div class="champion-name${!champion?' tbd':''}">${champion||'TBD'}</div>
+            <div class="champion-name${!champion?' tbd':''}">${champion?displayName(champion):'TBD'}</div>
           </div>
         </div>
       </div>
@@ -406,8 +464,8 @@ function checkBracketAuth() {
 function openBracketModal(round, idx) {
   const match = round==='final' ? bracketData.final : bracketData.semis[idx];
   currentModalSlot = {round, idx};
-  document.getElementById('modal-p1').textContent = match.p1;
-  document.getElementById('modal-p2').textContent = match.p2;
+  document.getElementById('modal-p1').textContent = displayName(match.p1);
+  document.getElementById('modal-p2').textContent = displayName(match.p2);
   document.getElementById('modal-round-label').textContent = round==='final' ? 'Final' : `Semifinal ${idx+1}`;
   document.getElementById('submit-btn').disabled = false;
   renderBracketModalGames(match);
@@ -506,10 +564,13 @@ async function submitBracketScore(){
 
   let p1w=0,p2w=0;
   for(const g of games){if(g.s1!==null){if(g.s1>g.s2)p1w++;else p2w++;}}
-  const winner = p1w>=2||p2w>=2 ? (p1w>p2w?document.getElementById('modal-p1').textContent:document.getElementById('modal-p2').textContent) : null;
+  const {round,idx}=currentModalSlot;
+  // Winner comes from the MATCH OBJECT (canonical identity), never from the
+  // modal labels, which show prettified display names.
+  const srcMatch = round==='final' ? bracketData.final : bracketData.semis[idx];
+  const winner = p1w>=2||p2w>=2 ? (p1w>p2w ? srcMatch.p1 : srcMatch.p2) : null;
 
   document.getElementById('submit-btn').disabled=true;
-  const {round,idx}=currentModalSlot;
   if(round==='final'){
     bracketData.final.games=games;
     bracketData.final.winner=winner;

@@ -201,6 +201,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('main-content').innerHTML = '<div class="loading-overlay">Invalid league.</div>';
     return;
   }
+  // Partner-signup doubles leagues use a BRACKET, not the round-robin playoff
+  if((currentSeason.leagueTypes || {})[currentLeague.id] === 'partner'){
+    window.location.href = `dev-bracket.html?league=${currentLeague.id}`;
+    return;
+  }
 
   document.title = `Playoffs — ${currentLeague.name}`;
   document.getElementById('league-banner').textContent = currentLeague.name;
