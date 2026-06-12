@@ -200,11 +200,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           <thead>
             <tr style="background:var(--surface2)">
               <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Date</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Name</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Player</th>
               <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">League</th>
+              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Partner</th>
               <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Email</th>
               <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Phone</th>
-              <th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
             </tr>
           </thead>
           <tbody id="registrations-body">
@@ -214,22 +214,31 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       </div>
     </div>
       <div class="admin-section" id="seasons-section">
-        <h3>Seasons</h3>
-        <div id="seasons-list" style="margin-bottom:1rem"></div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">New Season Name</label>
-            <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:200px"/>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:4px">
-            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Registration Deadline</label>
-            <input class="admin-input" type="date" id="new-season-deadline" style="width:180px"/>
-          </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
+          <h3 style="margin:0">Seasons</h3>
+          <button class="btn btn-ghost" id="new-season-toggle" style="font-size:12px;padding:6px 14px" onclick="toggleNewSeasonForm()">+ Start New Season</button>
         </div>
-        <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Registration Type Per League</label>
-        <div id="league-reg-types" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-bottom:1rem"></div>
-        <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
-        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved. Uncheck a league to leave it out of the season; set whether each is individual or partner signup.</p>
+        <div id="seasons-list" style="margin-bottom:1rem"></div>
+        <div id="new-season-form" style="display:none;background:var(--surface);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-top:.5rem">
+          <p style="font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.75rem">New Season</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Season Name</label>
+              <input class="admin-input" id="new-season-name" placeholder="e.g. Fall 2026" style="width:200px"/>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Registration Deadline</label>
+              <input class="admin-input" type="date" id="new-season-deadline" style="width:180px"/>
+            </div>
+          </div>
+          <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">League Setup</label>
+          <div id="league-reg-types" style="margin-bottom:1rem"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-green" style="width:auto;padding:9px 20px" onclick="createNewSeason()">Start New Season</button>
+            <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="toggleNewSeasonForm()">Cancel</button>
+          </div>
+          <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one. Past data is preserved.</p>
+        </div>
       </div>
 
       <div class="admin-section">
@@ -661,50 +670,86 @@ async function markScheduleGenerated(){
   showToast('Schedule published for ' + currentLeague.name);
 }
 
+function toggleNewSeasonForm(){
+  const f = document.getElementById('new-season-form');
+  const open = f.style.display !== 'none';
+  f.style.display = open ? 'none' : '';
+  document.getElementById('new-season-toggle').textContent = open ? '+ Start New Season' : 'Hide Form';
+  if(!open) renderNewSeasonLeagueRows();
+}
+
+// Shared table shell for league settings (active-season editor + new-season form)
+function leagueSettingsTable(rowsHtml, firstCol){
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;min-width:480px;background:var(--white);border-radius:var(--radius);overflow:hidden">
+    <thead><tr style="background:var(--surface2)">
+      ${[firstCol,'League','Signup','Weeks'].map(h=>`<th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+    </tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+}
+
 function renderSeasonsAdmin(){
   const el=document.getElementById('seasons-list');
   if(!el)return;
   if(!allSeasons.length){el.innerHTML='<p style="color:var(--muted);font-size:13px">No seasons yet.</p>';return;}
-  el.innerHTML=allSeasons.slice().reverse().map(s=>{
-    const isActive = s.id===currentSeason?.id;
+
+  const active = allSeasons.find(x => x.id === currentSeason?.id);
+  const past = allSeasons.filter(x => x.id !== currentSeason?.id).reverse();
+  let html = '';
+
+  if(active){
+    const s = active;
     const regOpen = isRegistrationOpen(s);
-    const deadlineStr = s.regDeadline ? new Date(s.regDeadline+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : 'None';
-    return `
-    <div style="padding:10px 14px;background:var(--surface);border-radius:var(--radius);margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--navy);flex:1">${s.name}</span>
-        ${isActive?'<span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px">Active</span>':'<span style="font-size:12px;color:var(--muted)">Archived</span>'}
+    const rows = LEAGUES.map(l => {
+      const t = (s.leagueTypes && s.leagueTypes[l.id]) || 'individual';
+      const wk = leagueWeekCount(s, l.id);
+      const enabled = !Array.isArray(s.enabledLeagues) || s.enabledLeagues.includes(l.id);
+      const td = 'padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px';
+      return `<tr style="${enabled?'':'opacity:.5'}">
+        <td style="${td}"><input type="checkbox" ${enabled?'checked':''} onchange="updateLeagueEnabled('${s.id}','${l.id}',this.checked)"/></td>
+        <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">${l.name}</td>
+        <td style="${td}">
+          <select class="admin-input" style="width:auto;font-size:12px;padding:4px 8px" onchange="updateLeagueType('${s.id}','${l.id}',this.value)" ${enabled?'':'disabled'}>
+            <option value="individual"${t==='individual'?' selected':''}>Individual</option>
+            <option value="partner"${t==='partner'?' selected':''}>Partner</option>
+          </select>
+        </td>
+        <td style="${td}"><input class="admin-input" type="number" min="1" max="30" value="${wk}" style="width:60px;font-size:12px;padding:4px 8px" onchange="updateLeagueWeeks('${s.id}','${l.id}',this.value)" ${enabled?'':'disabled'}/></td>
+      </tr>`;
+    }).join('');
+
+    html += `
+    <div style="background:var(--surface);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.75rem">
+        <span style="font-family:var(--font-display);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)">${s.name}</span>
+        <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:2px 8px;border-radius:4px">Active</span>
+        <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;${regOpen?'color:var(--green-dark);background:rgba(76,175,40,.12)':'color:var(--danger);background:rgba(217,59,59,.1)'}">Registration ${regOpen?'Open':'Closed'}</span>
       </div>
-      ${isActive ? `
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--muted)">
-          <span>Registration deadline: <strong style="color:var(--navy)">${deadlineStr}</strong></span>
-          <span style="display:inline-flex;align-items:center;gap:6px">Status:
-            <span style="font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;${regOpen?'color:var(--green-dark);background:rgba(76,175,40,.12)':'color:var(--danger);background:rgba(217,59,59,.1)'}">${regOpen?'Open':'Closed'}</span>
-          </span>
-          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="toggleRegistration('${s.id}', ${!(s.regOpen===false)})">${(s.regOpen===false)?'Re-open Registration':'Close Registration'}</button>
+      <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:1rem">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:11px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Registration Deadline</label>
+          <input class="admin-input" type="date" value="${s.regDeadline||''}" style="width:170px;font-size:13px" onchange="updateRegDeadline('${s.id}',this.value)"/>
         </div>
-        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-          <p style="font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Registration Type Per League</p>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
-            ${LEAGUES.map(l => {
-              const t = (s.leagueTypes && s.leagueTypes[l.id]) || 'individual';
-              const wk = leagueWeekCount(s, l.id);
-              const enabled = !Array.isArray(s.enabledLeagues) || s.enabledLeagues.includes(l.id);
-              return `<div style="display:flex;align-items:center;gap:8px;background:var(--white);padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border);${enabled?'':'opacity:.55'}">
-                <input type="checkbox" ${enabled?'checked':''} title="Enabled this season" onchange="updateLeagueEnabled('${s.id}','${l.id}',this.checked)"/>
-                <span style="flex:1;font-size:13px;font-weight:600;color:var(--navy)">${l.name}</span>
-                <select class="admin-input" style="width:auto;font-size:12px" onchange="updateLeagueType('${s.id}','${l.id}',this.value)">
-                  <option value="individual"${t==='individual'?' selected':''}>Individual</option>
-                  <option value="partner"${t==='partner'?' selected':''}>Partner</option>
-                </select>
-                <input class="admin-input" type="number" min="1" max="30" value="${wk}" title="Weeks" style="width:58px;font-size:12px" onchange="updateLeagueWeeks('${s.id}','${l.id}',this.value)"/>
-                <span style="font-size:11px;color:var(--muted)">wks</span>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>` : ''}
+        <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="toggleRegistration('${s.id}', ${!(s.regOpen===false)})">${(s.regOpen===false)?'Re-open Registration':'Close Registration'}</button>
+      </div>
+      ${leagueSettingsTable(rows,'In Season')}
     </div>`;
-  }).join('');
+  }
+
+  if(past.length){
+    html += `<p style="font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:0 0 6px">Past Seasons</p>` +
+      past.map(s => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px">
+        <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy);flex:1">${s.name}</span>
+        <span style="font-size:12px;color:var(--muted)">${seasonLeagues(s).length} leagues</span>
+        <span style="font-size:11px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Archived</span>
+      </div>`).join('');
+  }
+  el.innerHTML = html;
+}
+
+async function updateRegDeadline(seasonId, value){
+  await updateSeasonField(seasonId, { regDeadline: value || null });
+  showToast(value ? 'Registration deadline updated' : 'Registration deadline cleared');
+  renderSeasonsAdmin();
 }
 
 async function updateLeagueEnabled(seasonId, leagueId, enabled){
@@ -748,17 +793,19 @@ async function toggleRegistration(seasonId, close){
 function renderNewSeasonLeagueRows(){
   const el = document.getElementById('league-reg-types');
   if(!el) return;
-  el.innerHTML = LEAGUES.map(l => `
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-      <input type="checkbox" class="reg-enabled-chk" data-league="${l.id}" checked title="Include in season"/>
-      <span style="flex:1;font-size:13px;font-weight:600">${l.name}</span>
-      <select class="admin-input reg-type-sel" data-league="${l.id}" style="width:auto;font-size:12px">
+  const td = 'padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px';
+  const rows = LEAGUES.map(l => `<tr>
+    <td style="${td}"><input type="checkbox" class="reg-enabled-chk" data-league="${l.id}" checked/></td>
+    <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">${l.name}</td>
+    <td style="${td}">
+      <select class="admin-input reg-type-sel" data-league="${l.id}" style="width:auto;font-size:12px;padding:4px 8px">
         <option value="individual">Individual</option>
         <option value="partner">Partner</option>
       </select>
-      <input class="admin-input reg-weeks-inp" data-league="${l.id}" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-      <span style="font-size:11px;color:var(--muted)">wks</span>
-    </div>`).join('');
+    </td>
+    <td style="${td}"><input class="admin-input reg-weeks-inp" data-league="${l.id}" type="number" min="1" max="30" value="8" style="width:60px;font-size:12px;padding:4px 8px"/></td>
+  </tr>`).join('');
+  el.innerHTML = leagueSettingsTable(rows,'Include');
 }
 
 // ---- League catalog management --------------------------------------------
@@ -839,6 +886,8 @@ async function createNewSeason(){
   if(!enabledLeagues.length){ showToast('Enable at least one league!'); return; }
   const deadline = document.getElementById('new-season-deadline').value || null;
   await startNewSeason(name, leagueTypes, deadline, leagueWeeks, enabledLeagues);
+  const nsf = document.getElementById('new-season-form');
+  if(nsf){ nsf.style.display='none'; document.getElementById('new-season-toggle').textContent='+ Start New Season'; }
   // New season: every league starts empty — players fill in as they register.
   // Do NOT seed the hardcoded default schedule/players.
   schedule = [];
@@ -874,39 +923,33 @@ function exportJSON(){
 
 async function loadRegistrations(){
   const tbody = document.getElementById('registrations-body');
-  if(!tbody) return;
+  if(!tbody || !currentSeason) return;
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)"><div style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner"></div>Loading...</div></td></tr>';
   try{
     const leagueFilter = document.getElementById('reg-league-filter')?.value;
-    const filter = leagueFilter ? `&league_id=eq.${leagueFilter}` : '';
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/league_registrations?order=registered_at.desc${filter}`,
-      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
-    );
+    const filter = leagueFilter ? `&league_id=eq.${encodeURIComponent(leagueFilter)}` : '';
+    const base = `${SUPABASE_URL}/rest/v1/league_members?season_id=eq.${encodeURIComponent(currentSeason.id)}&status=eq.active${filter}&select=*`;
+    let r = await fetch(base + '&order=created_at.desc',
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+    if(!r.ok) r = await fetch(base, {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
     if(!r.ok){ tbody.innerHTML='<tr><td colspan="6" style="color:var(--danger);padding:1rem">Failed to load.</td></tr>'; return; }
     const rows = await r.json();
     if(!rows.length){
-      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No registrations yet.</td></tr>';
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--muted)">No registrations for this season yet.</td></tr>';
       return;
     }
     tbody.innerHTML = rows.map(row => {
-      const dt = new Date(row.registered_at);
-      const dateStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-      const statusColor = row.status==='accepted'?'var(--green-dark)':row.status==='waitlisted'?'var(--blue-dark)':'var(--muted)';
+      const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
+      const partner = row.partner_name
+        ? `${row.partner_name}${row.partner_status==='pending'?' <span style="color:#b8860b;font-size:11px">(pending)</span>':''}`
+        : '<span style="color:var(--muted)">—</span>';
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:8px 10px;font-size:13px;white-space:nowrap">${dateStr}</td>
-        <td style="padding:8px 10px;font-size:13px;font-weight:600">${row.first_name} ${row.last_name}</td>
-        <td style="padding:8px 10px;font-size:13px">${row.league_name}</td>
-        <td style="padding:8px 10px;font-size:13px"><a href="mailto:${row.email}" style="color:var(--navy)">${row.email}</a></td>
-        <td style="padding:8px 10px;font-size:13px">${row.phone}</td>
-        <td style="padding:8px 10px">
-          <select onchange="updateRegStatus(${row.id}, this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:3px 6px;font-size:12px;color:${statusColor};font-family:var(--font-display);font-weight:700;text-transform:uppercase;outline:none">
-            <option value="pending" ${row.status==='pending'?'selected':''}>Pending</option>
-            <option value="accepted" ${row.status==='accepted'?'selected':''}>Accepted</option>
-            <option value="waitlisted" ${row.status==='waitlisted'?'selected':''}>Waitlisted</option>
-            <option value="declined" ${row.status==='declined'?'selected':''}>Declined</option>
-          </select>
-        </td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:600">${row.first_name||''} ${row.last_name||''}</td>
+        <td style="padding:8px 10px;font-size:13px">${leagueName(row.league_id)}</td>
+        <td style="padding:8px 10px;font-size:13px">${partner}</td>
+        <td style="padding:8px 10px;font-size:13px">${row.email?`<a href="mailto:${row.email}" style="color:var(--navy)">${row.email}</a>`:'—'}</td>
+        <td style="padding:8px 10px;font-size:13px;white-space:nowrap">${row.phone||'—'}</td>
       </tr>`;
     }).join('');
   }catch(e){
@@ -914,17 +957,6 @@ async function loadRegistrations(){
   }
 }
 
-async function updateRegStatus(id, status){
-  try{
-    await fetch(`${SUPABASE_URL}/rest/v1/league_registrations?id=eq.${id}`,{
-      method:'PATCH',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({status})
-    });
-    showToast('Status updated!');
-    loadRegistrations();
-  }catch(e){ showToast('Update failed'); }
-}
 
 async function loadScoreLog(){
   const logSection=document.getElementById('score-log-body');
