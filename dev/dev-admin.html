@@ -89,6 +89,25 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 @media(max-width:400px){
   .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
 }
+/* --- roster cards (Players & Registered redesign) --- */
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:1rem}
+.roster-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.roster-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border)}
+.roster-card-head h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin:0}
+.roster-count{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--muted);background:var(--surface);padding:2px 9px;border-radius:10px}
+.roster-body{max-height:340px;overflow-y:auto}
+.roster-row{display:flex;align-items:center;gap:10px;padding:7px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.roster-row:last-child{border-bottom:none}
+.roster-num{font-family:var(--font-display);font-weight:700;color:var(--muted);width:20px;text-align:right;flex-shrink:0;font-size:12px}
+.roster-name{font-weight:600;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.roster-status{font-size:11px;white-space:nowrap;flex-shrink:0}
+.roster-input{flex:1;min-width:0;background:transparent;border:none;border-bottom:1px dashed transparent;font-size:13px;font-weight:600;color:var(--navy);font-family:var(--font-body);padding:2px 0;outline:none}
+.roster-input:hover{border-bottom-color:var(--border)}
+.roster-input:focus{border-bottom-color:var(--navy)}
+.roster-x{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;flex-shrink:0;line-height:1}
+.roster-x:hover{color:var(--danger);background:rgba(217,59,59,.08)}
+.roster-empty{padding:1.5rem 1rem;text-align:center;color:var(--muted);font-size:13px}
+.roster-foot{padding:8px 14px;border-top:1px solid var(--border);background:var(--surface)}
 </style>
 </head>
 <body>
@@ -156,19 +175,27 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       </div>
     </div>
       <div class="admin-section" id="roster-admin-section">
-        <h3>Players &amp; Registered Players</h3>
-        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Players who registered for this league this season. Load them in as the player list, then build the schedule below.</p>
-        <div id="admin-roster-list" style="margin-bottom:1rem"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">Load Registered Players</button>
+        <h3>League Roster</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">⇣ Load Registered Players</button>
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;display:none" id="gen-rr-btn" onclick="generateTeamRoundRobin()">Generate Team Round Robin</button>
-          <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule (Show Standings)</button>
+          <button class="btn btn-green" style="font-size:12px;padding:6px 12px" id="mark-generated-btn" onclick="markScheduleGenerated()">Publish Schedule</button>
         </div>
-        <p style="color:var(--muted);font-size:12px;margin-top:.5rem">"Publish Schedule" switches the league's public page from a roster list to full standings. Do this after you've built the schedule.</p>
-        <hr style="border:none;border-top:1px solid var(--border);margin:1.25rem 0"/>
-        <h4 style="font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.75rem">Player Names</h4>
-        <div id="admin-players" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
-        <p style="color:var(--muted);font-size:13px">Names update everywhere in the schedule when you save.</p>
+        <p style="color:var(--muted);font-size:12px;margin-top:.5rem">Pull registrations into the schedule roster, build the schedule below, then Publish to switch the league's public page from a roster list to standings.</p>
+        <div class="roster-grid">
+          <div class="roster-card">
+            <div class="roster-card-head"><h4>Registered</h4><span class="roster-count" id="reg-count">—</span></div>
+            <div class="roster-body" id="admin-roster-list"></div>
+          </div>
+          <div class="roster-card">
+            <div class="roster-card-head"><h4>Schedule Roster</h4><span class="roster-count" id="players-count">—</span></div>
+            <div class="roster-body" id="admin-players"></div>
+            <div class="roster-foot" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <span style="color:var(--muted);font-size:11px">Edits apply everywhere on save</span>
+              <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="addPlayerRow()">+ Add Player</button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="admin-section">
         <h3>Schedule Editor</h3>
@@ -397,13 +424,25 @@ function renderAdminPanel(){
     sel.parentNode.appendChild(delWeekBtn);
   }
   delWeekBtn.style.display = schedule.length ? '' : 'none';
-  document.getElementById('admin-players').innerHTML=PLAYERS.map((p,i)=>
-    `<div style="display:flex;align-items:center;gap:4px">
-      <input class="admin-input" style="width:110px" value="${p}" onchange="PLAYERS[${i}]=this.value"/>
-      <button class="btn btn-danger" style="font-size:11px;padding:3px 7px;white-space:nowrap" onclick="removePlayer(${i})" title="Remove">✕</button>
+  const playersEl = document.getElementById('admin-players');
+  playersEl.innerHTML = PLAYERS.length ? PLAYERS.map((p,i)=>
+    `<div class="roster-row">
+      <span class="roster-num">${i+1}</span>
+      <input class="roster-input" value="${p}" onchange="PLAYERS[${i}]=this.value"/>
+      <button class="roster-x" onclick="removePlayer(${i})" title="Remove">✕</button>
     </div>`
-  ).join('');
+  ).join('') : '<div class="roster-empty">No players loaded yet.<br/>Use "Load Registered Players" above.</div>';
+  const pc = document.getElementById('players-count');
+  if(pc) pc.textContent = PLAYERS.length || '0';
   renderAdminMatches();
+}
+
+function addPlayerRow(){
+  PLAYERS.push('');
+  renderAdminPanel();
+  const inputs = document.querySelectorAll('#admin-players .roster-input');
+  const last = inputs[inputs.length-1];
+  if(last) last.focus();
 }
 
 function renderAdminMatches(){
@@ -497,28 +536,44 @@ function removePlayer(idx){
 async function renderAdminRoster(){
   const el = document.getElementById('admin-roster-list');
   if(!el || !currentLeague) return;
-  el.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading...</p>';
+  el.innerHTML = '<div class="roster-empty">Loading…</div>';
+  const setCount = (txt) => { const c = document.getElementById('reg-count'); if(c) c.textContent = txt; };
   const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
   const isPartner = (currentSeason.leagueTypes && currentSeason.leagueTypes[currentLeague.id]) === 'partner';
   const rrBtn = document.getElementById('gen-rr-btn');
   if(rrBtn) rrBtn.style.display = isPartner ? '' : 'none';
   if(!isPartner) rebuildPartnerMap([]);
   if(!members.length){
-    el.innerHTML = '<p style="color:var(--muted);font-size:13px">No players registered for this league yet.</p>';
+    el.innerHTML = '<div class="roster-empty">No registrations for this league yet.</div>';
+    setCount('0');
     return;
   }
   if(isPartner){
     const teams = buildPartnerUnits(members);
     partnerTeams = teams;
     rebuildPartnerMap(teams);
-    el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${teams.map(t=>
-      `<span style="background:${t.complete?'var(--surface)':t.pending?'rgba(184,134,11,.1)':'rgba(217,59,59,.08)'};padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:${t.complete?'var(--navy)':t.pending?'#b8860b':'var(--danger)'}">${t.label}${t.complete?'':t.pending?' — invite pending':' — needs partner'}</span>`
-    ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${teams.length} team${teams.length!==1?'s':''} · ${members.length} registration${members.length!==1?'s':''}</p>`;
+    el.innerHTML = teams.map((t,i)=>{
+      const status = t.complete
+        ? '<span class="roster-status" style="color:var(--green-dark)">●</span>'
+        : t.pending
+          ? '<span class="roster-status" style="color:#b8860b">● invite pending</span>'
+          : '<span class="roster-status" style="color:var(--danger)">● needs partner</span>';
+      return `<div class="roster-row">
+        <span class="roster-num">${i+1}</span>
+        <span class="roster-name" title="${t.label}">${t.label}</span>
+        ${status}
+      </div>`;
+    }).join('');
+    setCount(`${teams.length} team${teams.length!==1?'s':''}`);
     return;
   }
-  el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:6px">${members.map(m=>
-    `<span style="background:var(--surface);padding:4px 10px;border-radius:var(--radius);font-size:13px;font-weight:600;color:var(--navy)">${m.first_name||''} ${m.last_name||''}</span>`
-  ).join('')}</div><p style="font-size:12px;color:var(--muted);margin-top:6px">${members.length} registered</p>`;
+  el.innerHTML = members.map((m,i)=>
+    `<div class="roster-row">
+      <span class="roster-num">${i+1}</span>
+      <span class="roster-name">${m.first_name||''} ${m.last_name||''}</span>
+    </div>`
+  ).join('');
+  setCount(String(members.length));
 }
 
 let partnerTeams = [];  // [{a, b, complete, label}] for partner leagues
