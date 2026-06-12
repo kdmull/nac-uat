@@ -176,15 +176,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <div class="fg"><label>Phone</label><input id="e-phone" type="tel" placeholder="(555) 555-5555" oninput="this.value=fmtPhone(this.value)"/></div>
     <div class="fg"><label>DUPR ID (read-only)</label><input id="e-dupr" type="text" disabled/></div>
     <div class="fg"><label>League (this season)</label>
-      <select id="e-league">
-        <option value="">— Not in a league —</option>
-        <option value="beginner">All Ages Beginner</option>
-        <option value="int1949">19-49 Intermediate</option>
-        <option value="int50">50+ Intermediate</option>
-        <option value="adv1949">19-49 Advanced</option>
-        <option value="adv50">50+ Advanced</option>
-        <option value="singles">Singles League</option>
-      </select>
+      <select id="e-league"><option value="">— Not in a league —</option></select>
     </div>
     <div class="fg" id="e-partner-wrap" style="display:none"><label>Partner (this league)</label>
       <select id="e-partner"></select>
@@ -208,10 +200,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 <script>
 const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const LEAGUE_NAMES = {
-  beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
-  adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
-};
+// League display names come from the shared catalog (custom leagues included).
+const LEAGUE_NAMES = new Proxy({}, { get: (_, id) => leagueName(id) });
 
 let accounts = [];          // merged profile + league rows
 let sortKey = 'name';
@@ -273,6 +263,10 @@ async function loadAccounts(){
     const seasonId = currentSeason?.id || 'spring2026';
     activeSeasonId = seasonId;
     seasonLeagueTypes = (currentSeason && currentSeason.leagueTypes) || {};
+    // League options come from the catalog, limited to this season's enabled leagues
+    document.getElementById('e-league').innerHTML =
+      '<option value="">— Not in a league —</option>' +
+      seasonLeagues(currentSeason).map(l => `<option value="${l.id}">${l.name}</option>`).join('');
     document.getElementById('season-label').textContent =
       `League column reflects ${currentSeason?.name || seasonId}`;
 

@@ -3,7 +3,9 @@ const SCORES_PW = 'NAC';
 const SUPABASE_URL='https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 
-const LEAGUES = [
+// Default league catalog — used until/unless a custom catalog is saved in the
+// database (pb_league key 'nac_leagues'). Admins can add/remove leagues there.
+const DEFAULT_LEAGUES = [
   {id:'beginner',  name:'All Ages Beginner',  key:'league_beginner',  type:'doubles', sub:'Under 3.0 rating'},
   {id:'int1949',   name:'19-49 Intermediate', key:'league_int1949',   type:'doubles', sub:'3.0 – 3.4 rating'},
   {id:'int50',     name:'50+ Intermediate',   key:'league_int50',     type:'doubles', sub:'3.0 – 3.4 rating'},
@@ -11,6 +13,35 @@ const LEAGUES = [
   {id:'adv50',     name:'50+ Advanced',       key:'league_adv50',     type:'doubles', sub:'3.5 & up rating'},
   {id:'singles',   name:'Singles League',     key:'league_singles',   type:'singles', sub:'Open singles league'},
 ];
+let LEAGUES = DEFAULT_LEAGUES.map(l => ({...l}));
+let leaguesLoaded = false;
+
+async function loadLeagues(){
+  try{
+    const r = await dbGet('nac_leagues');
+    if(r && r.data && Array.isArray(r.data.leagues) && r.data.leagues.length){
+      LEAGUES = r.data.leagues.map(l => ({...l, key: l.key || ('league_' + l.id)}));
+    }
+    leaguesLoaded = true;
+  }catch(e){ console.warn('League catalog load failed (using defaults):', e); }
+}
+
+async function saveLeagues(){
+  return dbSet('nac_leagues', { leagues: LEAGUES, updated: Date.now() });
+}
+
+// Leagues enabled for a given season. Older seasons (no enabledLeagues field)
+// get the whole catalog.
+function seasonLeagues(season){
+  const en = season && season.enabledLeagues;
+  if(!Array.isArray(en)) return LEAGUES;
+  return LEAGUES.filter(l => en.includes(l.id));
+}
+
+function leagueName(id){
+  const l = LEAGUES.find(x => x.id === id);
+  return l ? l.name : id;
+}
 
 // League data always starts EMPTY and is filled from the database by loadData().
 // (The old hardcoded demo schedule/players that used to live here caused fake
@@ -224,6 +255,7 @@ async function logScore(week, matchIdx, games, winner, team1, team2){
 }
 
 async function loadSeasons(){
+  if(!leaguesLoaded) await loadLeagues();
   try {
     const result = await dbGet('nac_seasons');
     if(result && result.data && result.data.seasons){
@@ -247,13 +279,14 @@ async function loadSeasons(){
 async function saveSeasons(activeId){
   await dbSet('nac_seasons', {active: activeId, seasons: allSeasons});
 }
-async function startNewSeason(name, leagueTypes, regDeadline, leagueWeeks){
+async function startNewSeason(name, leagueTypes, regDeadline, leagueWeeks, enabledLeagues){
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
   const newSeason = {
     id, name,
     created: new Date().toISOString(),
     leagueTypes: leagueTypes || {},
     leagueWeeks: leagueWeeks || {},   // weeks per league (default 8 when unset)
+    enabledLeagues: Array.isArray(enabledLeagues) ? enabledLeagues : LEAGUES.map(l=>l.id),
     regDeadline: regDeadline || null,
     regOpen: true,
     scheduleGenerated: {}

@@ -172,10 +172,8 @@ async function loadMyMembership(){
   }catch(e){ console.warn('loadMyMembership failed:', e); myMembership = null; }
 }
 
-const LEAGUE_NAMES = {
-  beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
-  adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
-};
+// League display names come from the shared catalog (custom leagues included).
+const LEAGUE_NAMES = new Proxy({}, { get: (_, id) => leagueName(id) });
 
 function renderMyRegistration(regOpen){
   switchMode = false;
@@ -294,6 +292,7 @@ function renderDuprRequired(){
 
 async function loadSeasonConfig(){
   try{
+    await loadLeagues();   // shared-dev.js: catalog from DB (fallback to defaults)
     const r = await dbGet('nac_seasons');
     if(r && r.data){
       activeSeasonId = r.data.active || 'spring2026';
@@ -322,14 +321,9 @@ function renderGate(){
 }
 
 function renderLeagueSelect(){
-  const leagues = [
-    {id:'beginner',name:'All Ages Beginner',sub:'Under 3.0 rating'},
-    {id:'int1949',name:'19-49 Intermediate',sub:'3.0 – 3.4 rating'},
-    {id:'int50',name:'50+ Intermediate',sub:'3.0 – 3.4 rating'},
-    {id:'adv1949',name:'19-49 Advanced',sub:'3.5 & up rating'},
-    {id:'adv50',name:'50+ Advanced',sub:'3.5 & up rating'},
-    {id:'singles',name:'Singles League',sub:'Open singles'},
-  ];
+  const leagues = (typeof seasonLeagues === 'function' && currentSeason)
+    ? seasonLeagues(currentSeason)
+    : LEAGUES;
   document.getElementById('page').innerHTML = `
     <div class="page-header">
       <h1>${switchMode ? 'Switch League' : 'League Registration'}</h1>

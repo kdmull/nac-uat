@@ -194,6 +194,7 @@ let leagueId = null;
 window.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   leagueId = params.get('league');
+  await loadSeasons();   // loads the league catalog too
   currentLeague = LEAGUES.find(l => l.id === leagueId);
 
   if(!currentLeague || currentLeague.type !== 'doubles') {

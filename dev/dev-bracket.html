@@ -185,6 +185,7 @@ let currentModalSlot = null; // {round, matchIndex}
 
 window.addEventListener('DOMContentLoaded', async () => {
   try {
+    await loadSeasons();   // loads the league catalog too
     currentLeague = LEAGUES.find(l => l.id === 'singles');
     await loadData(); // load regular season data for seedings
   } catch(e) {

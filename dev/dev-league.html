@@ -280,6 +280,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 <script src="shared-dev.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', async ()=>{
+  // Load the league catalog + seasons first — custom leagues live in the DB
+  await loadSeasons();
   currentLeague = getLeagueFromURL();
   if(!currentLeague){
     window.location.href='dev-index.html';
@@ -292,8 +294,6 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     const pt = document.getElementById('playoffs-tab');
     if(pt) pt.href = `dev-doubles-playoff.html?league=${currentLeague.id}`;
   }
-  // Load seasons first so data key includes season suffix
-  await loadSeasons();
   const urlSeason = getSeasonFromURL();
   if(urlSeason){
     const found = allSeasons.find(s=>s.id===urlSeason);

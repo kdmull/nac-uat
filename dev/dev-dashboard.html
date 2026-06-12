@@ -274,10 +274,8 @@ let ratingsLoading = false;
 
 const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-get-ratings';
 
-const LEAGUE_NAMES = {
-  beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
-  adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
-};
+// League display names come from the shared catalog (custom leagues included).
+const LEAGUE_NAMES = new Proxy({}, { get: (_, id) => leagueName(id) });
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();

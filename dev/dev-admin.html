@@ -125,14 +125,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <!-- League picker (shown after unlock) -->
       <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <label for="admin-league-sel" style="font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)">Managing League:</label>
-        <select id="admin-league-sel" onchange="onAdminLeagueChange(this.value)" style="flex:1;min-width:200px;padding:9px 12px;font-size:15px;font-family:var(--font-body);border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--navy);outline:none;cursor:pointer">
-          <option value="beginner">All Ages Beginner</option>
-          <option value="int1949">19-49 Intermediate</option>
-          <option value="int50">50+ Intermediate</option>
-          <option value="adv1949">19-49 Advanced</option>
-          <option value="adv50">50+ Advanced</option>
-          <option value="singles">Singles</option>
-        </select>
+        <select id="admin-league-sel" onchange="onAdminLeagueChange(this.value)" style="flex:1;min-width:200px;padding:9px 12px;font-size:15px;font-family:var(--font-body);border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--navy);outline:none;cursor:pointer"></select>
       </div>
 
       <div class="save-bar">
@@ -202,12 +195,6 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <div style="display:flex;gap:8px">
           <select id="reg-league-filter" class="admin-input" style="width:180px" onchange="loadRegistrations()">
             <option value="">All Leagues</option>
-            <option value="beginner">All Ages Beginner</option>
-            <option value="int1949">19-49 Intermediate</option>
-            <option value="int50">50+ Intermediate</option>
-            <option value="adv1949">19-49 Advanced</option>
-            <option value="adv50">50+ Advanced</option>
-            <option value="singles">Singles</option>
           </select>
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadRegistrations()">↻ Refresh</button>
         </div>
@@ -244,64 +231,33 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           </div>
         </div>
         <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Registration Type Per League</label>
-        <div id="league-reg-types" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-bottom:1rem">
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">All Ages Beginner</span>
-            <select class="admin-input reg-type-sel" data-league="beginner" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="beginner" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">19-49 Intermediate</span>
-            <select class="admin-input reg-type-sel" data-league="int1949" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="int1949" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">50+ Intermediate</span>
-            <select class="admin-input reg-type-sel" data-league="int50" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="int50" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">19-49 Advanced</span>
-            <select class="admin-input reg-type-sel" data-league="adv1949" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="adv1949" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">50+ Advanced</span>
-            <select class="admin-input reg-type-sel" data-league="adv50" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="adv50" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
-            <span style="flex:1;font-size:13px;font-weight:600">Singles</span>
-            <select class="admin-input reg-type-sel" data-league="singles" style="width:auto;font-size:12px">
-              <option value="individual">Individual</option>
-              <option value="partner">Partner</option>
-            </select>
-            <input class="admin-input reg-weeks-inp" data-league="singles" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
-            <span style="font-size:11px;color:var(--muted)">wks</span>
-          </div>
-        </div>
+        <div id="league-reg-types" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin-bottom:1rem"></div>
         <button class="btn btn-green" onclick="createNewSeason()">Start New Season</button>
-        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved. Set whether each league is individual or partner signup.</p>
+        <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Starting a new season archives the current one and starts fresh across all leagues. Past data is preserved. Uncheck a league to leave it out of the season; set whether each is individual or partner signup.</p>
+      </div>
+
+      <div class="admin-section">
+        <h3>Manage Leagues</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">The league catalog used across the whole site. Add new leagues here; they appear in season setup, registration, and the public pages. To sit a league out for one season, use the checkboxes in the season settings above instead of deleting it.</p>
+        <div id="league-catalog-list" style="margin-bottom:1rem"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">League Name</label>
+            <input class="admin-input" id="new-league-name" placeholder="e.g. Women's 3.5+" style="width:200px"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Format</label>
+            <select class="admin-input" id="new-league-type" style="width:120px">
+              <option value="doubles">Doubles</option>
+              <option value="singles">Singles</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px">
+            <label style="font-size:12px;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Description</label>
+            <input class="admin-input" id="new-league-sub" placeholder="e.g. 3.5 & up rating" style="width:100%"/>
+          </div>
+          <button class="btn btn-green" onclick="addLeague()">+ Add League</button>
+        </div>
       </div>
     </div><!-- end admin-content -->
   </div><!-- end admin-wrap -->
@@ -338,10 +294,24 @@ async function checkAccountAdmin(){
     return !!(data && data.is_admin);
   }catch(e){ return false; }
 }
+function populateAdminLeagueSel(){
+  const sel = document.getElementById('admin-league-sel');
+  const cur = sel.value;
+  sel.innerHTML = LEAGUES.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+  if(cur && LEAGUES.find(l=>l.id===cur)) sel.value = cur;
+}
+
 window.addEventListener('DOMContentLoaded', async ()=>{
-  // Determine starting league: URL param if present, otherwise the dropdown's first option
+  // League catalog lives in the DB now — load it before resolving anything
+  await loadSeasons();
+  populateAdminLeagueSel();
+  renderLeagueCatalog();
+  renderNewSeasonLeagueRows();
+  const regFilter = document.getElementById('reg-league-filter');
+  if(regFilter) regFilter.innerHTML = '<option value="">All Leagues</option>' +
+    LEAGUES.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   const urlLeague = getLeagueFromURL();
-  const startId = urlLeague ? urlLeague.id : document.getElementById('admin-league-sel').value;
+  const startId = (urlLeague && urlLeague.id) || (LEAGUES[0] && LEAGUES[0].id);
   document.getElementById('admin-league-sel').value = startId;
   currentLeague = LEAGUES.find(l => l.id === startId);
   await initAdminLeague(currentLeague);
@@ -717,7 +687,9 @@ function renderSeasonsAdmin(){
             ${LEAGUES.map(l => {
               const t = (s.leagueTypes && s.leagueTypes[l.id]) || 'individual';
               const wk = leagueWeekCount(s, l.id);
-              return `<div style="display:flex;align-items:center;gap:8px;background:var(--white);padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border)">
+              const enabled = !Array.isArray(s.enabledLeagues) || s.enabledLeagues.includes(l.id);
+              return `<div style="display:flex;align-items:center;gap:8px;background:var(--white);padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border);${enabled?'':'opacity:.55'}">
+                <input type="checkbox" ${enabled?'checked':''} title="Enabled this season" onchange="updateLeagueEnabled('${s.id}','${l.id}',this.checked)"/>
                 <span style="flex:1;font-size:13px;font-weight:600;color:var(--navy)">${l.name}</span>
                 <select class="admin-input" style="width:auto;font-size:12px" onchange="updateLeagueType('${s.id}','${l.id}',this.value)">
                   <option value="individual"${t==='individual'?' selected':''}>Individual</option>
@@ -731,6 +703,18 @@ function renderSeasonsAdmin(){
         </div>` : ''}
     </div>`;
   }).join('');
+}
+
+async function updateLeagueEnabled(seasonId, leagueId, enabled){
+  const s = allSeasons.find(x => x.id === seasonId);
+  if(!s) return;
+  let en = Array.isArray(s.enabledLeagues) ? s.enabledLeagues.slice() : LEAGUES.map(l=>l.id);
+  en = en.filter(id => id !== leagueId);
+  if(enabled) en.push(leagueId);
+  if(!en.length){ showToast('At least one league must stay enabled'); renderSeasonsAdmin(); return; }
+  await updateSeasonField(seasonId, { enabledLeagues: en });
+  renderSeasonsAdmin();
+  showToast(leagueName(leagueId) + (enabled ? ' enabled' : ' disabled') + ' for this season');
 }
 
 async function updateLeagueWeeks(seasonId, leagueId, value){
@@ -759,6 +743,78 @@ async function toggleRegistration(seasonId, close){
   showToast(close ? 'Registration closed' : 'Registration re-opened');
 }
 
+function renderNewSeasonLeagueRows(){
+  const el = document.getElementById('league-reg-types');
+  if(!el) return;
+  el.innerHTML = LEAGUES.map(l => `
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);padding:6px 10px;border-radius:var(--radius)">
+      <input type="checkbox" class="reg-enabled-chk" data-league="${l.id}" checked title="Include in season"/>
+      <span style="flex:1;font-size:13px;font-weight:600">${l.name}</span>
+      <select class="admin-input reg-type-sel" data-league="${l.id}" style="width:auto;font-size:12px">
+        <option value="individual">Individual</option>
+        <option value="partner">Partner</option>
+      </select>
+      <input class="admin-input reg-weeks-inp" data-league="${l.id}" type="number" min="1" max="30" value="8" title="Weeks" style="width:58px;font-size:12px"/>
+      <span style="font-size:11px;color:var(--muted)">wks</span>
+    </div>`).join('');
+}
+
+// ---- League catalog management --------------------------------------------
+function renderLeagueCatalog(){
+  const el = document.getElementById('league-catalog-list');
+  if(!el) return;
+  el.innerHTML = LEAGUES.map((l,i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:var(--radius);margin-bottom:6px;flex-wrap:wrap">
+      <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy);min-width:160px">${l.name}</span>
+      <span style="font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:${l.type==='doubles'?'rgba(26,42,108,.08)':'rgba(76,175,40,.12)'};color:${l.type==='doubles'?'var(--navy)':'var(--green-dark)'}">${l.type}</span>
+      <span style="flex:1;font-size:12px;color:var(--muted)">${l.sub||''}</span>
+      <span style="font-size:11px;color:var(--muted)">id: ${l.id}</span>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteLeague(${i})">Delete</button>
+    </div>`).join('');
+}
+
+async function addLeague(){
+  const name = document.getElementById('new-league-name').value.trim();
+  const type = document.getElementById('new-league-type').value;
+  const sub  = document.getElementById('new-league-sub').value.trim();
+  if(!name){ showToast('Enter a league name!'); return; }
+  let id = name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  if(!id){ showToast('Name needs letters or numbers'); return; }
+  let base = id, n = 2;
+  while(LEAGUES.find(l => l.id === id)){ id = base + (n++); }
+  LEAGUES.push({ id, name, key: 'league_' + id, type, sub });
+  const ok = await saveLeagues();
+  if(!ok){ LEAGUES.pop(); showToast('Could not save league — try again'); return; }
+  document.getElementById('new-league-name').value = '';
+  document.getElementById('new-league-sub').value = '';
+  renderLeagueCatalog();
+  populateAdminLeagueSel();
+  renderNewSeasonLeagueRows();
+  renderSeasonsAdmin();
+  showToast(`"${name}" added — enable it per season in the season settings`);
+}
+
+async function deleteLeague(idx){
+  const l = LEAGUES[idx];
+  if(!l) return;
+  if(LEAGUES.length <= 1){ showToast('At least one league must remain'); return; }
+  if(!confirm(`Delete "${l.name}" from the league catalog?\n\nIt disappears from ALL seasons, the home page, and registration. Player registrations and saved schedules for it stay in the database but won't be reachable.\n\nIf you just want it out of THIS season, cancel and uncheck it in the season settings instead.`)) return;
+  const removed = LEAGUES.splice(idx, 1)[0];
+  const ok = await saveLeagues();
+  if(!ok){ LEAGUES.splice(idx, 0, removed); showToast('Could not save — try again'); return; }
+  if(currentLeague && currentLeague.id === removed.id){
+    currentLeague = LEAGUES[0];
+    document.getElementById('admin-league-sel').value = currentLeague.id;
+    await initAdminLeague(currentLeague);
+    renderAdminPanel(); renderAdminRoster();
+  }
+  renderLeagueCatalog();
+  populateAdminLeagueSel();
+  renderNewSeasonLeagueRows();
+  renderSeasonsAdmin();
+  showToast(`"${removed.name}" deleted`);
+}
+
 async function createNewSeason(){
   const name=document.getElementById('new-season-name').value.trim();
   if(!name){showToast('Enter a season name!');return;}
@@ -774,8 +830,13 @@ async function createNewSeason(){
     const n = parseInt(inp.value, 10);
     leagueWeeks[inp.dataset.league] = (n >= 1 && n <= 30) ? n : 8;
   });
+  const enabledLeagues = [];
+  document.querySelectorAll('.reg-enabled-chk').forEach(chk => {
+    if(chk.checked) enabledLeagues.push(chk.dataset.league);
+  });
+  if(!enabledLeagues.length){ showToast('Enable at least one league!'); return; }
   const deadline = document.getElementById('new-season-deadline').value || null;
-  await startNewSeason(name, leagueTypes, deadline, leagueWeeks);
+  await startNewSeason(name, leagueTypes, deadline, leagueWeeks, enabledLeagues);
   // New season: every league starts empty — players fill in as they register.
   // Do NOT seed the hardcoded default schedule/players.
   schedule = [];

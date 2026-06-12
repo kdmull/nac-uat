@@ -137,6 +137,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const playerName = params.get('player');
   const leagueId = params.get('league');
 
+  await loadSeasons();   // loads the league catalog too
   currentLeague = LEAGUES.find(l => l.id === leagueId) || null;
   if(!currentLeague || !playerName){
     document.getElementById('main-content').innerHTML = '<div class="loading-overlay">Invalid profile link.</div>';

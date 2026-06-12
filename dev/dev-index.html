@@ -105,32 +105,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
   </div>
 
   <div class="section-label">View Leagues</div>
-  <div class="leagues-grid">
-    <a class="league-card" href="dev-league.html?league=beginner">
-      <div class="league-card-title">All Ages Beginner</div>
-      <div class="league-card-sub">Under 3.0 rating</div>
-    </a>
-    <a class="league-card" href="dev-league.html?league=int1949">
-      <div class="league-card-title">19-49 Intermediate</div>
-      <div class="league-card-sub">3.0 – 3.4 rating</div>
-    </a>
-    <a class="league-card" href="dev-league.html?league=int50">
-      <div class="league-card-title">50+ Intermediate</div>
-      <div class="league-card-sub">3.0 – 3.4 rating</div>
-    </a>
-    <a class="league-card" href="dev-league.html?league=adv1949">
-      <div class="league-card-title">19-49 Advanced</div>
-      <div class="league-card-sub">3.5 & up rating</div>
-    </a>
-    <a class="league-card" href="dev-league.html?league=adv50">
-      <div class="league-card-title">50+ Advanced</div>
-      <div class="league-card-sub">3.5 & up rating</div>
-    </a>
-    <a class="league-card" href="dev-league.html?league=singles">
-      <div class="league-card-title">Singles</div>
-      <div class="league-card-sub">Open singles league</div>
-    </a>
-  </div>
+  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -138,6 +113,44 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// League cards are dynamic: catalog from pb_league 'nac_leagues' (fallback to
+// the built-in six), filtered to the active season's enabled leagues.
+const FALLBACK_LEAGUES = [
+  {id:'beginner',  name:'All Ages Beginner',  sub:'Under 3.0 rating'},
+  {id:'int1949',   name:'19-49 Intermediate', sub:'3.0 – 3.4 rating'},
+  {id:'int50',     name:'50+ Intermediate',   sub:'3.0 – 3.4 rating'},
+  {id:'adv1949',   name:'19-49 Advanced',     sub:'3.5 & up rating'},
+  {id:'adv50',     name:'50+ Advanced',       sub:'3.5 & up rating'},
+  {id:'singles',   name:'Singles',            sub:'Open singles league'},
+];
+
+async function renderLeagueCards(){
+  const grid = document.getElementById('leagues-grid');
+  if(!grid) return;
+  let leagues = FALLBACK_LEAGUES;
+  let enabled = null;
+  try{
+    const [lg, se] = await Promise.all([
+      sb.from('pb_league').select('value').eq('key','nac_leagues').maybeSingle(),
+      sb.from('pb_league').select('value').eq('key','nac_seasons').maybeSingle()
+    ]);
+    if(lg.data && lg.data.value && Array.isArray(lg.data.value.leagues) && lg.data.value.leagues.length){
+      leagues = lg.data.value.leagues;
+    }
+    if(se.data && se.data.value && se.data.value.seasons){
+      const active = (se.data.value.seasons || []).find(x => x.id === se.data.value.active);
+      if(active && Array.isArray(active.enabledLeagues)) enabled = active.enabledLeagues;
+    }
+  }catch(e){ console.warn('league cards: using fallback', e); }
+  const show = enabled ? leagues.filter(l => enabled.includes(l.id)) : leagues;
+  grid.innerHTML = show.map(l => `
+    <a class="league-card" href="dev-league.html?league=${l.id}">
+      <div class="league-card-title">${l.name}</div>
+      <div class="league-card-sub">${l.sub||''}</div>
+    </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
+}
+renderLeagueCards();
 
 window.addEventListener('DOMContentLoaded', async () => {
   const { data: { session } } = await sb.auth.getSession();

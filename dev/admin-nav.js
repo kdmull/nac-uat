@@ -128,6 +128,15 @@
     beginner:'All Ages Beginner', int1949:'19-49 Intermediate', int50:'50+ Intermediate',
     adv1949:'19-49 Advanced', adv50:'50+ Advanced', singles:'Singles League'
   };
+  // Merge in custom leagues from the catalog so banner names stay correct
+  fetch(SB_URL+'/rest/v1/pb_league?key=eq.nac_leagues&select=value',
+    { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY } })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      var lgs = rows[0] && rows[0].value && rows[0].value.leagues;
+      if(Array.isArray(lgs)) lgs.forEach(function(l){ if(l && l.id) LEAGUE_NAMES[l.id] = l.name || l.id; });
+    })
+    .catch(function(){});
 
   function checkPartnerInvites(sess){
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
