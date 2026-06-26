@@ -220,7 +220,7 @@
     var st = document.createElement('style');
     st.id = 'nac-hamburger-css';
     st.textContent =
-      '.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;padding:6px 10px;margin-left:auto}' +
+      '.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:30px;line-height:1;cursor:pointer;padding:6px 12px;margin-left:auto}' +
       '.nav-panel{display:none;background:var(--navy,#1a2a6c);border-bottom:3px solid var(--green,#4caf28)}' +
       '.nav-panel.open{display:block}' +
       '.nav-panel a{display:block;padding:13px 22px;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.78);text-decoration:none;border-top:1px solid rgba(255,255,255,.08)}' +
@@ -235,7 +235,7 @@
         'nav .nav-greeting{display:none!important}' +
         'nav{justify-content:space-between!important;flex-wrap:nowrap!important}' +
         'nav .nav-brand{width:auto!important;margin:0!important;justify-content:flex-start!important;padding:.5rem 0!important;flex:0 1 auto}' +
-        'nav .nav-logo{height:42px!important}' +
+        'nav .nav-logo{height:52px!important}' +
       '}';
     document.head.appendChild(st);
   }
