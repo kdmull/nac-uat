@@ -212,9 +212,105 @@
     else document.body.insertBefore(wrap, document.body.firstChild);
   }
 
+  // ── Mobile hamburger: collapse BOTH nav rows into one menu ───────────
+  function esc(s){ return (s||'').replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function injectHamburgerCSS(){
+    if(document.getElementById('nac-hamburger-css')) return;
+    var st = document.createElement('style');
+    st.id = 'nac-hamburger-css';
+    st.textContent =
+      '.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:24px;line-height:1;cursor:pointer;padding:6px 10px;margin-left:auto}' +
+      '.nav-panel{display:none;background:var(--navy,#1a2a6c);border-bottom:3px solid var(--green,#4caf28)}' +
+      '.nav-panel.open{display:block}' +
+      '.nav-panel a{display:block;padding:13px 22px;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.78);text-decoration:none;border-top:1px solid rgba(255,255,255,.08)}' +
+      '.nav-panel a:hover,.nav-panel a:active{background:rgba(255,255,255,.06);color:#fff}' +
+      '.nav-panel a.np-active{color:var(--green,#4caf28)}' +
+      '.nav-panel .np-greeting{padding:12px 22px 8px;font-family:"Barlow",sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.9)}' +
+      '.nav-panel .np-divider{height:1px;background:rgba(255,255,255,.16);margin:0}' +
+      '@media(min-width:769px){.nav-panel{display:none!important}}' +
+      '@media(max-width:768px){' +
+        '.nav-hamburger{display:block}' +
+        'nav .nav-actions,nav .nav-right,nav [data-account-nav],nav .nav-tabs{display:none!important}' +
+        'nav .nav-greeting{display:none!important}' +
+        'nav{justify-content:space-between!important;flex-wrap:nowrap!important}' +
+        'nav .nav-brand{width:auto!important;margin:0!important;justify-content:flex-start!important;padding:.5rem 0!important;flex:0 1 auto}' +
+        'nav .nav-logo{height:42px!important}' +
+      '}';
+    document.head.appendChild(st);
+  }
+
+  // Gather every nav link + account item present right now.
+  function collectNav(){
+    var nav = document.querySelector('nav');
+    var out = { greeting:'', links:[], account:[] };
+    if(!nav) return out;
+    var g = nav.querySelector('.nav-greeting');
+    if(g) out.greeting = g.textContent.trim();
+    nav.querySelectorAll('.nav-tab, .nav-link').forEach(function(a){
+      var t = a.textContent.trim(); if(!t) return;
+      out.links.push({ text:t, href:a.getAttribute('href'),
+        active: a.classList.contains('active') || a.classList.contains('current') });
+    });
+    nav.querySelectorAll('#nav-actions a, #nav-actions button, [data-account-nav] a, [data-account-nav] button').forEach(function(a){
+      var t = a.textContent.trim(); if(!t) return;
+      out.account.push({ text:t, href: a.getAttribute && a.getAttribute('href'),
+        signout: t.toLowerCase().indexOf('sign out') >= 0 });
+    });
+    return out;
+  }
+
+  function buildPanel(panel, closeFn){
+    var d = collectNav();
+    var html = '';
+    if(d.greeting) html += '<div class="np-greeting">' + esc(d.greeting) + '</div>';
+    d.links.forEach(function(l){
+      html += '<a href="' + esc(l.href || '#') + '"' + (l.active ? ' class="np-active"' : '') + '>' + esc(l.text) + '</a>';
+    });
+    if(d.account.length){
+      html += '<div class="np-divider"></div>';
+      d.account.forEach(function(a){
+        html += a.signout
+          ? '<a href="#" data-signout="1">' + esc(a.text) + '</a>'
+          : '<a href="' + esc(a.href || '#') + '">' + esc(a.text) + '</a>';
+      });
+    }
+    panel.innerHTML = html;
+    panel.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(e){
+        if(a.getAttribute('data-signout')){ e.preventDefault(); signOut(); return; }
+        closeFn();   // let navigation proceed
+      });
+    });
+  }
+
+  function setupHamburger(){
+    var nav = document.querySelector('nav');
+    if(!nav || nav.querySelector('.nav-hamburger')) return;
+    var btn = document.createElement('button');
+    btn.className = 'nav-hamburger';
+    btn.setAttribute('aria-label', 'Menu');
+    btn.innerHTML = '☰';
+    nav.appendChild(btn);
+    var panel = document.createElement('div');
+    panel.className = 'nav-panel';
+    nav.parentNode.insertBefore(panel, nav.nextSibling);
+    function close(){ panel.classList.remove('open'); btn.innerHTML = '☰'; }
+    function open(){ buildPanel(panel, close); panel.classList.add('open'); btn.innerHTML = '✕'; }
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      panel.classList.contains('open') ? close() : open();
+    });
+    document.addEventListener('click', function(e){
+      if(panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn) close();
+    });
+  }
+
   function run(){
+    injectHamburgerCSS();             // mobile menu styles (everyone)
+    setupHamburger();                 // collapse both nav rows into one menu
     var sess = getSession();
-    if(!sess) return;                 // not signed in → nothing to add
+    if(!sess) return;                 // not signed in → no account/admin links to add
     injectAccountButtons();           // My Profile + Sign Out for any logged-in user
     checkAdmin(sess).then(function(isAdmin){ if(isAdmin) injectLinks(); });
     checkPartnerInvites(sess);        // partner invite Accept/Decline banner
