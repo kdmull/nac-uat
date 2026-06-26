@@ -220,7 +220,7 @@
     var st = document.createElement('style');
     st.id = 'nac-hamburger-css';
     st.textContent =
-      '.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:30px;line-height:1;cursor:pointer;padding:6px 12px;margin-left:auto}' +
+      '.nav-hamburger{display:none;background:none;border:none;color:#fff;font-size:36px;line-height:1;cursor:pointer;padding:6px 12px;margin-left:auto}' +
       '.nav-panel{display:none;background:var(--navy,#1a2a6c);border-bottom:3px solid var(--green,#4caf28)}' +
       '.nav-panel.open{display:block}' +
       '.nav-panel a{display:block;padding:13px 22px;font-family:"Barlow Condensed",sans-serif;font-size:16px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.78);text-decoration:none;border-top:1px solid rgba(255,255,255,.08)}' +
@@ -230,12 +230,12 @@
       '.nav-panel .np-divider{height:1px;background:rgba(255,255,255,.16);margin:0}' +
       '@media(min-width:769px){.nav-panel{display:none!important}}' +
       '@media(max-width:768px){' +
-        '.nav-hamburger{display:block}' +
+        '.nav-hamburger{display:block;position:absolute;right:8px;top:50%;transform:translateY(-50%);margin:0}' +
         'nav .nav-actions,nav .nav-right,nav [data-account-nav],nav .nav-tabs{display:none!important}' +
         'nav .nav-greeting{display:none!important}' +
-        'nav{justify-content:space-between!important;flex-wrap:nowrap!important}' +
-        'nav .nav-brand{width:auto!important;margin:0!important;justify-content:flex-start!important;padding:.5rem 0!important;flex:0 1 auto}' +
-        'nav .nav-logo{height:52px!important}' +
+        'nav{position:relative;justify-content:center!important;flex-wrap:nowrap!important}' +
+        'nav .nav-brand{width:auto!important;margin:0 auto!important;justify-content:center!important;padding:.5rem 0!important;flex:0 1 auto}' +
+        'nav .nav-logo{height:64px!important}' +
       '}';
     document.head.appendChild(st);
   }
