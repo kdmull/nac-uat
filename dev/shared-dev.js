@@ -152,19 +152,8 @@ async function getDuprIds(playerNames){
   }catch(e){ return {}; }
 }
 
-// Store DUPR match code in Supabase for future updates/deletes
-async function storeDuprMatchCode(identifier, matchCode, hashedMatchCode){
-  try{
-    await fetch(`${SUPABASE_URL}/rest/v1/pb_scores_log`, {
-      method: 'PATCH',
-      headers:{
-        'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,
-        'Content-Type':'application/json'
-      },
-      body: JSON.stringify({ dupr_match_code: matchCode, dupr_hashed_code: hashedMatchCode })
-    });
-  }catch(e){ console.warn('Could not store DUPR match code:', e); }
-}
+// (matchCode is now persisted server-side by the dupr-submit-match function,
+// keyed by a stable identifier, so admins can update/delete the match later.)
 
 async function submitToDUPR(week, matchIdx, m, games){
   if(!currentLeague) return;
@@ -219,6 +208,7 @@ async function submitToDUPR(week, matchIdx, m, games){
         match: { teamA, teamB },
         leagueKey: currentLeague.key,
         leagueName: currentLeague.name,
+        seasonId: (viewingSeason?.id || currentSeason?.id || null),
         week,
         matchNum: matchIdx + 1,
         format
@@ -341,6 +331,111 @@ function leagueWeekCount(season, leagueId){
   const w = season && season.leagueWeeks && season.leagueWeeks[leagueId];
   const n = parseInt(w, 10);
   return (n >= 1 && n <= 30) ? n : 8;   // default 8 weeks
+}
+
+// ---- Account admin detection (no supabase-js needed) ----------------------
+// Reads the Supabase auth session straight from localStorage so pages that
+// don't load the supabase-js SDK (league/bracket/playoff) can still tell
+// whether the signed-in user is an admin.
+function nacGetSession(){
+  try{
+    var ref = (SUPABASE_URL.match(/^https?:\/\/([^.]+)\./) || [])[1] || '';
+    var raw = ref ? localStorage.getItem('sb-'+ref+'-auth-token') : null;
+    if(!raw){
+      for(var i=0;i<localStorage.length;i++){
+        var k = localStorage.key(i);
+        if(/^sb-.*-auth-token$/.test(k)){ raw = localStorage.getItem(k); break; }
+      }
+    }
+    if(!raw) return null;
+    var obj = JSON.parse(raw);
+    var s = obj.currentSession || obj;
+    var token = s.access_token;
+    if(!token) return null;
+    var uid = (s.user && s.user.id) || null;
+    if(!uid){
+      var part = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      uid = JSON.parse(atob(part)).sub || null;
+    }
+    return uid ? { token: token, uid: uid } : null;
+  }catch(e){ return null; }
+}
+
+async function checkAccountAdmin(){
+  try{
+    const sess = nacGetSession();
+    if(!sess) return false;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${sess.uid}&select=is_admin`,
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+sess.token } });
+    if(!r.ok) return false;
+    const rows = await r.json();
+    return !!(rows[0] && rows[0].is_admin);
+  }catch(e){ return false; }
+}
+
+// ---- Playoff seeding (shared by admin + public postseason pages) ----------
+// Entrants for the currently-loaded league, best record first, with W/L.
+// isTeam=true -> partnerships ("A & B"); else individuals.
+function computePlayoffEntrants(isTeam){
+  if(isTeam){
+    const teamStats = {};
+    const teamOf = (x, y) => {
+      const key = [x, y].filter(Boolean).map(v=>v.toLowerCase()).sort().join('|');
+      if(!key) return null;
+      if(!teamStats[key]) teamStats[key] = { name:[x,y].filter(Boolean).join(' & '), w:0,l:0,pts:0,opp:0 };
+      return teamStats[key];
+    };
+    for(const w of schedule)for(const m of w.matches){
+      if(m.p1a===undefined) continue;
+      teamOf(m.p1a, m.p1b); teamOf(m.p2a, m.p2b);
+      const r = seriesResult(m);
+      if(!r.complete) continue;
+      const t1 = teamOf(m.p1a, m.p1b), t2 = teamOf(m.p2a, m.p2b);
+      if(!t1 || !t2) continue;
+      const t1won = r.p1w > r.p2w;
+      const wt = t1won ? t1 : t2, lt = t1won ? t2 : t1;
+      wt.w++; wt.pts += t1won ? r.pts1 : r.pts2; wt.opp += t1won ? r.pts2 : r.pts1;
+      lt.l++; lt.pts += t1won ? r.pts2 : r.pts1; lt.opp += t1won ? r.pts1 : r.pts2;
+    }
+    return Object.values(teamStats).map(s => {
+      const tot = s.w + s.l;
+      return {name:s.name, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+    }).sort((a,b) => b.pct-a.pct||b.diff-a.diff);
+  }
+  const stats = getStats();
+  return getActivePlayers().map(p => {
+    const s = stats[p] || {w:0,l:0,pts:0,opp:0};
+    const tot = s.w + s.l;
+    return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+  }).sort((a,b) => b.pct-a.pct||b.diff-a.diff);
+}
+
+// Single-elimination bracket from 4 seed names (#1v#4, #2v#3).
+function buildBracketData(seedNames, isTeam){
+  const ent = computePlayoffEntrants(isTeam);
+  const recOf = (n) => ent.find(e=>e.name===n) || {w:0,l:0};
+  const seeds = (seedNames||[]).map((name,i)=>{ const r = recOf(name); return {name, w:r.w, l:r.l, seed:i+1}; });
+  return {
+    seeds,
+    semis: [
+      {p1: seeds[0]?.name||'TBD', p2: seeds[3]?.name||'TBD', games:[], winner:null},
+      {p1: seeds[1]?.name||'TBD', p2: seeds[2]?.name||'TBD', games:[], winner:null},
+    ],
+    final: {p1:null, p2:null, games:[], winner:null},
+    champion: null,
+  };
+}
+
+// Round-robin playoff from 4 seed names (rotating-partner format).
+function buildPlayoffData(seedNames){
+  const seeds = ['','','',''];
+  for(let i=0;i<4;i++) seeds[i] = (seedNames && seedNames[i]) || '';
+  const matches = [
+    {label:'Match 1', team1:[0,3], team2:[1,2], s1:null, s2:null},
+    {label:'Match 2', team1:[0,2], team2:[1,3], s1:null, s2:null},
+    {label:'Match 3', team1:[0,1], team2:[2,3], s1:null, s2:null},
+  ];
+  return {seeds, matches};
 }
 
 function isViewingActiveSeason(){
