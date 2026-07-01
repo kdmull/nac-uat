@@ -627,10 +627,13 @@ async function renderDuprMatches(){
       const label = isDoubles
         ? `${displayName(m.p1a)} & ${displayName(m.p1b)} vs ${displayName(m.p2a)} & ${displayName(m.p2b)}`
         : `${displayName(m.p1)} vs ${displayName(m.p2)}`;
+      const gameScores = (m.games || [])
+        .filter(g => g.s1 !== null && g.s2 !== null && g.s1 !== undefined && g.s2 !== undefined)
+        .map(g => `${g.s1}-${g.s2}`).join(', ');
       completed.push({
         week: w.week, matchNum,
         identifier: `${currentLeague.key}|${currentSeason.id}|w${w.week}|m${matchNum}`,
-        label, series: r.seriesStr,
+        label, series: r.seriesStr, scores: gameScores,
       });
     });
   }
@@ -672,7 +675,7 @@ async function renderDuprMatches(){
       return `<tr>
         <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">Wk ${c.week} · M${c.matchNum}</td>
         <td style="${td}">${c.label}</td>
-        <td style="${td};white-space:nowrap">${c.series}</td>
+        <td style="${td};white-space:nowrap">${c.scores || c.series}${c.scores ? ` <span style="color:var(--muted);font-size:11px">(${c.series})</span>` : ''}</td>
         <td style="${td}">${statusCell}</td>
         <td style="${td};white-space:nowrap;text-align:right">${actions}</td>
       </tr>`;

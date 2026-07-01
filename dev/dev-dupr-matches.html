@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>DUPR Matches — NAC Pickleball Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;--green:#4caf28;--green-dark:#3a8c1e;
+  --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
+.nav-link:hover{color:#fff}
+.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.page{padding:2rem 1.5rem;max-width:1100px;margin:0 auto}
+.page-head{margin-bottom:1.25rem}
+.page-head h1{font-family:var(--font-display);font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1}
+.page-head p{color:var(--muted);font-size:14px;margin-top:4px}
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.5rem}
+.lg-head{display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap}
+.lg-head h2{font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1}
+.count-pill{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface);padding:2px 10px;border-radius:10px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.stat-card .v{font-family:var(--font-display);font-size:32px;font-weight:900;color:var(--navy);line-height:1}
+.stat-card .l{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:4px}
+.table-wrap{overflow-x:auto}
+table.m{width:100%;border-collapse:collapse;min-width:640px}
+table.m th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:9px 10px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap}
+table.m td{padding:10px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:middle}
+table.m tr:last-child td{border-bottom:none}
+.nw{white-space:nowrap}.ar{text-align:right}.sm{font-size:11px}.muted{color:var(--muted)}
+code{font-family:monospace;font-size:12px;color:var(--muted)}
+.badge{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px}
+.badge.ok{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.badge.pend{color:var(--muted);background:var(--surface)}
+.badge.del{color:var(--danger);background:rgba(217,59,59,.1)}
+.btn-sm{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:5px 12px;border-radius:6px;border:1.5px solid transparent;cursor:pointer;margin-left:6px}
+.btn-sm.green{background:var(--green);color:#fff;border-color:var(--green)}.btn-sm.green:hover{background:var(--green-dark)}
+.btn-sm.ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-sm.ghost:hover{background:var(--surface)}
+.btn-sm.danger{background:transparent;color:var(--danger);border-color:rgba(217,59,59,.4)}.btn-sm.danger:hover{background:rgba(217,59,59,.08)}
+.btn-sm:disabled{opacity:.4;cursor:not-allowed}
+.gate{text-align:center;padding:4rem 1rem}
+.gate h3{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.gate p{color:var(--muted);margin-bottom:1.5rem}
+.gate a{display:inline-block;padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.5px;background:var(--navy);color:#fff;text-decoration:none}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:768px){.stats-row{grid-template-columns:1fr 1fr 1fr;gap:8px}.stat-card{padding:.75rem}.stat-card .v{font-size:24px}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-right" id="nav-links">
+    <a class="nav-link" href="dev-index.html">Leagues</a>
+    <a class="nav-link" href="dev-rules.html">Rules</a>
+    <a class="nav-link" href="dev-admin.html">Admin</a>
+    <a class="nav-link" href="dev-accounts.html">Accounts</a>
+    <a class="nav-link current" href="dev-dupr-matches.html">DUPR</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div id="gate" class="gate" style="display:none">
+    <h3>Admins Only</h3>
+    <p>Your account doesn't have admin access to this page.</p>
+    <a href="dev-index.html">Back to Leagues</a>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="page-head">
+      <h1>DUPR Matches</h1>
+      <p id="season-label">All completed matches across every league. Submit, update, or remove matches in DUPR.</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="v" id="stat-total">—</div><div class="l">Completed</div></div>
+      <div class="stat-card"><div class="v" id="stat-sub">—</div><div class="l">In DUPR</div></div>
+      <div class="stat-card"><div class="v" id="stat-pending">—</div><div class="l">Pending</div></div>
+    </div>
+    <div id="leagues-wrap"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="shared-dev.js"></script>
+<script>
+let PAGE = {};      // leagueId -> { league, schedule, idMap, matches:[...] }
+let subMap = {};    // identifier -> dupr_matches row
+let adminDuprId = null;
+
+function H(){ return { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }; }
+function toast(msg){
+  const t = document.getElementById('toast'); if(!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window.__tt); window.__tt = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  let admin = false;
+  try{ admin = await checkAccountAdmin(); }catch(e){ admin = false; }
+  if(admin){ document.getElementById('content').style.display=''; await loadAll(); }
+  else { document.getElementById('gate').style.display=''; }
+});
+
+async function loadAdminDuprId(){
+  try{
+    const s = nacGetSession(); if(!s) return;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${s.uid}&select=dupr_id`,
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+s.token } });
+    if(r.ok){ const d = await r.json(); adminDuprId = (d[0] && d[0].dupr_id) || null; }
+  }catch(e){ /* ignore */ }
+}
+
+async function leagueDuprIds(leagueId){
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&select=player_name,dupr_id`, { headers:H() });
+    if(!r.ok) return {};
+    const map = {}; for(const row of await r.json()) map[row.player_name] = row.dupr_id; return map;
+  }catch(e){ return {}; }
+}
+
+async function fetchSubmitted(){
+  subMap = {};
+  try{
+    const rr = await fetch(`${SUPABASE_URL}/rest/v1/dupr_matches?select=*`, { headers:H() });
+    if(rr.ok) for(const row of await rr.json()) subMap[row.identifier] = row;
+  }catch(e){ /* ignore */ }
+}
+
+async function loadAll(){
+  const wrap = document.getElementById('leagues-wrap');
+  wrap.innerHTML = '<div class="section"><p class="muted">Loading every league…</p></div>';
+  await loadSeasons();
+  if(currentSeason) { try{ await buildFullNameMap(currentSeason.id); }catch(e){} }
+  await loadAdminDuprId();
+  await fetchSubmitted();
+
+  const sLabel = document.getElementById('season-label');
+  if(sLabel && currentSeason) sLabel.textContent = `Season: ${currentSeason.name}. All completed matches across every league — submit, update, or remove in DUPR.`;
+
+  PAGE = {};
+  const leagues = seasonLeagues(currentSeason);
+  for(const lg of leagues){
+    let sched = [];
+    try{ const res = await dbGet(seasonKey(lg.key, currentSeason.id)); sched = (res.data && res.data.schedule) || []; }catch(e){}
+    const idMap = await leagueDuprIds(lg.id);
+    const matches = [];
+    for(const w of sched){
+      (w.matches || []).forEach((m, idx) => {
+        const r = seriesResult(m);
+        if(!r.complete) return;
+        const matchNum = idx + 1;
+        const isD = m.p1a !== undefined;
+        const names = isD ? [m.p1a,m.p1b,m.p2a,m.p2b].filter(Boolean) : [m.p1,m.p2].filter(Boolean);
+        const label = isD
+          ? `${displayName(m.p1a)} &amp; ${displayName(m.p1b)} vs ${displayName(m.p2a)} &amp; ${displayName(m.p2b)}`
+          : `${displayName(m.p1)} vs ${displayName(m.p2)}`;
+        const scores = (m.games || []).filter(g => g.s1!=null && g.s2!=null).map(g => `${g.s1}-${g.s2}`).join(', ');
+        matches.push({
+          week:w.week, matchNum,
+          identifier:`${lg.key}|${currentSeason.id}|w${w.week}|m${matchNum}`,
+          label, scores, series:r.seriesStr,
+          linked: names.every(n => idMap[n]),
+        });
+      });
+    }
+    PAGE[lg.id] = { league:lg, schedule:sched, idMap, matches };
+  }
+  render();
+}
+
+function render(){
+  const wrap = document.getElementById('leagues-wrap');
+  const leagues = Object.values(PAGE);
+  const total = leagues.reduce((a,l)=>a+l.matches.length,0);
+  const submitted = leagues.reduce((a,l)=>a+l.matches.filter(m=>{const s=subMap[m.identifier];return s&&s.status!=='deleted'&&s.match_code;}).length,0);
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-sub').textContent = submitted;
+  document.getElementById('stat-pending').textContent = total - submitted;
+
+  const withMatches = leagues.filter(l => l.matches.length);
+  if(!withMatches.length){
+    wrap.innerHTML = '<div class="section"><p class="muted">No completed matches in any league yet. Once players finish a series, it appears here to submit to DUPR.</p></div>';
+    return;
+  }
+  wrap.innerHTML = withMatches.map(renderLeague).join('');
+}
+
+function renderLeague(l){
+  const rows = l.matches.map(c => {
+    const sub = subMap[c.identifier];
+    const deleted = sub && sub.status === 'deleted';
+    const done = sub && sub.status !== 'deleted' && sub.match_code;
+    const idAttr = c.identifier.replace(/'/g,"\\'");
+    let status, actions;
+    if(done){
+      status = `<span class="badge ok">submitted</span> <code>${sub.match_code}</code>`;
+      actions = `<button class="btn-sm ghost" onclick="doUpdate('${l.league.id}','${idAttr}',${c.week},${c.matchNum})">Update</button>`
+              + `<button class="btn-sm danger" onclick="doDelete('${idAttr}')">Delete</button>`;
+    } else {
+      status = deleted ? '<span class="badge del">deleted</span>' : '<span class="badge pend">not submitted</span>';
+      const dis = c.linked ? '' : 'disabled title="A player is not DUPR-linked"';
+      actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">Submit</button>`;
+    }
+    return `<tr>
+      <td class="nw"><strong>Wk ${c.week} · M${c.matchNum}</strong></td>
+      <td>${c.label}</td>
+      <td class="nw">${c.scores || c.series}${c.scores ? ` <span class="muted sm">(${c.series})</span>` : ''}</td>
+      <td>${status}</td>
+      <td class="nw ar">${actions}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="section">
+    <div class="lg-head"><h2>${l.league.name}</h2><span class="count-pill">${l.matches.length} match${l.matches.length!==1?'es':''}</span></div>
+    <div class="table-wrap"><table class="m">
+      <thead><tr><th>Week / Match</th><th>Matchup</th><th>Result</th><th>DUPR Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+  </div>`;
+}
+
+function buildBody(m, idMap){
+  const isD = m.p1a !== undefined;
+  const format = isD ? 'DOUBLES' : 'SINGLES';
+  const names = isD ? [m.p1a,m.p1b,m.p2a,m.p2b].filter(Boolean) : [m.p1,m.p2].filter(Boolean);
+  if(!names.every(n => idMap[n])) return null;
+  const teamA = isD ? { player1:idMap[m.p1a], player2:idMap[m.p1b] } : { player1:idMap[m.p1] };
+  const teamB = isD ? { player1:idMap[m.p2a], player2:idMap[m.p2b] } : { player1:idMap[m.p2] };
+  const comp = (m.games || []).filter(g => g.s1!=null && g.s2!=null);
+  if(!comp.length) return null;
+  comp.forEach((g,i) => { teamA[`game${i+1}`] = g.s1; teamB[`game${i+1}`] = g.s2; });
+  return { match:{ teamA, teamB }, format };
+}
+
+async function callFn(name, body){
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    method:'POST', headers:{ 'Content-Type':'application/json', ...H() }, body: JSON.stringify(body)
+  });
+  return await r.json().catch(()=>({}));
+}
+
+function matchFrom(leagueId, week, matchNum){
+  const P = PAGE[leagueId]; if(!P) return null;
+  const wk = P.schedule.find(w => w.week === week);
+  return wk ? wk.matches[matchNum-1] : null;
+}
+
+async function doSubmit(leagueId, week, matchNum){
+  const P = PAGE[leagueId];
+  const m = matchFrom(leagueId, week, matchNum);
+  if(!m){ toast('Match not found'); return; }
+  if(!adminDuprId){ toast('Connect your DUPR admin account (Dashboard) before submitting'); return; }
+  const body = buildBody(m, P.idMap);
+  if(!body){ toast('Cannot submit — a player is unlinked or the score is incomplete'); return; }
+  toast('Submitting to DUPR…');
+  const d = await callFn('dupr-submit-match', {
+    match: body.match, format: body.format,
+    leagueKey: P.league.key, leagueName: P.league.name,
+    seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
+  });
+  toast(d.success ? 'Submitted to DUPR' : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : (d.error || 'Submission failed')));
+  await fetchSubmitted(); render();
+}
+
+async function doUpdate(leagueId, identifier, week, matchNum){
+  const P = PAGE[leagueId];
+  const m = matchFrom(leagueId, week, matchNum);
+  if(!m){ toast('Match not found'); return; }
+  const body = buildBody(m, P.idMap);
+  if(!body){ toast('Cannot update — player unlinked or score incomplete'); return; }
+  toast('Updating in DUPR…');
+  const d = await callFn('dupr-update-match', { identifier, match: body.match, format: body.format });
+  toast(d.success ? 'Match updated in DUPR' : (d.error || 'Update failed'));
+  await fetchSubmitted(); render();
+}
+
+async function doDelete(identifier){
+  if(!confirm('Delete this match from DUPR? This removes the result from the DUPR history of everyone in it.')) return;
+  toast('Deleting from DUPR…');
+  const d = await callFn('dupr-delete-match', { identifier });
+  toast(d.success ? 'Match deleted from DUPR' : (d.error || 'Delete failed'));
+  await fetchSubmitted(); render();
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>
