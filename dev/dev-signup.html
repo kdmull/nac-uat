@@ -402,6 +402,38 @@ async function selectLeague(league){
     </div>`;
 }
 
+// Check a player's DUPR entitlements via the dupr-get-entitlements edge function.
+// Returns {eligible, message}. Blocks on missing BASIC_L1, on premium leagues
+// without PREMIUM_L1, and (conservatively) when eligibility can't be verified.
+async function verifyDuprEligibility(duprId, league){
+  if(!duprId){
+    return { eligible:false, message:'A linked DUPR account is required to register. Please connect DUPR from your dashboard first.' };
+  }
+  try{
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-entitlements`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ duprId, premiumRequired: !!league.premium })
+    });
+    const d = await res.json().catch(()=>({}));
+    if(!res.ok){
+      return { eligible:false, message:(d.error || 'We could not verify your DUPR eligibility right now.') +
+        ' Please reconnect your DUPR account from your dashboard and try again.' };
+    }
+    if(!d.basic){
+      return { eligible:false, message:'Your DUPR account is not currently eligible for rated play (missing the BASIC_L1 entitlement). ' +
+        'If you believe this is an error, please contact DUPR support.' };
+    }
+    if(league.premium && !d.premium){
+      return { eligible:false, message:'<strong>'+ (league.name||'This league') +'</strong> is a DUPR+ premium league. ' +
+        'Your DUPR account needs the PREMIUM_L1 entitlement (an active DUPR+ membership) to register.' };
+    }
+    return { eligible:true };
+  }catch(e){
+    return { eligible:false, message:'Could not reach DUPR to verify your eligibility. Please try again in a moment.' };
+  }
+}
+
 async function confirmRegistration(){
   const type = leagueRegType(selectedLeague.id);
   const msg = document.getElementById('reg-msg');
@@ -446,6 +478,16 @@ async function confirmRegistration(){
       showRegSuccess(`You and <strong>${partnerName}</strong> are now partners — they had already chosen you!`);
       return;
     }
+  }
+
+  // ── DUPR User Gating ──────────────────────────────────────────────
+  // Every player in a rated league must hold BASIC_L1; DUPR+ premium leagues
+  // additionally require PREMIUM_L1. Verify before creating the membership.
+  const gate = await verifyDuprEligibility(p.dupr_id, selectedLeague);
+  if(!gate.eligible){
+    btn.disabled=false; btn.textContent = switchMode ? 'Switch to '+selectedLeague.name : 'Register for '+selectedLeague.name;
+    msg.className='msg error'; msg.innerHTML = gate.message;
+    return;
   }
 
   const { error } = await sb.from('league_members').insert({

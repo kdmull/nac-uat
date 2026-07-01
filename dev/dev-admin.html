@@ -197,6 +197,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           </div>
         </div>
       </div>
+      <div class="admin-section" id="playoff-admin-section">
+        <h3>Playoffs &amp; Seeding</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem" id="playoff-admin-desc">Seeds auto-fill to the top 4 from standings. Override any seed below (e.g. if someone can't make it), then Save.</p>
+        <div id="playoff-seed-area"></div>
+      </div>
       <div class="admin-section">
         <h3>Schedule Editor</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
@@ -313,6 +318,7 @@ function unlockAdmin(){
   renderAdminRoster();
   loadRegistrations();
   loadScoreLog();
+  renderPlayoffSeeding();
 }
 
 // Check if the logged-in user is an admin — if so, skip the password gate
@@ -363,6 +369,7 @@ async function onAdminLeagueChange(id){
   renderAdminPanel();
   renderAdminRoster();
   loadScoreLog();
+  renderPlayoffSeeding();
 }
 
 async function initAdminLeague(league){
@@ -533,6 +540,93 @@ function removePlayer(idx){
   PLAYERS.splice(idx,1);
   renderAdminPanel();showToast(name+' removed — hit Save to sync');
 }
+// ── PLAYOFF SEEDING (admin) ────────────────────────────
+function leaguePlayoffFormat(){
+  const isPartner = (currentSeason.leagueTypes || {})[currentLeague.id] === 'partner';
+  const isTeam = currentLeague.type === 'doubles' && isPartner;
+  const useBracket = currentLeague.type === 'singles' || isTeam;
+  return { isTeam, useBracket };
+}
+function playoffStoreKey(useBracket){
+  return useBracket ? `bracket_${currentLeague.id}_${currentSeason.id}` : `playoff_${currentLeague.id}`;
+}
+
+async function renderPlayoffSeeding(){
+  const area = document.getElementById('playoff-seed-area');
+  const desc = document.getElementById('playoff-admin-desc');
+  if(!area || !currentLeague) return;
+  area.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
+
+  const { isTeam, useBracket } = leaguePlayoffFormat();
+  const entrants = computePlayoffEntrants(isTeam);
+  if(desc) desc.textContent = `Format: ${useBracket ? (isTeam?'Bracket (teams)':'Bracket') : 'Round-robin playoff'}. Seeds auto-fill to the top 4 from standings — override any seed (e.g. for a no-show), then Save.`;
+
+  if(entrants.length < 1){
+    area.innerHTML = `<p style="color:var(--muted);font-size:13px">No ${isTeam?'teams':'players'} with results yet. Seeding becomes available once matches have been played.</p>`;
+    return;
+  }
+
+  // Prefill from a saved bracket/playoff if present, else top-4 auto
+  let current = [];
+  try{
+    const saved = await dbGet(playoffStoreKey(useBracket));
+    if(saved && saved.data && saved.data.seeds){
+      current = useBracket
+        ? saved.data.seeds.map(s => s.name)
+        : saved.data.seeds.slice();
+    }
+  }catch(e){ /* ignore */ }
+  if(!current.length) current = entrants.slice(0,4).map(e=>e.name);
+  while(current.length < 4) current.push('');
+
+  const label = isTeam ? 'team' : 'player';
+  const slot = (i) => {
+    const sel = current[i] || '';
+    const opts = `<option value="">— pick a ${label} —</option>` +
+      entrants.map(e=>`<option value="${e.name.replace(/"/g,'&quot;')}"${e.name===sel?' selected':''}>${displayName(e.name)} (${e.w}-${e.l})</option>`).join('');
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span style="font-family:var(--font-display);font-weight:800;color:var(--navy);width:34px;flex-shrink:0">#${i+1}</span>
+      <select id="pf-seed-${i}" class="admin-input" style="flex:1;min-width:0;font-size:13px">${opts}</select>
+    </div>`;
+  };
+  area.innerHTML = `
+    <div style="max-width:480px">${[0,1,2,3].map(slot).join('')}</div>
+    <p style="color:var(--muted);font-size:12px;margin:.25rem 0 1rem">${useBracket
+      ? 'Bracket: <strong>#1 plays #4</strong>, <strong>#2 plays #3</strong> in the semifinals.'
+      : 'Round robin: partners rotate each match (1&4 v 2&3, 1&3 v 2&4, 1&2 v 3&4).'}</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green" style="width:auto;padding:8px 18px" onclick="savePlayoffSeeding()">Save Seeds</button>
+      <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="resetPlayoffSeedingAuto()">Reset to Top 4</button>
+    </div>`;
+}
+
+async function savePlayoffSeeding(){
+  const { isTeam, useBracket } = leaguePlayoffFormat();
+  const picks = [0,1,2,3].map(i => document.getElementById('pf-seed-'+i).value.trim());
+  const chosen = picks.filter(Boolean);
+  if(chosen.length !== 4){ showToast('Pick all four seeds.'); return; }
+  if(new Set(chosen).size !== 4){ showToast('Each seed must be different.'); return; }
+  if(!confirm("Save these seeds? This sets the bracket/playoff and clears any postseason scores already entered for this league.")) return;
+
+  const data = useBracket ? buildBracketData(picks, isTeam) : buildPlayoffData(picks);
+  const ok = await dbSet(playoffStoreKey(useBracket), data);
+  if(ok === false){ showToast('Could not save — try again'); return; }
+  showToast('Playoff seeds saved');
+  renderPlayoffSeeding();
+}
+
+async function resetPlayoffSeedingAuto(){
+  const { isTeam, useBracket } = leaguePlayoffFormat();
+  const top4 = computePlayoffEntrants(isTeam).slice(0,4).map(e=>e.name);
+  if(top4.length < 4){ showToast('Not enough entrants for a top-4 seed yet.'); return; }
+  if(!confirm('Reset seeds to the current top 4 from standings? Clears any postseason scores already entered.')) return;
+  const data = useBracket ? buildBracketData(top4, isTeam) : buildPlayoffData(top4);
+  const ok = await dbSet(playoffStoreKey(useBracket), data);
+  if(ok === false){ showToast('Could not save — try again'); return; }
+  showToast('Seeds reset to top 4');
+  renderPlayoffSeeding();
+}
+
 async function renderAdminRoster(){
   const el = document.getElementById('admin-roster-list');
   if(!el || !currentLeague) return;
@@ -872,9 +966,23 @@ function renderLeagueCatalog(){
       <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy);min-width:160px">${l.name}</span>
       <span style="font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:${l.type==='doubles'?'rgba(26,42,108,.08)':'rgba(76,175,40,.12)'};color:${l.type==='doubles'?'var(--navy)':'var(--green-dark)'}">${l.type}</span>
       <span style="flex:1;font-size:12px;color:var(--muted)">${l.sub||''}</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${l.premium?'var(--green-dark)':'var(--muted)'};cursor:pointer" title="DUPR+ premium league — requires PREMIUM_L1 entitlement to register">
+        <input type="checkbox" ${l.premium?'checked':''} onchange="toggleLeaguePremium(${i}, this.checked)"/> DUPR+
+      </label>
       <span style="font-size:11px;color:var(--muted)">id: ${l.id}</span>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteLeague(${i})">Delete</button>
     </div>`).join('');
+}
+
+async function toggleLeaguePremium(idx, on){
+  const l = LEAGUES[idx];
+  if(!l) return;
+  const prev = l.premium;
+  l.premium = !!on;
+  const ok = await saveLeagues();
+  if(!ok){ l.premium = prev; showToast('Could not save — try again'); renderLeagueCatalog(); return; }
+  renderLeagueCatalog();
+  showToast(on ? `"${l.name}" marked DUPR+ premium` : `"${l.name}" is no longer premium`);
 }
 
 async function addLeague(){
