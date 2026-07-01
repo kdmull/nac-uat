@@ -202,6 +202,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem" id="playoff-admin-desc">Seeds auto-fill to the top 4 from standings. Override any seed below (e.g. if someone can't make it), then Save.</p>
         <div id="playoff-seed-area"></div>
       </div>
+      <div class="admin-section" id="dupr-matches-section">
+        <h3>DUPR Matches</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Matches submitted to DUPR for this league. As the club admin (match owner) you can push the latest score again (Update) or remove a match from DUPR (Delete).</p>
+        <div id="dupr-matches-area"></div>
+      </div>
       <div class="admin-section">
         <h3>Schedule Editor</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
@@ -319,6 +324,7 @@ function unlockAdmin(){
   loadRegistrations();
   loadScoreLog();
   renderPlayoffSeeding();
+  renderDuprMatches();
 }
 
 // Check if the logged-in user is an admin — if so, skip the password gate
@@ -370,6 +376,7 @@ async function onAdminLeagueChange(id){
   renderAdminRoster();
   loadScoreLog();
   renderPlayoffSeeding();
+  renderDuprMatches();
 }
 
 async function initAdminLeague(league){
@@ -549,6 +556,95 @@ function leaguePlayoffFormat(){
 }
 function playoffStoreKey(useBracket){
   return useBracket ? `bracket_${currentLeague.id}_${currentSeason.id}` : `playoff_${currentLeague.id}`;
+}
+
+// ── DUPR MATCHES (admin update/delete) ─────────────────
+async function renderDuprMatches(){
+  const area = document.getElementById('dupr-matches-area');
+  if(!area || !currentLeague) return;
+  area.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
+  let rows = [];
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_matches?league_key=eq.${encodeURIComponent(currentLeague.key)}&order=submitted_at.desc&select=*`,
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY } });
+    if(r.ok) rows = await r.json();
+  }catch(e){ /* ignore */ }
+
+  if(!rows.length){
+    area.innerHTML = '<p style="color:var(--muted);font-size:13px">No matches submitted to DUPR for this league yet. Matches are sent automatically when a series score is entered for players with linked, eligible DUPR accounts.</p>';
+    return;
+  }
+  const td = 'padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px';
+  area.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px;background:var(--white);border-radius:var(--radius);overflow:hidden">
+    <thead><tr style="background:var(--surface2)">
+      ${['Week / Match','Format','DUPR Code','Status',''].map(h=>`<th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+    </tr></thead><tbody>
+    ${rows.map(row=>{
+      const deleted = row.status === 'deleted';
+      const id = row.identifier.replace(/'/g,"\\'");
+      return `<tr style="${deleted?'opacity:.5':''}">
+        <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">Week ${row.week ?? '—'} · Match ${row.match_num ?? '—'}</td>
+        <td style="${td}">${(row.format||'—').toLowerCase()}</td>
+        <td style="${td};font-family:monospace;font-size:12px">${row.match_code || '<span style=\"color:var(--muted)\">none</span>'}</td>
+        <td style="${td}">${deleted
+          ? '<span style="color:var(--danger);font-size:12px">deleted</span>'
+          : '<span style="color:var(--green-dark);font-size:12px">active</span>'}</td>
+        <td style="${td};white-space:nowrap;text-align:right">
+          ${deleted ? '' : `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="updateDuprMatch('${id}', ${row.week}, ${row.match_num})">Update</button>
+          <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteDuprMatch('${id}')">Delete</button>`}
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+
+// Rebuild the DUPR match payload from the currently-loaded schedule.
+async function buildDuprMatchBody(m){
+  const isDoubles = m.p1a !== undefined;
+  const format = isDoubles ? 'DOUBLES' : 'SINGLES';
+  const names = isDoubles ? [m.p1a,m.p1b,m.p2a,m.p2b].filter(Boolean) : [m.p1,m.p2].filter(Boolean);
+  const ids = await getDuprIds(names);
+  if(!names.every(n => ids[n])) return null;
+  const teamA = isDoubles ? { player1: ids[m.p1a], player2: ids[m.p1b] } : { player1: ids[m.p1] };
+  const teamB = isDoubles ? { player1: ids[m.p2a], player2: ids[m.p2b] } : { player1: ids[m.p2] };
+  const completed = (m.games||[]).filter(g => g.s1!==null && g.s2!==null);
+  if(!completed.length) return null;
+  completed.forEach((g,i) => { teamA[`game${i+1}`] = g.s1; teamB[`game${i+1}`] = g.s2; });
+  return { match:{ teamA, teamB }, format };
+}
+
+async function updateDuprMatch(identifier, week, matchNum){
+  const wk = schedule.find(w => w.week === week);
+  const m = wk && wk.matches[matchNum-1];
+  if(!m){ showToast('That match is no longer in the schedule'); return; }
+  const body = await buildDuprMatchBody(m);
+  if(!body){ showToast('Cannot update — a player is unlinked or scores are incomplete'); return; }
+  showToast('Updating match in DUPR…');
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-update-match`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ identifier, ...body })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(d.success) showToast('Match updated in DUPR');
+    else showToast(d.error || 'Update failed — check function logs');
+  }catch(e){ showToast('Update error: ' + e.message); }
+  renderDuprMatches();
+}
+
+async function deleteDuprMatch(identifier){
+  if(!confirm('Delete this match from DUPR? This removes the submitted result from the DUPR history of everyone in it.')) return;
+  showToast('Deleting match from DUPR…');
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-delete-match`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ identifier })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(d.success) showToast('Match deleted from DUPR');
+    else showToast(d.error || 'Delete failed — check function logs');
+  }catch(e){ showToast('Delete error: ' + e.message); }
+  renderDuprMatches();
 }
 
 async function renderPlayoffSeeding(){
