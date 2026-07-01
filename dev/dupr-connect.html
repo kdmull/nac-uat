@@ -297,9 +297,18 @@ async function handleDUPRMessage(event){
   if(accountMode && accountUser){
     try{
       const { error } = await sbAuth.from('profiles')
-        .update({ dupr_id: duprId })
+        .update({ dupr_id: duprId, dupr_access_token: userToken || null, dupr_refresh_token: refreshToken || null })
         .eq('id', accountUser.id);
       if(error) throw error;
+
+      // Enroll this player for DUPR rating webhooks. The successful subscribe
+      // makes DUPR immediately POST a RATING_SEED to our receiver, so the
+      // player's current rating lands in dupr_ratings right away.
+      fetch(`${SUPABASE_URL}/functions/v1/dupr-subscribe-user`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+        body: JSON.stringify({ duprId })
+      }).catch(e => console.warn('DUPR webhook subscribe failed:', e));
 
       document.getElementById('account-card').style.display = 'none';
       document.getElementById('iframe-wrap').style.display = 'none';
@@ -352,6 +361,13 @@ async function handleDUPRMessage(event){
     });
 
     if(!r.ok) throw new Error('Save failed: ' + r.status);
+
+    // Enroll for DUPR rating webhooks (fires a RATING_SEED to our receiver).
+    fetch(`${SUPABASE_URL}/functions/v1/dupr-subscribe-user`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ duprId })
+    }).catch(e => console.warn('DUPR webhook subscribe failed:', e));
 
     // Show success
     document.getElementById('setup-card').style.display = 'none';

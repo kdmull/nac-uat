@@ -332,7 +332,27 @@ async function loadDuprRatings(){
     console.log('DUPR IDs to fetch ratings for:', duprIds);
     if(!duprIds.length){ console.log('No linked players — skipping ratings fetch'); return; }
 
-    // 2. Fetch live ratings from DUPR via Edge Function
+    // 2a. Prefer WEBHOOK-FED ratings (dupr_ratings), kept current by DUPR pushes.
+    let missing = duprIds.slice();
+    try{
+      const idIn = duprIds.map(encodeURIComponent).join(',');
+      const wr = await fetch(
+        `${SUPABASE_URL}/rest/v1/dupr_ratings?dupr_id=in.(${idIn})&select=dupr_id,singles,doubles`,
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+      );
+      if(wr.ok){
+        const byId = {};
+        for(const x of await wr.json()) byId[x.dupr_id] = x;
+        for(const name in duprRatings){
+          const id = duprRatings[name].duprId;
+          if(byId[id]){ duprRatings[name].singles = byId[id].singles; duprRatings[name].doubles = byId[id].doubles; }
+        }
+        missing = duprIds.filter(id => !byId[id]);
+      }
+    }catch(e){ console.warn('dupr_ratings read failed, will use batch:', e); }
+    if(!missing.length){ console.log('All ratings served from webhooks'); return; }
+
+    // 2b. Batch fallback for any players not yet seeded by a webhook.
     const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
       method: 'POST',
       headers: {
@@ -340,18 +360,17 @@ async function loadDuprRatings(){
         'Authorization':'Bearer '+SUPABASE_KEY,
         'apikey': SUPABASE_KEY
       },
-      body: JSON.stringify({ duprIds })
+      body: JSON.stringify({ duprIds: missing })
     });
     console.log('Ratings Edge Function status:', rr.status);
     if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status, await rr.text()); return; }
     const data = await rr.json();
-    console.log('Ratings response:', data);
     const ratingsById = data.ratings || {};
 
-    // 3. Merge ratings into duprRatings by player name
+    // 3. Merge batch ratings only for the players that lacked a webhook rating.
     for(const name in duprRatings){
       const id = duprRatings[name].duprId;
-      if(ratingsById[id]){
+      if(missing.includes(id) && ratingsById[id]){
         duprRatings[name].singles = ratingsById[id].singles;
         duprRatings[name].doubles = ratingsById[id].doubles;
       }

@@ -207,6 +207,15 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Matches submitted to DUPR for this league. As the club admin (match owner) you can push the latest score again (Update) or remove a match from DUPR (Delete).</p>
         <div id="dupr-matches-area"></div>
       </div>
+      <div class="admin-section" id="dupr-webhooks-section">
+        <h3>DUPR Rating Webhooks</h3>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">One-time setup: register this site's webhook with DUPR, then subscribe players so DUPR pushes live rating updates. Players are auto-subscribed when they connect DUPR; use "Subscribe All" to backfill anyone who connected earlier.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="registerDuprWebhook()">Register Webhook</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:8px 14px" onclick="subscribeAllDupr()">Subscribe All Players</button>
+        </div>
+        <p id="dupr-webhook-status" style="font-size:12px;color:var(--muted);margin-top:.75rem"></p>
+      </div>
       <div class="admin-section">
         <h3>Schedule Editor</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
@@ -559,6 +568,35 @@ function playoffStoreKey(useBracket){
 }
 
 // ── DUPR MATCHES (admin update/delete) ─────────────────
+// ── DUPR WEBHOOK SETUP (admin) ─────────────────────────
+async function registerDuprWebhook(){
+  const st = document.getElementById('dupr-webhook-status');
+  if(st) st.textContent = 'Registering webhook with DUPR…';
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-register-webhook`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({})
+    });
+    const d = await r.json().catch(()=>({}));
+    if(st) st.textContent = d.success ? `✓ Webhook registered: ${d.webhookUrl}` : ('Registration failed: ' + (d.error||'unknown'));
+    showToast(d.success ? 'Webhook registered' : 'Registration failed');
+  }catch(e){ if(st) st.textContent = 'Error: ' + e.message; }
+}
+
+async function subscribeAllDupr(){
+  const st = document.getElementById('dupr-webhook-status');
+  if(st) st.textContent = 'Subscribing all linked players…';
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-subscribe-user`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({})   // empty = subscribe every dupr_id we have
+    });
+    const d = await r.json().catch(()=>({}));
+    if(st) st.textContent = d.success ? `✓ Subscribed ${(d.subscribed||[]).length} player(s). Ratings will seed in shortly.` : ('Subscribe failed: ' + (d.error||'unknown'));
+    showToast(d.success ? 'Players subscribed' : 'Subscribe failed');
+  }catch(e){ if(st) st.textContent = 'Error: ' + e.message; }
+}
+
 async function renderDuprMatches(){
   const area = document.getElementById('dupr-matches-area');
   if(!area || !currentLeague) return;
