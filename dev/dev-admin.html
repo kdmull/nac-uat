@@ -334,6 +334,7 @@ function unlockAdmin(){
   loadScoreLog();
   renderPlayoffSeeding();
   renderDuprMatches();
+  loadAdminDuprId();
 }
 
 // Check if the logged-in user is an admin — if so, skip the password gate
@@ -386,6 +387,7 @@ async function onAdminLeagueChange(id){
   loadScoreLog();
   renderPlayoffSeeding();
   renderDuprMatches();
+  loadAdminDuprId();
 }
 
 async function initAdminLeague(league){
@@ -597,43 +599,112 @@ async function subscribeAllDupr(){
   }catch(e){ if(st) st.textContent = 'Error: ' + e.message; }
 }
 
+// Admin's own DUPR id (submitter for club-match verification).
+let adminDuprId = null;
+async function loadAdminDuprId(){
+  try{
+    const s = nacGetSession();
+    if(!s) return;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${s.uid}&select=dupr_id`,
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+s.token } });
+    if(r.ok){ const d = await r.json(); adminDuprId = (d[0] && d[0].dupr_id) || null; }
+  }catch(e){ /* ignore */ }
+}
+
 async function renderDuprMatches(){
   const area = document.getElementById('dupr-matches-area');
   if(!area || !currentLeague) return;
   area.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading…</p>';
-  let rows = [];
+
+  // 1) All completed matches in the loaded schedule.
+  const completed = [];
+  for(const w of (schedule || [])){
+    (w.matches || []).forEach((m, idx) => {
+      const r = seriesResult(m);
+      if(!r.complete) return;
+      const matchNum = idx + 1;
+      const isDoubles = m.p1a !== undefined;
+      const label = isDoubles
+        ? `${displayName(m.p1a)} & ${displayName(m.p1b)} vs ${displayName(m.p2a)} & ${displayName(m.p2b)}`
+        : `${displayName(m.p1)} vs ${displayName(m.p2)}`;
+      completed.push({
+        week: w.week, matchNum,
+        identifier: `${currentLeague.key}|${currentSeason.id}|w${w.week}|m${matchNum}`,
+        label, series: r.seriesStr,
+      });
+    });
+  }
+
+  // 2) Which are already in DUPR.
+  const subMap = {};
   try{
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_matches?league_key=eq.${encodeURIComponent(currentLeague.key)}&order=submitted_at.desc&select=*`,
+    const rr = await fetch(`${SUPABASE_URL}/rest/v1/dupr_matches?league_key=eq.${encodeURIComponent(currentLeague.key)}&select=*`,
       { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY } });
-    if(r.ok) rows = await r.json();
+    if(rr.ok){ for(const row of await rr.json()) subMap[row.identifier] = row; }
   }catch(e){ /* ignore */ }
 
-  if(!rows.length){
-    area.innerHTML = '<p style="color:var(--muted);font-size:13px">No matches submitted to DUPR for this league yet. Matches are sent automatically when a series score is entered for players with linked, eligible DUPR accounts.</p>';
+  if(!completed.length){
+    area.innerHTML = '<p style="color:var(--muted);font-size:13px">No completed matches yet. Once players finish a series, it appears here to submit to DUPR.</p>';
     return;
   }
+
   const td = 'padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px';
-  area.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px;background:var(--white);border-radius:var(--radius);overflow:hidden">
+  area.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:620px;background:var(--white);border-radius:var(--radius);overflow:hidden">
     <thead><tr style="background:var(--surface2)">
-      ${['Week / Match','Format','DUPR Code','Status',''].map(h=>`<th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
+      ${['Week / Match','Matchup','Result','DUPR Status',''].map(h=>`<th style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:8px 10px;text-align:left;border-bottom:1px solid var(--border)">${h}</th>`).join('')}
     </tr></thead><tbody>
-    ${rows.map(row=>{
-      const deleted = row.status === 'deleted';
-      const id = row.identifier.replace(/'/g,"\\'");
-      return `<tr style="${deleted?'opacity:.5':''}">
-        <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">Week ${row.week ?? '—'} · Match ${row.match_num ?? '—'}</td>
-        <td style="${td}">${(row.format||'—').toLowerCase()}</td>
-        <td style="${td};font-family:monospace;font-size:12px">${row.match_code || '<span style=\"color:var(--muted)\">none</span>'}</td>
-        <td style="${td}">${deleted
-          ? '<span style="color:var(--danger);font-size:12px">deleted</span>'
-          : '<span style="color:var(--green-dark);font-size:12px">active</span>'}</td>
-        <td style="${td};white-space:nowrap;text-align:right">
-          ${deleted ? '' : `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="updateDuprMatch('${id}', ${row.week}, ${row.match_num})">Update</button>
-          <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteDuprMatch('${id}')">Delete</button>`}
-        </td>
+    ${completed.map(c => {
+      const sub = subMap[c.identifier];
+      const deleted = sub && sub.status === 'deleted';
+      const submitted = sub && sub.status !== 'deleted' && sub.match_code;
+      const id = c.identifier.replace(/'/g,"\\'");
+      let statusCell, actions;
+      if(submitted){
+        statusCell = `<span style="color:var(--green-dark);font-size:12px">submitted</span> <span style="font-family:monospace;font-size:11px;color:var(--muted)">${sub.match_code}</span>`;
+        actions = `<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="updateDuprMatch('${id}', ${c.week}, ${c.matchNum})">Update</button>
+          <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteDuprMatch('${id}')">Delete</button>`;
+      } else {
+        statusCell = deleted
+          ? '<span style="color:var(--danger);font-size:12px">deleted — can resubmit</span>'
+          : '<span style="color:var(--muted);font-size:12px">not submitted</span>';
+        actions = `<button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="submitMatchToDupr(${c.week}, ${c.matchNum})">Submit to DUPR</button>`;
+      }
+      return `<tr>
+        <td style="${td};font-weight:600;color:var(--navy);white-space:nowrap">Wk ${c.week} · M${c.matchNum}</td>
+        <td style="${td}">${c.label}</td>
+        <td style="${td};white-space:nowrap">${c.series}</td>
+        <td style="${td}">${statusCell}</td>
+        <td style="${td};white-space:nowrap;text-align:right">${actions}</td>
       </tr>`;
     }).join('')}
-    </tbody></table></div>`;
+    </tbody></table></div>
+    <p style="color:var(--muted);font-size:12px;margin-top:.75rem">Matches submit under the club with your DUPR admin account, which must be a DIRECTOR or ORGANIZER of the club. Every player must hold a BASIC_L1 entitlement.</p>`;
+}
+
+async function submitMatchToDupr(week, matchNum){
+  const wk = schedule.find(w => w.week === week);
+  const m = wk && wk.matches[matchNum-1];
+  if(!m){ showToast('That match is no longer in the schedule'); return; }
+  if(!adminDuprId){ showToast('Connect your DUPR admin account (Dashboard) before submitting'); return; }
+  const payload = await buildDuprMatchBody(m);
+  if(!payload){ showToast('Cannot submit — a player is unlinked or the score is incomplete'); return; }
+  showToast('Submitting match to DUPR…');
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-submit-match`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({
+        match: payload.match, format: payload.format,
+        leagueKey: currentLeague.key, leagueName: currentLeague.name,
+        seasonId: currentSeason.id, week, matchNum,
+        submitterDuprId: adminDuprId,
+      })
+    });
+    const d = await r.json().catch(()=>({}));
+    if(d.success){ showToast('Match submitted to DUPR'); }
+    else if(d.ineligible){ showToast('Blocked: player(s) missing BASIC_L1 — ' + d.ineligible.join(', ')); }
+    else { showToast(d.error || 'Submission failed — check function logs'); }
+  }catch(e){ showToast('Submit error: ' + e.message); }
+  renderDuprMatches();
 }
 
 // Rebuild the DUPR match payload from the currently-loaded schedule.

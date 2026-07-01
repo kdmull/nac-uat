@@ -690,8 +690,9 @@ async function submitScore(){
   const m=schedule.find(w=>w.week===week).matches[idx];
   const r=seriesResult(m);
   await logScore(week, idx, games, r.winner, r.team1, r.team2);
-  // Submit to DUPR in background (don't block UI)
-  submitToDUPR(week, idx, m, games).catch(e => console.warn('DUPR submission error:', e));
+  // DUPR submission is no longer automatic. Scores are recorded locally here;
+  // an admin reviews completed matches and submits them to DUPR from the admin
+  // page (satisfies DUPR's "only admins/TDs submit matches" requirement).
   closeModal();
   if(typeof renderScoreMatches==='function')renderScoreMatches(week);
   if(typeof renderStandings==='function')renderStandings();
