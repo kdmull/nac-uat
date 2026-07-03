@@ -80,9 +80,12 @@ code{font-family:monospace;font-size:12px;color:var(--muted)}
   </div>
 
   <div id="content" style="display:none">
-    <div class="page-head">
-      <h1>DUPR Matches</h1>
-      <p id="season-label">All completed matches across every league. Submit, update, or remove matches in DUPR.</p>
+    <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div>
+        <h1>DUPR Matches</h1>
+        <p id="season-label">All completed matches across every league. Submit, update, or remove matches in DUPR.</p>
+      </div>
+      <button class="btn-sm ghost" style="margin-top:6px" onclick="loadAll()">↻ Refresh</button>
     </div>
     <div class="stats-row">
       <div class="stat-card"><div class="v" id="stat-total">—</div><div class="l">Completed</div></div>
@@ -272,7 +275,7 @@ async function doSubmit(leagueId, week, matchNum){
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
   });
   toast(d.success ? 'Submitted to DUPR' : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : (d.error || 'Submission failed')));
-  await fetchSubmitted(); render();
+  await loadAll();
 }
 
 async function doUpdate(leagueId, identifier, week, matchNum){
@@ -282,9 +285,9 @@ async function doUpdate(leagueId, identifier, week, matchNum){
   const body = buildBody(m, P.idMap);
   if(!body){ toast('Cannot update — player unlinked or score incomplete'); return; }
   toast('Updating in DUPR…');
-  const d = await callFn('dupr-update-match', { identifier, match: body.match, format: body.format });
+  const d = await callFn('dupr-update-match', { identifier, match: body.match, format: body.format, leagueName: P.league.name, week });
   toast(d.success ? 'Match updated in DUPR' : (d.error || 'Update failed'));
-  await fetchSubmitted(); render();
+  await loadAll();
 }
 
 async function doDelete(identifier){
@@ -292,7 +295,7 @@ async function doDelete(identifier){
   toast('Deleting from DUPR…');
   const d = await callFn('dupr-delete-match', { identifier });
   toast(d.success ? 'Match deleted from DUPR' : (d.error || 'Delete failed'));
-  await fetchSubmitted(); render();
+  await loadAll();
 }
 </script>
 <script src="admin-nav.js"></script>

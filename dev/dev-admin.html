@@ -735,7 +735,7 @@ async function updateDuprMatch(identifier, week, matchNum){
   try{
     const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-update-match`, {
       method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
-      body: JSON.stringify({ identifier, ...body })
+      body: JSON.stringify({ identifier, ...body, leagueName: currentLeague.name, week })
     });
     const d = await r.json().catch(()=>({}));
     if(d.success) showToast('Match updated in DUPR');
