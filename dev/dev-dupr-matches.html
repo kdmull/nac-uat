@@ -274,6 +274,7 @@ async function doSubmit(leagueId, week, matchNum){
     leagueKey: P.league.key, leagueName: P.league.name,
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
   });
+  if(!d.success) console.error('DUPR SUBMIT failed:', d);
   toast(d.success ? 'Submitted to DUPR' : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : (d.error || 'Submission failed')));
   await loadAll();
 }
@@ -286,6 +287,7 @@ async function doUpdate(leagueId, identifier, week, matchNum){
   if(!body){ toast('Cannot update — player unlinked or score incomplete'); return; }
   toast('Updating in DUPR…');
   const d = await callFn('dupr-update-match', { identifier, match: body.match, format: body.format, leagueName: P.league.name, week });
+  if(!d.success) console.error('DUPR UPDATE failed:', d);
   toast(d.success ? 'Match updated in DUPR' : (d.error || 'Update failed'));
   await loadAll();
 }
@@ -294,6 +296,7 @@ async function doDelete(identifier){
   if(!confirm('Delete this match from DUPR? This removes the result from the DUPR history of everyone in it.')) return;
   toast('Deleting from DUPR…');
   const d = await callFn('dupr-delete-match', { identifier });
+  if(!d.success) console.error('DUPR DELETE failed:', d);
   toast(d.success ? 'Match deleted from DUPR' : (d.error || 'Delete failed'));
   await loadAll();
 }
