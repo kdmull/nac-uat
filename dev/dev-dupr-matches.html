@@ -202,22 +202,43 @@ function render(){
   wrap.innerHTML = withMatches.map(renderLeague).join('');
 }
 
+function effectiveSub(baseId){
+  // A schedule match may have a base submission plus versioned resubmissions
+  // (baseId-r1, -r2 …). Prefer the newest ACTIVE row; else the newest deleted.
+  const keys = Object.keys(subMap).filter(k => k === baseId || k.startsWith(baseId + '-r'));
+  if(!keys.length) return null;
+  const rows = keys.map(k => ({ ...subMap[k], identifier: k }));
+  const active = rows.filter(r => r.status !== 'deleted');
+  const pick = (active.length ? active : rows)
+    .sort((a,b) => new Date(a.submitted_at||0) - new Date(b.submitted_at||0));
+  return pick[pick.length - 1];
+}
+function nextResubmitVersion(baseId){
+  const vers = Object.keys(subMap)
+    .filter(k => k.startsWith(baseId + '-r'))
+    .map(k => parseInt(k.slice((baseId + '-r').length), 10))
+    .filter(n => !isNaN(n));
+  return (vers.length ? Math.max(...vers) : 0) + 1;
+}
+
 function renderLeague(l){
   const rows = l.matches.map(c => {
-    const sub = subMap[c.identifier];
+    const sub = effectiveSub(c.identifier);
     const deleted = sub && sub.status === 'deleted';
     const done = sub && sub.status !== 'deleted' && sub.match_code;
-    const idAttr = c.identifier.replace(/'/g,"\\'");
+    const dis = c.linked ? '' : 'disabled title="A player is not DUPR-linked"';
     let status, actions;
     if(done){
+      const idAttr = sub.identifier.replace(/'/g,"\\'");
       status = `<span class="badge ok">submitted</span> <code>${sub.match_code}</code>`;
       actions = `<button class="btn-sm ghost" onclick="doUpdate('${l.league.id}','${idAttr}',${c.week},${c.matchNum})">Update</button>`
               + `<button class="btn-sm danger" onclick="doDelete('${idAttr}')">Delete</button>`;
+    } else if(deleted){
+      status = '<span class="badge del">deleted</span>';
+      actions = `<button class="btn-sm green" ${dis} title="Push a fresh copy to DUPR under a new id" onclick="doResubmitNew('${l.league.id}',${c.week},${c.matchNum})">Resubmit as new</button>`;
     } else {
-      status = deleted ? '<span class="badge del">deleted</span>' : '<span class="badge pend">not submitted</span>';
-      const dis = c.linked ? '' : 'disabled title="A player is not DUPR-linked"';
-      const label = deleted ? 'Resubmit' : 'Submit';
-      actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">${label}</button>`;
+      status = '<span class="badge pend">not submitted</span>';
+      actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">Submit</button>`;
     }
     return `<tr>
       <td class="nw"><strong>Wk ${c.week} · M${c.matchNum}</strong></td>
@@ -262,22 +283,30 @@ function matchFrom(leagueId, week, matchNum){
   return wk ? wk.matches[matchNum-1] : null;
 }
 
-async function doSubmit(leagueId, week, matchNum){
+async function doSubmit(leagueId, week, matchNum, idSuffix){
   const P = PAGE[leagueId];
   const m = matchFrom(leagueId, week, matchNum);
   if(!m){ toast('Match not found'); return; }
   if(!adminDuprId){ toast('Connect your DUPR admin account (Dashboard) before submitting'); return; }
   const body = buildBody(m, P.idMap);
   if(!body){ toast('Cannot submit — a player is unlinked or the score is incomplete'); return; }
-  toast('Submitting to DUPR…');
+  toast(idSuffix ? 'Resubmitting to DUPR as a new match…' : 'Submitting to DUPR…');
   const d = await callFn('dupr-submit-match', {
     match: body.match, format: body.format,
     leagueKey: P.league.key, leagueName: P.league.name,
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
+    idSuffix: idSuffix || undefined,
   });
   if(!d.success) console.error('DUPR SUBMIT failed:', d);
   toast(d.success ? (d.updated ? 'Match updated in DUPR' : 'Submitted to DUPR') : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : ((d.error || 'Submission failed') + (d.details ? ' — ' + d.details : ''))));
   await loadAll();
+}
+
+// Resubmit a previously-deleted match as a fresh DUPR match (new identifier).
+async function doResubmitNew(leagueId, week, matchNum){
+  const baseId = `${PAGE[leagueId].league.key}|${currentSeason.id}|w${week}|m${matchNum}`;
+  const v = nextResubmitVersion(baseId);
+  await doSubmit(leagueId, week, matchNum, 'r' + v);
 }
 
 async function doUpdate(leagueId, identifier, week, matchNum){
