@@ -275,7 +275,7 @@ async function doSubmit(leagueId, week, matchNum){
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
   });
   if(!d.success) console.error('DUPR SUBMIT failed:', d);
-  toast(d.success ? 'Submitted to DUPR' : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : (d.error || 'Submission failed')));
+  toast(d.success ? (d.updated ? 'Match updated in DUPR' : 'Submitted to DUPR') : (d.ineligible ? ('Blocked: missing BASIC_L1 — ' + d.ineligible.join(', ')) : ((d.error || 'Submission failed') + (d.details ? ' — ' + d.details : ''))));
   await loadAll();
 }
 
@@ -288,7 +288,7 @@ async function doUpdate(leagueId, identifier, week, matchNum){
   toast('Updating in DUPR…');
   const d = await callFn('dupr-update-match', { identifier, match: body.match, format: body.format, leagueName: P.league.name, week });
   if(!d.success) console.error('DUPR UPDATE failed:', d);
-  toast(d.success ? 'Match updated in DUPR' : (d.error || 'Update failed'));
+  toast(d.success ? 'Match updated in DUPR' : ((d.error || 'Update failed') + (d.details ? ' — ' + d.details : '')));
   await loadAll();
 }
 
