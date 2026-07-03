@@ -105,6 +105,10 @@ let subMap = {};    // identifier -> dupr_matches row
 let adminDuprId = null;
 
 function H(){ return { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }; }
+
+// Deep-link to a match on DUPR. NOTE: confirm the exact path from your DUPR
+// dashboard (open a submitted match and copy its URL) and adjust if needed.
+const DUPR_MATCH_URL = (id) => `https://dashboard.dupr.com/dashboard/matches/${id}`;
 function toast(msg){
   const t = document.getElementById('toast'); if(!t) return;
   t.textContent = msg; t.classList.add('show');
@@ -243,7 +247,9 @@ function renderLeague(l){
     return `<tr>
       <td class="nw"><strong>Wk ${c.week} · M${c.matchNum}</strong></td>
       <td>${c.label}</td>
-      <td class="nw">${c.scores || c.series}${c.scores ? ` <span class="muted sm">(${c.series})</span>` : ''}</td>
+      <td class="nw">${done
+        ? `<a href="${DUPR_MATCH_URL(sub.match_id || sub.match_code)}" target="_blank" rel="noopener" title="Open this match on DUPR" style="color:var(--green-dark);text-decoration:underline">${c.scores || c.series}</a>`
+        : (c.scores || c.series)}${c.scores ? ` <span class="muted sm">(${c.series})</span>` : ''}</td>
       <td>${status}</td>
       <td class="nw ar">${actions}</td>
     </tr>`;
