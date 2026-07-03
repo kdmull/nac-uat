@@ -216,7 +216,8 @@ function renderLeague(l){
     } else {
       status = deleted ? '<span class="badge del">deleted</span>' : '<span class="badge pend">not submitted</span>';
       const dis = c.linked ? '' : 'disabled title="A player is not DUPR-linked"';
-      actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">Submit</button>`;
+      const label = deleted ? 'Resubmit' : 'Submit';
+      actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">${label}</button>`;
     }
     return `<tr>
       <td class="nw"><strong>Wk ${c.week} · M${c.matchNum}</strong></td>
