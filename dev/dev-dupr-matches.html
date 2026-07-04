@@ -106,9 +106,8 @@ let adminDuprId = null;
 
 function H(){ return { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY }; }
 
-// Deep-link to a match on DUPR. NOTE: confirm the exact path from your DUPR
-// dashboard (open a submitted match and copy its URL) and adjust if needed.
-const DUPR_MATCH_URL = (id) => `https://dashboard.dupr.com/dashboard/matches/${id}`;
+// Deep-link to a match on DUPR (confirmed format: /match/detail/{numeric matchId}).
+const DUPR_MATCH_URL = (id) => `https://dashboard.dupr.com/dashboard/match/detail/${id}`;
 function toast(msg){
   const t = document.getElementById('toast'); if(!t) return;
   t.textContent = msg; t.classList.add('show');
