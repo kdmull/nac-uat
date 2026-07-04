@@ -461,6 +461,21 @@ async function saveEdit(){
     let partnerResult = null;
     if(newLeague && partnerWrapVisible && (newPartner !== origPartner || (leagueChanged && newPartner))){
       partnerResult = await callAdminFn('admin-set-partner', { userId: editingId, seasonId: activeSeasonId, partnerUserId: newPartner || null });
+      // Alert the newly-selected partner by email.
+      if(partnerResult && newPartner){
+        try{
+          fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+            body: JSON.stringify({ type:'partner', data:{
+              partnerUserId: newPartner,
+              byName: (a0 && a0.name) || 'A player',
+              league: LEAGUE_NAMES[newLeague] || newLeague,
+              status: 'accepted'
+            }})
+          }).catch(()=>{});
+        }catch(e){}
+      }
     }
     const a = accounts.find(x => x.id === editingId);
     if(a){
