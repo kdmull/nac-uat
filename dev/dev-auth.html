@@ -181,6 +181,15 @@ async function doSignup(){
 
   if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
 
+  // Notify the admin that a new account was created (keepalive survives redirect).
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type:'account', data:{ email, name:(first+' '+last).trim() } })
+    }).catch(()=>{});
+  }catch(e){}
+
   if(data.session){
     // Logged in immediately (email confirmation off) — require DUPR linking next
     window.location.href = 'dupr-connect.html';

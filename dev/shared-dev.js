@@ -242,6 +242,22 @@ async function logScore(week, matchIdx, games, winner, team1, team2){
       })
     });
   }catch(e){console.error('Score log failed:',e);}
+  // Notify the admin that a score was submitted (fire-and-forget).
+  notifyEmail('score', {
+    league: currentLeague?.name, week, match: matchIdx+1,
+    team1, team2, games, winner
+  });
+}
+
+// Fire-and-forget admin email notification via the notify-email edge function.
+function notifyEmail(type, data){
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type, data })
+    }).catch(()=>{});
+  }catch(e){ /* never block the app on a notification */ }
 }
 
 async function loadSeasons(){
