@@ -295,6 +295,29 @@ async function doSubmit(leagueId, week, matchNum, idSuffix){
   if(!adminDuprId){ toast('Connect your DUPR admin account (Dashboard) before submitting'); return; }
   const body = buildBody(m, P.idMap);
   if(!body){ toast('Cannot submit — a player is unlinked or the score is incomplete'); return; }
+
+  // Guard against DUPR's "missing player or same player in both teams" error:
+  // map each roster slot to its resolved DUPR id and check for blanks/duplicates.
+  const isD = m.p1a !== undefined;
+  const slots = isD
+    ? [['p1a',m.p1a],['p1b',m.p1b],['p2a',m.p2a],['p2b',m.p2b]]
+    : [['p1',m.p1],['p2',m.p2]];
+  const resolved = slots.filter(([k,n]) => n).map(([k,n]) => ({ name:n, id:P.idMap[n] }));
+  const missing = resolved.filter(r => !r.id);
+  if(missing.length){
+    console.warn('DUPR submit — unresolved players:', missing, 'idMap:', P.idMap);
+    toast('Not linked to DUPR: ' + missing.map(r=>r.name).join(', '));
+    return;
+  }
+  const seen = {};
+  const collided = [];
+  resolved.forEach(r => { if(seen[r.id]) collided.push(`${seen[r.id]} & ${r.name}`); else seen[r.id] = r.name; });
+  if(collided.length){
+    console.warn('DUPR submit — two players share one DUPR id:', collided, 'resolved:', resolved, 'idMap:', P.idMap);
+    toast('These players share the same DUPR account (fix their dupr_players entries): ' + collided.join(', '));
+    return;
+  }
+
   toast(idSuffix ? 'Resubmitting to DUPR as a new match…' : 'Submitting to DUPR…');
   const d = await callFn('dupr-submit-match', {
     match: body.match, format: body.format,
