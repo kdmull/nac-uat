@@ -417,8 +417,12 @@ async function verifyDuprEligibility(duprId, league){
     });
     const d = await res.json().catch(()=>({}));
     if(!res.ok){
-      return { eligible:false, message:(d.error || 'We could not verify your DUPR eligibility right now.') +
-        ' Please reconnect your DUPR account from your dashboard and try again.' };
+      // We couldn't reach a working DUPR entitlements check (currently a
+      // DUPR-side issue). Don't block registration on a verification outage —
+      // allow it and log. Enforcement resumes automatically once the check
+      // returns a real answer.
+      console.warn('DUPR eligibility check unavailable — allowing registration:', d.error || res.status);
+      return { eligible:true, unverified:true };
     }
     if(!d.basic){
       return { eligible:false, message:'Your DUPR account is not currently eligible for rated play (missing the BASIC_L1 entitlement). ' +
@@ -430,7 +434,9 @@ async function verifyDuprEligibility(duprId, league){
     }
     return { eligible:true };
   }catch(e){
-    return { eligible:false, message:'Could not reach DUPR to verify your eligibility. Please try again in a moment.' };
+    // Network/unexpected error reaching the check — allow rather than block.
+    console.warn('DUPR eligibility check error — allowing registration:', e);
+    return { eligible:true, unverified:true };
   }
 }
 
