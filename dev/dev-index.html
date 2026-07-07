@@ -96,8 +96,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <p>Standings, schedules, scores, and league registration</p>
   </div>
 
+  <div class="section-label">View Leagues</div>
+  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
+
   <!-- Sign-in prompt (logged-out only) -->
-  <div class="signin-card" id="signin-card">
+  <div class="signin-card" id="signin-card" style="margin-top:1.5rem">
     <h2>Join a League</h2>
     <p>Sign in or create an account to register for leagues and connect your DUPR rating.</p>
     <div class="actions">
@@ -105,16 +108,13 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <a class="btn btn-green" href="dev-auth.html">Create Account</a>
     </div>
   </div>
-
-  <div class="section-label">View Leagues</div>
-  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // League cards are dynamic: catalog from pb_league 'nac_leagues' (fallback to
 // the built-in six), filtered to the active season's enabled leagues.
@@ -133,6 +133,7 @@ async function renderLeagueCards(){
   let leagues = FALLBACK_LEAGUES;
   let enabled = null;
   try{
+    if(!sb) throw new Error('client unavailable');
     const [lg, se] = await Promise.all([
       sb.from('pb_league').select('value').eq('key','nac_leagues').maybeSingle(),
       sb.from('pb_league').select('value').eq('key','nac_seasons').maybeSingle()
@@ -155,6 +156,7 @@ async function renderLeagueCards(){
 renderLeagueCards();
 
 window.addEventListener('DOMContentLoaded', async () => {
+  if(!sb) return;  // client unavailable — leagues render from fallback; nav stays default
   const { data: { session } } = await sb.auth.getSession();
   const signinCard = document.getElementById('signin-card');
   const mainNav = document.getElementById('main-nav');
