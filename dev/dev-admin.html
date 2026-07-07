@@ -48,6 +48,10 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .admin-gate .err{color:var(--danger);font-size:13px;margin-top:8px}
 .admin-content{display:none}.admin-content.visible{display:block}
 .admin-section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.admin-tabs{position:sticky;top:64px;z-index:20;display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:6px;box-shadow:0 1px 4px rgba(26,42,108,.06)}
+.admin-tab{flex:1;min-width:120px;padding:10px 14px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:transparent;border:none;border-radius:var(--radius);cursor:pointer;transition:all .12s}
+.admin-tab:hover{background:var(--surface);color:var(--navy)}
+.admin-tab.active{background:var(--navy);color:#fff}
 .admin-section h3{font-family:var(--font-display);font-size:18px;font-weight:700;text-transform:uppercase;color:var(--navy);margin-bottom:1rem;letter-spacing:.5px}
 .admin-match-row{display:grid;grid-template-columns:50px 1fr 28px 1fr 1fr 80px 78px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
 .admin-match-row:last-child{border-bottom:none}
@@ -151,7 +155,14 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           <button class="btn btn-green" id="admin-save-btn" onclick="saveAdmin()">Save All Changes</button>
         </div>
       </div>
-    <div class="admin-section" id="score-log-section" style="display:none">
+
+      <div class="admin-tabs" id="admin-tabs">
+        <button class="admin-tab active" data-tab="schedule" onclick="showAdminTab('schedule')">Schedule &amp; Roster</button>
+        <button class="admin-tab" data-tab="dupr" onclick="showAdminTab('dupr')">DUPR</button>
+        <button class="admin-tab" data-tab="data" onclick="showAdminTab('data')">Scores &amp; Sign-ups</button>
+        <button class="admin-tab" data-tab="setup" onclick="showAdminTab('setup')">Seasons &amp; Leagues</button>
+      </div>
+    <div class="admin-section" id="score-log-section" data-admin-tab="data" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
         <h3 style="margin:0">Score Log</h3>
         <button class="btn btn-ghost" style="font-size:12px;padding:6px 14px" onclick="loadScoreLog()">↻ Refresh Log</button>
@@ -174,7 +185,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         </table>
       </div>
     </div>
-      <div class="admin-section" id="roster-admin-section">
+      <div class="admin-section" id="roster-admin-section" data-admin-tab="schedule">
         <h3>League Roster</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px" onclick="loadRosterIntoPlayers()">⇣ Load Registered Players</button>
@@ -197,17 +208,17 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           </div>
         </div>
       </div>
-      <div class="admin-section" id="playoff-admin-section">
+      <div class="admin-section" id="playoff-admin-section" data-admin-tab="schedule">
         <h3>Playoffs &amp; Seeding</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem" id="playoff-admin-desc">Seeds auto-fill to the top 4 from standings. Override any seed below (e.g. if someone can't make it), then Save.</p>
         <div id="playoff-seed-area"></div>
       </div>
-      <div class="admin-section" id="dupr-matches-section">
+      <div class="admin-section" id="dupr-matches-section" data-admin-tab="dupr">
         <h3>DUPR Matches</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">Matches submitted to DUPR for this league. As the club admin (match owner) you can push the latest score again (Update) or remove a match from DUPR (Delete).</p>
         <div id="dupr-matches-area"></div>
       </div>
-      <div class="admin-section" id="dupr-webhooks-section">
+      <div class="admin-section" id="dupr-webhooks-section" data-admin-tab="dupr">
         <h3>DUPR Rating Webhooks</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">One-time setup: register this site's webhook with DUPR, then subscribe players so DUPR pushes live rating updates. Players are auto-subscribed when they connect DUPR; use "Subscribe All" to backfill anyone who connected earlier.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -216,7 +227,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         </div>
         <p id="dupr-webhook-status" style="font-size:12px;color:var(--muted);margin-top:.75rem"></p>
       </div>
-      <div class="admin-section">
+      <div class="admin-section" id="schedule-editor-section" data-admin-tab="schedule">
         <h3>Schedule Editor</h3>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
           <label style="color:var(--muted);font-size:13px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px">Week:</label>
@@ -231,7 +242,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
           <div id="admin-matches" style="min-width:480px"></div>
         </div>
       </div>
-    <div class="admin-section" id="registrations-section" style="display:none">
+    <div class="admin-section" id="registrations-section" data-admin-tab="data" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
         <h3 style="margin:0">Registrations</h3>
         <div style="display:flex;gap:8px">
@@ -259,7 +270,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         </table>
       </div>
     </div>
-      <div class="admin-section" id="seasons-section">
+      <div class="admin-section" id="seasons-section" data-admin-tab="setup">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
           <h3 style="margin:0">Seasons</h3>
           <button class="btn btn-ghost" id="new-season-toggle" style="font-size:12px;padding:6px 14px" onclick="toggleNewSeasonForm()">+ Start New Season</button>
@@ -287,7 +298,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         </div>
       </div>
 
-      <div class="admin-section">
+      <div class="admin-section" id="manage-leagues-section" data-admin-tab="setup">
         <h3>Manage Leagues</h3>
         <p style="color:var(--muted);font-size:13px;margin-bottom:1rem">The league catalog used across the whole site. Add new leagues here; they appear in season setup, registration, and the public pages. To sit a league out for one season, use the checkboxes in the season settings above instead of deleting it.</p>
         <div id="league-catalog-list" style="margin-bottom:1rem"></div>
@@ -325,8 +336,6 @@ const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 function unlockAdmin(){
   document.getElementById('admin-gate').style.display='none';
   document.getElementById('admin-content').classList.add('visible');
-  document.getElementById('score-log-section').style.display='block';
-  document.getElementById('registrations-section').style.display='block';
   renderAdminPanel();
   renderSeasonsAdmin();
   renderAdminRoster();
@@ -335,6 +344,22 @@ function unlockAdmin(){
   renderPlayoffSeeding();
   renderDuprMatches();
   loadAdminDuprId();
+  let savedTab = 'schedule';
+  try{ savedTab = localStorage.getItem('nacAdminTab') || 'schedule'; }catch(e){}
+  showAdminTab(savedTab);
+}
+
+// In-page section navigation: show only the selected group of sections.
+function showAdminTab(tab){
+  const valid = ['schedule','dupr','data','setup'];
+  if(!valid.includes(tab)) tab = 'schedule';
+  document.querySelectorAll('#admin-content [data-admin-tab]').forEach(el => {
+    el.style.display = (el.getAttribute('data-admin-tab') === tab) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.admin-tab').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+  });
+  try{ localStorage.setItem('nacAdminTab', tab); }catch(e){}
 }
 
 // Check if the logged-in user is an admin — if so, skip the password gate
