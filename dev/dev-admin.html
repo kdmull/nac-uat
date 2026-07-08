@@ -488,7 +488,7 @@ async function initAdminLeague(league){
   if(!hasSchedule){
     const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
     PLAYERS = members
-      .map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim())
+      .map(m => deriveScheduleName(m.first_name, m.last_name))
       .filter(n => n && n !== '.');
     schedule = [];
   }
@@ -943,7 +943,7 @@ async function loadRosterIntoPlayers(){
     showToast(`${teams.length} team${teams.length!==1?'s':''} (${PLAYERS.length} players) loaded` +
       (incomplete ? ` — ${incomplete} without a partner` : '') + ' — build the schedule & save');
   } else {
-    PLAYERS = members.map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim());
+    PLAYERS = members.map(m => deriveScheduleName(m.first_name, m.last_name));
     renderAdminPanel();
     showToast(members.length + ' players loaded — now build the schedule & save');
   }
@@ -1212,7 +1212,7 @@ async function resetToDefault(){
   schedule=[];
   const members = await loadLeagueMembers(currentLeague.id, currentSeason.id);
   PLAYERS = members
-    .map(m => `${m.first_name||''} ${(m.last_name||'')[0]||''}.`.trim())
+    .map(m => deriveScheduleName(m.first_name, m.last_name))
     .filter(n => n && n !== '.');
   renderAdminPanel();renderAdminRoster();showToast('Schedule cleared & roster reloaded!');
 }
@@ -1592,7 +1592,7 @@ async function loadRegistered(){
   if(error){ notes.textContent = 'Could not load registrations: ' + error.message; return; }
   if(!regs || !regs.length){ notes.textContent = 'No registrations yet for this division.'; return; }
 
-  const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || (r.email||'?');
+  const nm = r => deriveScheduleName(r.first_name, r.last_name) || (r.email||'?');
 
   // DUPR ratings for seeding: user_id -> profiles.dupr_id -> dupr_ratings
   const uids = [...new Set(regs.flatMap(r => [r.user_id, r.partner_user_id]).filter(Boolean))];

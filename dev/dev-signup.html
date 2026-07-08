@@ -557,7 +557,7 @@ async function confirmRegistration(){
   // name through dupr_players. Mirror the id into that name-keyed table for this league,
   // deriving player_name exactly as the admin schedule generator does ("First L.").
   if(p.dupr_id){
-    const scheduleName = `${p.first_name||''} ${(p.last_name||'')[0]||''}.`.trim();
+    const scheduleName = deriveScheduleName(p.first_name, p.last_name);
     try{
       await fetch(`${SUPABASE_URL}/rest/v1/dupr_players`, {
         method:'POST',

@@ -99,6 +99,7 @@ code{font-family:monospace;font-size:12px;color:var(--muted)}
 <div id="toast"></div>
 
 <script src="shared-dev.js"></script>
+<script src="tournament-engine.js"></script>
 <script>
 let PAGE = {};      // leagueId -> { league, schedule, idMap, matches:[...] }
 let subMap = {};    // identifier -> dupr_matches row
@@ -185,7 +186,95 @@ async function loadAll(){
     }
     PAGE[lg.id] = { league:lg, schedule:sched, idMap, matches };
   }
+
+  await loadTournamentMatches();
   render();
+}
+
+// Build DUPR-page entries for tournament pool + bracket matches, so completed
+// tournament games show up right alongside league matches for submission.
+async function loadTournamentMatches(){
+  let cat = [];
+  try{ const res = await dbGet('nac_tournaments'); cat = (res.data && res.data.tournaments) || []; }catch(e){ return; }
+
+  for(const t of cat){
+    for(const d of (t.divisions || [])){
+      let DIV = null;
+      try{ const r = await dbGet(`tourney_${t.id}_${d.id}`); DIV = (r.data && r.data.teams) ? r.data : null; }catch(e){}
+      if(!DIV || !DIV.teams || !DIV.teams.length) continue;
+
+      // Resolve each registered player's name -> DUPR id from this division's
+      // registrations (league_id 't:<tid>:<divId>') joined to profiles.
+      const idMap = await tournamentDuprIds(t, d);
+
+      // teams[i].name is "Full Name" (singles) or "A & B" (doubles).
+      const teamPlayers = DIV.teams.map(tm => (tm.name || '').split(' & ').map(x => x.trim()).filter(Boolean));
+      const isD = d.teamType === 'doubles';
+
+      const pseudoKey = `t_${t.id}_${d.id}`;            // PAGE bucket id
+      const leagueKey = `tourney|${t.id}|${d.id}`;      // DUPR identifier prefix + submit leagueKey
+      const matches = [];
+      const schedule = [];                              // matchFrom() reads .games from here
+
+      const pushMatch = (t1, t2, games, tag, roundLabel) => {
+        const comp = (games || []).filter(g => g && g.s1!=null && g.s2!=null);
+        if(!comp.length) return;                        // only completed games
+        const A = teamPlayers[t1] || [], B = teamPlayers[t2] || [];
+        const m = isD
+          ? { p1a:A[0], p1b:A[1], p2a:B[0], p2b:B[1], games: comp }
+          : { p1:A[0], p2:B[0], games: comp };
+        const matchNum = matches.length + 1;
+        schedule.push({ week:1, matches:[m] });         // one match per pseudo-week
+        const names = isD ? [A[0],A[1],B[0],B[1]].filter(Boolean) : [A[0],B[0]].filter(Boolean);
+        const label = isD
+          ? `${displayName(A[0])} &amp; ${displayName(A[1])} vs ${displayName(B[0])} &amp; ${displayName(B[1])}`
+          : `${displayName(A[0])} vs ${displayName(B[0])}`;
+        matches.push({
+          week: matchNum, matchNum: 1,
+          identifier: `${leagueKey}|${tag}`,
+          label, scores: comp.map(g=>`${g.s1}-${g.s2}`).join(', '),
+          series: roundLabel,
+          linked: names.length && names.every(n => idMap[n]),
+        });
+      };
+
+      // Pool matches
+      (DIV.poolMatches || []).forEach((pm, i) => {
+        pushMatch(pm.t1, pm.t2, pm.games, `pool${pm.pool}r${pm.round}g${i}`, `Pool ${String.fromCharCode(65+pm.pool)}`);
+      });
+      // Bracket matches (both teams present only)
+      if(DIV.bracket){
+        DIV.bracket.rounds.forEach((round, ri) => {
+          round.forEach((bm, bi) => {
+            if(bm.t1===null || bm.t2===null) return;
+            pushMatch(bm.t1, bm.t2, [{s1:bm.s1, s2:bm.s2}], `r${ri}m${bi}`, teRoundName(DIV.bracket.size, ri, DIV.bracket.rounds.length));
+          });
+        });
+      }
+
+      if(matches.length){
+        PAGE[pseudoKey] = {
+          league: { id: pseudoKey, key: leagueKey, name: `🏆 ${t.name} — ${d.name}` },
+          schedule, idMap, matches, isTournament: true
+        };
+      }
+    }
+  }
+}
+
+// name -> DUPR id for a tournament division, from its registrations + profiles.
+async function tournamentDuprIds(t, d){
+  const map = {};
+  try{
+    const lm = await fetch(`${SUPABASE_URL}/rest/v1/league_members?league_id=eq.${encodeURIComponent('t:'+t.id+':'+d.id)}&status=eq.active&select=user_id,first_name,last_name`, { headers:H() });
+    const rows = lm.ok ? await lm.json() : [];
+    const uids = [...new Set(rows.map(r=>r.user_id).filter(Boolean))];
+    if(!uids.length) return map;
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${uids.map(encodeURIComponent).join(',')})&select=id,first_name,last_name,dupr_id`, { headers:H() });
+    const profs = pr.ok ? await pr.json() : [];
+    profs.forEach(p => { if(p.dupr_id){ map[deriveScheduleName(p.first_name, p.last_name)] = p.dupr_id; } });
+  }catch(e){ console.warn('tournamentDuprIds failed', e); }
+  return map;
 }
 
 function render(){
@@ -319,10 +408,12 @@ async function doSubmit(leagueId, week, matchNum, idSuffix){
   }
 
   toast(idSuffix ? 'Resubmitting to DUPR as a new match…' : 'Submitting to DUPR…');
+  const row = P.matches.find(x => x.week === week && x.matchNum === matchNum);
   const d = await callFn('dupr-submit-match', {
     match: body.match, format: body.format,
     leagueKey: P.league.key, leagueName: P.league.name,
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
+    identifier: row ? row.identifier : undefined,   // tournaments carry a custom id
     idSuffix: idSuffix || undefined,
   });
   if(!d.success) console.error('DUPR SUBMIT failed:', d);

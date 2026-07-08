@@ -84,7 +84,9 @@ function displayName(n){
 }
 
 function deriveScheduleName(first, last){
-  return `${(first||'').trim()} ${(((last||'').trim())[0]||'')}.`.trim();
+  // Full name is the player's identity across schedules, standings, brackets,
+  // DUPR sync, and rosters. (Was "First L." — now full last name.)
+  return `${(first||'').trim()} ${(last||'').trim()}`.trim();
 }
 
 async function buildFullNameMap(seasonId){
