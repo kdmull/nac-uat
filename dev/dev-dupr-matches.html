@@ -203,12 +203,23 @@ async function loadTournamentMatches(){
       try{ const r = await dbGet(`tourney_${t.id}_${d.id}`); DIV = (r.data && r.data.teams) ? r.data : null; }catch(e){}
       if(!DIV || !DIV.teams || !DIV.teams.length) continue;
 
-      // Resolve each registered player's name -> DUPR id from this division's
-      // registrations (league_id 't:<tid>:<divId>') joined to profiles.
-      const idMap = await tournamentDuprIds(t, d);
-
       // teams[i].name is "Full Name" (singles) or "A & B" (doubles).
       const teamPlayers = DIV.teams.map(tm => (tm.name || '').split(' & ').map(x => x.trim()).filter(Boolean));
+
+      // Prefer the DUPR ids stored on each team at "Load Registered" time — they
+      // were captured with an admin session that could read profiles, so they
+      // don't depend on this page's (anon) RLS access. Map player name -> id by
+      // position within the team. Fall back to name-resolution for any gaps.
+      const idMap = {};
+      DIV.teams.forEach((tm, ti) => {
+        const names = teamPlayers[ti] || [];
+        const ids = tm.duprIds || [];
+        names.forEach((n, k) => { if(ids[k]) idMap[n] = ids[k]; });
+      });
+      const anyMissing = DIV.teams.some((tm, ti) => (teamPlayers[ti]||[]).some(n => !idMap[n]));
+      if(anyMissing){
+        try{ const fallback = await tournamentDuprIds(t, d); Object.keys(fallback).forEach(n => { if(!idMap[n]) idMap[n] = fallback[n]; }); }catch(e){}
+      }
       const isD = d.teamType === 'doubles';
 
       const pseudoKey = `t_${t.id}_${d.id}`;            // PAGE bucket id
