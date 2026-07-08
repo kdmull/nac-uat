@@ -44,6 +44,8 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 table.g tr:last-child td{border-bottom:none}
 .score-in{width:44px;padding:5px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:13px}
 .score-in:disabled{background:var(--surface);color:var(--muted)}
+.pool-match.clickable{cursor:pointer}
+.pool-match.clickable:hover{background:rgba(76,175,40,.07)}
 /* ── Standings table (identical to the league page) ── */
 .standings-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 4px rgba(26,42,108,.06)}
 .standings-table thead{background:var(--navy)}
@@ -270,14 +272,51 @@ function poolMatchTable(pi){
   const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
   const rows = ms.map(({m,mi}) => {
     const g = m.games[0];
-    return `<tr><td style="text-align:right">${teamLabel(m.t1)}</td>
-      <td style="white-space:nowrap;text-align:center">
-        <input class="score-in" type="number" min="0" value="${g.s1??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s1',this.value)"/>
-        <input class="score-in" type="number" min="0" value="${g.s2??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s2',this.value)"/>
-      </td>
-      <td>${teamLabel(m.t2)}</td></tr>`;
+    const r = teMatchResult(m);
+    const played = r.complete;
+    const w1 = played && r.winner===m.t1, w2 = played && r.winner===m.t2;
+    const score = played ? `${g.s1}–${g.s2}` : '<span style="color:var(--muted)">vs</span>';
+    return `<tr class="pool-match${editable?' clickable':''}" ${editable?`onclick="openPoolModal(${mi})"`:''}>
+      <td style="text-align:right;${w1?'font-weight:700;color:var(--green-dark)':''}">${teamLabel(m.t1)}</td>
+      <td style="white-space:nowrap;text-align:center;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--navy)">${score}</td>
+      <td style="${w2?'font-weight:700;color:var(--green-dark)':''}">${teamLabel(m.t2)}</td>
+    </tr>`;
   }).join('');
-  return `<table class="g" style="margin-top:10px"><thead><tr><th style="text-align:right">Team</th><th style="text-align:center">Score</th><th>Team</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const hint = editable ? `<p style="font-size:12px;color:var(--green-dark);font-weight:600;margin:8px 0 0">✓ Click any match to enter scores</p>` : '';
+  return `<table class="g" style="margin-top:10px"><thead><tr>
+      <th style="text-align:right">Team</th><th style="text-align:center">Score</th><th>Team</th>
+    </tr></thead><tbody>${rows}</tbody></table>${hint}`;
+}
+
+// ── Pool score modal (same flow as the bracket) ──
+let poolModalIdx = null;
+function openPoolModal(mi){
+  poolModalIdx = mi;
+  const m = DIV.poolMatches[mi];
+  const g = m.games[0];
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg'; wrap.id='pool-modal';
+  wrap.onclick = e => { if(e.target===wrap) closePoolModal(); };
+  wrap.innerHTML = `<div class="modal">
+    <h3>Pool ${String.fromCharCode(65+m.pool)} — Round ${m.round}</h3>
+    <div class="modal-row"><span>${teamLabel(m.t1)}</span><input type="number" min="0" id="pl-s1" value="${g.s1??''}"/></div>
+    <div class="modal-row"><span>${teamLabel(m.t2)}</span><input type="number" min="0" id="pl-s2" value="${g.s2??''}"/></div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button class="btn btn-green" style="flex:1" onclick="savePoolModal()">Save</button>
+      <button class="btn btn-ghost" onclick="closePoolModal()">Cancel</button>
+    </div></div>`;
+  document.body.appendChild(wrap);
+  setTimeout(()=>{ const el=document.getElementById('pl-s1'); if(el) el.focus(); }, 30);
+}
+function closePoolModal(){ const el=document.getElementById('pool-modal'); if(el) el.remove(); poolModalIdx=null; }
+async function savePoolModal(){
+  if(poolModalIdx === null) return;
+  const v1 = document.getElementById('pl-s1').value, v2 = document.getElementById('pl-s2').value;
+  const g = DIV.poolMatches[poolModalIdx].games[0];
+  g.s1 = v1==='' ? null : Math.max(0, parseInt(v1,10)||0);
+  g.s2 = v2==='' ? null : Math.max(0, parseInt(v2,10)||0);
+  closePoolModal();
+  if(await saveDiv()) render();
 }
 
 // Knockout bracket rendered with the same card/connector/champion look as the
