@@ -129,7 +129,7 @@ async function loadCounts(){
     const rows_ = data || [];
     const byDiv = {};
     rows_.forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
-    const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || 'Player';
+    const nm = r => `${r.first_name||''} ${r.last_name||''}`.trim() || 'Player';
 
     // DUPR ratings for everyone registered: user_id → dupr_id → rating
     const uids = [...new Set(rows_.map(r => r.user_id).filter(Boolean))];
