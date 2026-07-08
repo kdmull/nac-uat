@@ -13,7 +13,8 @@
   var ADMIN_LINKS = [
     { href:'dev-admin.html',    label:'Admin' },
     { href:'dev-accounts.html', label:'Accounts' },
-    { href:'dev-dupr-matches.html', label:'DUPR' }
+    { href:'dev-dupr-matches.html', label:'DUPR' },
+    { href:'dev-tournament-admin.html', label:'Tourneys' }
   ];
 
   // Read the Supabase session from localStorage (handles v2 and v1 shapes).
@@ -40,14 +41,29 @@
     }catch(e){ return null; }
   }
 
-  // Check is_admin on the user's own profile row. Uses the user's token so
-  // row-level security (auth.uid() = id) is satisfied.
-  function checkAdmin(sess){
-    return fetch(SB_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(sess.uid)+'&select=is_admin',
+  // Fetch the user's own profile row (is_admin + dupr_id) in ONE request.
+  // Uses the user's token so row-level security (auth.uid() = id) is satisfied.
+  // Returns null on any failure so callers can fail open (no redirect loops).
+  function fetchProfile(sess){
+    return fetch(SB_URL+'/rest/v1/profiles?id=eq.'+encodeURIComponent(sess.uid)+'&select=is_admin,dupr_id',
       { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+sess.token } })
-      .then(function(r){ return r.ok ? r.json() : []; })
-      .then(function(rows){ return !!(rows[0] && rows[0].is_admin); })
-      .catch(function(){ return false; });
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(rows){ return rows && rows[0] ? rows[0] : null; })
+      .catch(function(){ return null; });
+  }
+
+  // Required-DUPR gate: a signed-in, non-admin user with no linked DUPR is
+  // sent to the connect page from ANY page (dev-auth and dupr-connect don't
+  // load this script, so they're naturally exempt).
+  function enforceDuprLink(prof){
+    if(!prof) return false;                       // profile unreadable → fail open
+    if(prof.is_admin) return false;               // admins are never locked out
+    if(prof.dupr_id) return false;                // already linked
+    var current = (location.pathname.split('/').pop() || '').toLowerCase();
+    if(current === 'dupr-connect.html' || current === 'dev-auth.html') return false;
+    var here = location.pathname.split('/').pop() + (location.search || '');
+    location.replace('dupr-connect.html?returnTo=' + encodeURIComponent(here));
+    return true;
   }
 
   function injectLinks(){
@@ -311,10 +327,13 @@
     injectHamburgerCSS();             // mobile menu styles (everyone)
     setupHamburger();                 // collapse both nav rows into one menu
     var sess = getSession();
-    if(!sess) return;                 // not signed in → no account/admin links to add
-    injectAccountButtons();           // My Profile + Sign Out for any logged-in user
-    checkAdmin(sess).then(function(isAdmin){ if(isAdmin) injectLinks(); });
-    checkPartnerInvites(sess);        // partner invite Accept/Decline banner
+    if(!sess) return;                 // not signed in → public browsing as usual
+    fetchProfile(sess).then(function(prof){
+      if(enforceDuprLink(prof)) return;          // redirecting to connect — stop here
+      injectAccountButtons();                    // My Profile + Sign Out
+      if(prof && prof.is_admin) injectLinks();   // admin nav links
+      checkPartnerInvites(sess);                 // partner invite banner
+    });
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);

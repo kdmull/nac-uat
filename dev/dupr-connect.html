@@ -160,24 +160,8 @@ async function handleDUPRMessage(event){
       .update({ dupr_id: duprId, dupr_access_token: userToken || null, dupr_refresh_token: refreshToken || null })
       .eq('id', accountUser.id);
     if(error) throw error;
-
-    // Mirror the DUPR id into dupr_players for every league this player is
-    // already registered in, so standings and match submission (which resolve
-    // players by their "First L." schedule name) find it — even when they
-    // connect DUPR AFTER registering. (Also handled by a DB trigger; harmless.)
-    try{
-      const { data: me } = await sbAuth.from('profiles').select('first_name,last_name').eq('id', accountUser.id).single();
-      const schedName = `${(me&&me.first_name)||''} ${(((me&&me.last_name)||'')[0])||''}.`.trim();
-      const { data: memberships } = await sbAuth.from('league_members').select('league_id').eq('user_id', accountUser.id);
-      for(const mm of (memberships||[])){
-        if(!mm.league_id) continue;
-        await fetch(`${SUPABASE_URL}/rest/v1/dupr_players`, {
-          method:'POST',
-          headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY, 'Content-Type':'application/json', 'Prefer':'resolution=merge-duplicates' },
-          body: JSON.stringify({ league_key: mm.league_id, player_name: schedName, dupr_id: duprId })
-        }).catch(()=>{});
-      }
-    }catch(e){ console.warn('dupr_players mirror failed:', e); }
+    // (The dupr_players mirror is maintained automatically by a database
+    // trigger on profiles — no client write needed.)
 
     // Enroll for DUPR rating webhooks (fires a RATING_SEED to our receiver).
     fetch(`${SUPABASE_URL}/functions/v1/dupr-subscribe-user`, {

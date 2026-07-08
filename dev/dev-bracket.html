@@ -79,7 +79,10 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 .seed-record{font-family:var(--font-display);font-size:13px;color:var(--muted)}
 
 /* Auth gate */
+.admin-input{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-family:var(--font-body);outline:none}
+.admin-input:focus{border-color:var(--navy)}
 .auth-gate{text-align:center;padding:3rem 1rem}
+
 .auth-gate h3{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
 .auth-gate p{color:var(--muted);margin-bottom:1.2rem;font-size:14px}
 .auth-gate input{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 14px;font-size:16px;width:180px;outline:none;font-family:var(--font-body);margin-right:8px}
@@ -180,6 +183,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 <script>
 let BRACKET_KEY = 'bracket_singles';   // set per league + season at init
 let isTeamBracket = false;             // partner-doubles = bracket of TEAMS
+let isBracketAdmin = false;            // account admin -> skip the score password
 let bracketData = null;
 let bracketAuthed = false;
 let currentModalSlot = null; // {round, matchIndex}
@@ -201,6 +205,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     isTeamBracket = isPartnerLg;
     BRACKET_KEY = `bracket_${currentLeague.id}_${currentSeason.id}`;
+
+    // Admins (account-based) skip the password and can edit seeds
+    isBracketAdmin = await checkAccountAdmin();
+    if(isBracketAdmin) bracketAuthed = true;
 
     // Dynamic page chrome
     document.title = `Playoff Bracket — ${currentLeague.name}`;
@@ -251,57 +259,25 @@ async function loadBracket() {
 }
 
 async function saveBracket() {
-  await dbSet(BRACKET_KEY, bracketData);
+  // Playoff scores go through submit-score (server-verified pw or admin
+  // session); scorers may only write bracket_/playoff_ keys.
+  try{
+    const sess = (typeof nacGetSession==='function') ? nacGetSession() : null;
+    await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY,
+                'Authorization':'Bearer '+SUPABASE_KEY,
+                ...(sess ? { 'x-user-token': sess.token } : {}) },
+      body: JSON.stringify({ mode:'playoff', pw: nacGetScorePw(), key: BRACKET_KEY, value: bracketData })
+    });
+  }catch(e){ console.error('Bracket save failed:', e); }
 }
 
+// Top-4 auto-seed (kept as the public default). Admins override seeds from the
+// admin screen, which writes a saved bracket this page then loads.
 function initBracketFromStandings() {
-  let seeds;
-  if(isTeamBracket){
-    // Partner doubles: seed TEAMS (pairs appearing together on a match side)
-    const teamStats = {};
-    const teamOf = (x, y) => {
-      const key = [x, y].filter(Boolean).map(v=>v.toLowerCase()).sort().join('|');
-      if(!key) return null;
-      if(!teamStats[key]) teamStats[key] = { name:[x,y].filter(Boolean).join(' & '), w:0,l:0,pts:0,opp:0 };
-      return teamStats[key];
-    };
-    for(const w of schedule)for(const m of w.matches){
-      if(m.p1a===undefined) continue;
-      teamOf(m.p1a, m.p1b); teamOf(m.p2a, m.p2b);
-      const r = seriesResult(m);
-      if(!r.complete) continue;
-      const t1 = teamOf(m.p1a, m.p1b), t2 = teamOf(m.p2a, m.p2b);
-      if(!t1 || !t2) continue;
-      const t1won = r.p1w > r.p2w;
-      const wt = t1won ? t1 : t2, lt = t1won ? t2 : t1;
-      wt.w++; wt.pts += t1won ? r.pts1 : r.pts2; wt.opp += t1won ? r.pts2 : r.pts1;
-      lt.l++; lt.pts += t1won ? r.pts2 : r.pts1; lt.opp += t1won ? r.pts1 : r.pts2;
-    }
-    seeds = Object.values(teamStats).map(s => {
-      const tot = s.w + s.l;
-      return {name:s.name, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
-    }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
-  } else {
-    const stats = getStats();
-    const active = getActivePlayers();
-    seeds = active.map(p => {
-      const s = stats[p] || {w:0,l:0,pts:0,opp:0};
-      const tot = s.w + s.l;
-      return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
-    }).sort((a,b) => b.pct-a.pct||b.diff-a.diff).slice(0,4);
-  }
-
-  return {
-    seeds: seeds.map((s,i) => ({...s, seed:i+1})),
-    semis: [
-      // Seed 1 vs Seed 4
-      {p1: seeds[0]?.name||'TBD', p2: seeds[3]?.name||'TBD', games:[], winner:null},
-      // Seed 2 vs Seed 3
-      {p1: seeds[1]?.name||'TBD', p2: seeds[2]?.name||'TBD', games:[], winner:null},
-    ],
-    final: {p1:null, p2:null, games:[], winner:null},
-    champion: null,
-  };
+  const seedNames = computePlayoffEntrants(isTeamBracket).slice(0,4).map(e=>e.name);
+  return buildBracketData(seedNames, isTeamBracket);
 }
 
 function bracketSeriesResult(match) {
@@ -390,7 +366,7 @@ function render() {
     ${authSection}
 
     <div class="seedings-panel">
-      <h3>Playoff Seeds</h3>
+      <h3>Playoff ${isTeamBracket?'Teams':'Seeds'}</h3>
       <div class="seedings-grid">
         ${(bracketData.seeds||[]).map(s=>`
           <div class="seed-row">
@@ -449,10 +425,13 @@ function render() {
 }
 
 // ── AUTH ───────────────────────────────────────────────
-function checkBracketAuth() {
+async function checkBracketAuth() {
   const pw = document.getElementById('bracket-pw').value;
-  if(pw===SCORES_PW||pw===ADMIN_PW) {
+  document.getElementById('bracket-err').textContent = 'Checking…';
+  const ok = await nacVerifyScorePw(pw);   // verified server-side
+  if(ok) {
     bracketAuthed = true;
+    document.getElementById('bracket-err').textContent = '';
     render();
   } else {
     document.getElementById('bracket-err').textContent = 'Incorrect password.';

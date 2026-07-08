@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Tournaments — NAC Pickleball Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;--green:#4caf28;--green-dark:#3a8c1e;
+  --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-link:hover{color:#fff}.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.page{padding:2rem 1.5rem;max-width:1100px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1;margin-bottom:.25rem}
+.sub{color:var(--muted);font-size:14px;margin-bottom:1.25rem}
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.5rem}
+.section h3{font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:1rem}
+.inp{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:14px;color:var(--text);background:var(--white)}
+.inp:focus{outline:none;border-color:var(--navy)}
+.btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy-dark)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(217,59,59,.4)}.btn-danger:hover{background:rgba(217,59,59,.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
+.pill.draft{color:var(--muted);background:var(--surface)}
+.pill.pools{color:#8a6d00;background:rgba(212,167,0,.14)}
+.pill.knockout{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.pill.complete{color:var(--navy);background:var(--surface2)}
+.trow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;flex-wrap:wrap;cursor:pointer}
+.trow:hover{background:var(--surface)}
+.trow.active{border-color:var(--navy);background:var(--surface)}
+.trow .tname{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--navy)}
+.trow .tmeta{font-size:12px;color:var(--muted)}
+table.g{width:100%;border-collapse:collapse}
+table.g th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:6px 8px;text-align:left;border-bottom:2px solid var(--border)}
+table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
+.score-in{width:46px;padding:5px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:13px}
+.pool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.pool-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.pool-card h4{font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.br-round{display:inline-block;vertical-align:top;margin-right:22px;min-width:210px}
+.br-round h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.br-match{border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:13px;background:var(--white)}
+.br-team{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
+.br-team.w{font-weight:700;color:var(--green-dark)}
+.gate{text-align:center;padding:4rem 1rem}
+.gate h3{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.gate a{display:inline-block;padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;text-transform:uppercase;background:var(--navy);color:#fff;text-decoration:none;margin-top:1rem}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:700px){.page{padding:1rem}.section{padding:1rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-right" id="nav-links">
+    <a class="nav-link" href="dev-index.html">Leagues</a>
+    <a class="nav-link" href="dev-rules.html">Rules</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div id="gate" class="gate" style="display:none">
+    <h3>Admins Only</h3>
+    <p style="color:var(--muted)">Your account doesn't have admin access to this page.</p>
+    <a href="dev-index.html">Back to Leagues</a>
+  </div>
+
+  <div id="content" style="display:none">
+    <h1>Tournaments</h1>
+    <p class="sub">Create tournaments, seed pool play, and run the knockout bracket.</p>
+
+    <div class="section">
+      <h3>Your Tournaments</h3>
+      <div id="tournament-list"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem">
+        <input class="inp" id="new-t-name" placeholder="Tournament name" style="flex:2;min-width:180px"/>
+        <input class="inp" id="new-t-date" type="date" style="flex:1;min-width:140px"/>
+        <input class="inp" id="new-t-loc" placeholder="Location" style="flex:1;min-width:140px"/>
+        <button class="btn btn-green" onclick="createTournament()">+ Create</button>
+      </div>
+    </div>
+
+    <div class="section" id="divisions-section" style="display:none">
+      <h3 id="divisions-title">Divisions</h3>
+      <div id="division-list"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem;align-items:center">
+        <input class="inp" id="new-d-name" placeholder="Division name (e.g. Men's 3.5 Doubles)" style="flex:2;min-width:200px"/>
+        <select class="inp" id="new-d-type"><option value="doubles">Doubles</option><option value="singles">Singles</option></select>
+        <select class="inp" id="new-d-pool"><option value="4">Pools of 4</option><option value="5">Pools of 5</option><option value="3">Pools of 3</option></select>
+        <select class="inp" id="new-d-adv"><option value="2">Top 2 advance</option><option value="1">Top 1 advances</option></select>
+        <input class="inp" id="new-d-fee" type="number" min="0" placeholder="Fee $" style="width:80px"/>
+        <button class="btn btn-green" onclick="addDivision()">+ Add Division</button>
+      </div>
+    </div>
+
+    <div id="division-detail"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared-dev.js"></script>
+<script src="tournament-engine.js"></script>
+<script>
+const CATALOG_KEY = 'nac_tournaments';
+let CAT = { tournaments: [] };        // the catalog
+let curT = null;                      // selected tournament
+let curD = null;                      // selected division
+let DIV = null;                       // selected division state (teams/pools/bracket)
+
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.classList.remove('show'),2800); }
+const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const divKey = (t,d) => `tourney_${t.id}_${d.id}`;
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('x'+Date.now());
+function teamLabel(i){ return DIV && DIV.teams[i] ? esc(DIV.teams[i].name) : (i===null?'—':'TBD'); }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  let admin = false;
+  try{ admin = await checkAccountAdmin(); }catch(e){}
+  if(!admin){ document.getElementById('gate').style.display=''; return; }
+  document.getElementById('content').style.display='';
+  const res = await dbGet(CATALOG_KEY);
+  if(res && res.data && Array.isArray(res.data.tournaments)) CAT = res.data;
+  renderTournaments();
+});
+
+async function saveCatalog(){ const ok = await dbSet(CATALOG_KEY, CAT); if(!ok) toast('Save failed — are you signed in as an admin?'); return ok; }
+async function saveDiv(){ DIV.updated = Date.now(); const ok = await dbSet(divKey(curT,curD), DIV); if(!ok) toast('Save failed'); return ok; }
+
+// ── Tournaments ─────────────────────────────────────────
+function renderTournaments(){
+  const el = document.getElementById('tournament-list');
+  if(!CAT.tournaments.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No tournaments yet — create your first below.</p>'; return; }
+  el.innerHTML = CAT.tournaments.map((t,i) => `
+    <div class="trow ${curT&&curT.id===t.id?'active':''}" onclick="selectTournament(${i})">
+      <span class="tname">${esc(t.name)}</span>
+      <span class="tmeta">${esc(t.date||'')}${t.location?' · '+esc(t.location):''} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteTournament(${i})">Delete</button>
+    </div>`).join('');
+}
+
+async function createTournament(){
+  const name = document.getElementById('new-t-name').value.trim();
+  if(!name){ toast('Enter a tournament name'); return; }
+  const t = { id: slug(name)+'-'+String(Date.now()).slice(-4), name,
+              date: document.getElementById('new-t-date').value || '',
+              location: document.getElementById('new-t-loc').value.trim(), divisions: [] };
+  CAT.tournaments.push(t);
+  if(await saveCatalog()){ document.getElementById('new-t-name').value=''; document.getElementById('new-t-loc').value=''; renderTournaments(); toast('Tournament created'); }
+}
+
+async function deleteTournament(i){
+  if(!confirm(`Delete "${CAT.tournaments[i].name}" and all its divisions?`)) return;
+  const t = CAT.tournaments[i];
+  CAT.tournaments.splice(i,1);
+  if(curT && curT.id===t.id){ curT=null; curD=null; DIV=null; document.getElementById('divisions-section').style.display='none'; document.getElementById('division-detail').innerHTML=''; }
+  await saveCatalog(); renderTournaments();
+}
+
+function selectTournament(i){
+  curT = CAT.tournaments[i]; curD = null; DIV = null;
+  document.getElementById('division-detail').innerHTML='';
+  document.getElementById('divisions-section').style.display='';
+  document.getElementById('divisions-title').textContent = curT.name + ' — Divisions';
+  renderTournaments(); renderDivisions();
+}
+
+// ── Divisions ───────────────────────────────────────────
+function renderDivisions(){
+  const el = document.getElementById('division-list');
+  const divs = curT.divisions || [];
+  if(!divs.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No divisions yet.</p>'; return; }
+  el.innerHTML = divs.map((d,i) => `
+    <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
+      <span class="tname" style="font-size:15px">${esc(d.name)}</span>
+      <span class="tmeta">${d.teamType} · pools of ${d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
+      <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteDivision(${i})">Delete</button>
+    </div>`).join('');
+}
+
+async function addDivision(){
+  const name = document.getElementById('new-d-name').value.trim();
+  if(!name){ toast('Enter a division name'); return; }
+  const d = { id: slug(name), name,
+    teamType: document.getElementById('new-d-type').value,
+    poolSize: parseInt(document.getElementById('new-d-pool').value,10),
+    advance: parseInt(document.getElementById('new-d-adv').value,10),
+    fee: parseFloat(document.getElementById('new-d-fee').value)||0,
+    format: 'pool_knockout', phase: 'draft' };
+  if((curT.divisions||[]).some(x=>x.id===d.id)){ toast('A division with that name already exists'); return; }
+  curT.divisions = curT.divisions || [];
+  curT.divisions.push(d);
+  if(await saveCatalog()){ document.getElementById('new-d-name').value=''; renderDivisions(); toast('Division added'); }
+}
+
+async function deleteDivision(i){
+  const d = curT.divisions[i];
+  if(!confirm(`Delete division "${d.name}"?`)) return;
+  curT.divisions.splice(i,1);
+  if(curD && curD.id===d.id){ curD=null; DIV=null; document.getElementById('division-detail').innerHTML=''; }
+  await saveCatalog(); renderDivisions();
+}
+
+async function selectDivision(i){
+  curD = curT.divisions[i];
+  const res = await dbGet(divKey(curT,curD));
+  DIV = (res && res.data && res.data.teams) ? res.data
+      : { teams:[], pools:[], poolMatches:[], bracket:null, phase:'setup', updated:Date.now() };
+  renderDivisions(); renderDivisionDetail();
+}
+
+// ── Division detail: teams → pools → knockout ───────────
+function renderDivisionDetail(){
+  const el = document.getElementById('division-detail');
+  if(!curD){ el.innerHTML=''; return; }
+  let html = `<div class="section"><h3>${esc(curD.name)} — ${DIV.phase==='setup'?'Teams & Seeding':DIV.phase==='pools'?'Pool Play':DIV.phase==='knockout'?'Knockout Bracket':'Results'}</h3>`;
+
+  if(DIV.phase === 'setup'){
+    html += `
+      <p style="color:var(--muted);font-size:13px;margin-bottom:.75rem">One ${curD.teamType==='doubles'?'team':'player'} per line, strongest first (line 1 = seed 1). For doubles use "Player A & Player B".</p>
+      <textarea class="inp" id="teams-input" rows="10" style="width:100%;font-family:monospace;font-size:13px" placeholder="Smith & Jones\nDavis & Lee\n...">${DIV.teams.map(t=>esc(t.name)).join('\n')}</textarea>
+      <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="saveTeams()">Save Teams</button>
+        <button class="btn btn-green" onclick="generatePools()">Generate Pools →</button>
+      </div>`;
+  }
+
+  if(DIV.phase === 'pools' || DIV.phase === 'knockout' || DIV.phase === 'complete'){
+    html += `<div class="pool-grid">` + DIV.pools.map((pool,pi) => {
+      const st = tePoolStandings(pi, DIV.pools, DIV.poolMatches, DIV.teams);
+      const standRows = st.map((r,place) => `<tr>
+        <td style="font-weight:${place<curD.advance?'700':'400'};color:${place<curD.advance?'var(--green-dark)':'inherit'}">${teamLabel(r.team)}</td>
+        <td>${r.won}-${r.lost}</td><td>${r.pf-r.pa>0?'+':''}${r.pf-r.pa}</td></tr>`).join('');
+      const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
+      const matchRows = ms.map(({m,mi}) => {
+        const g = m.games[0];
+        const locked = DIV.phase!=='pools';
+        return `<tr><td>${teamLabel(m.t1)}</td>
+          <td><input class="score-in" type="number" min="0" value="${g.s1??''}" ${locked?'disabled':''} onchange="setPoolScore(${mi},0,'s1',this.value)"/>
+              <input class="score-in" type="number" min="0" value="${g.s2??''}" ${locked?'disabled':''} onchange="setPoolScore(${mi},0,'s2',this.value)"/></td>
+          <td>${teamLabel(m.t2)}</td></tr>`;
+      }).join('');
+      return `<div class="pool-card"><h4>Pool ${String.fromCharCode(65+pi)}</h4>
+        <table class="g"><thead><tr><th>Team</th><th>W-L</th><th>+/-</th></tr></thead><tbody>${standRows}</tbody></table>
+        <div style="height:8px"></div>
+        <table class="g"><thead><tr><th>Team</th><th>Score</th><th>Team</th></tr></thead><tbody>${matchRows}</tbody></table>
+      </div>`;
+    }).join('') + `</div>`;
+
+    if(DIV.phase === 'pools'){
+      const done = tePoolsComplete(DIV.poolMatches);
+      html += `<div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="backToSetup()">← Back to Teams</button>
+        <button class="btn btn-green" ${done?'':'disabled title="Enter all pool scores first"'} onclick="buildKnockout()">Build Knockout Bracket →</button>
+      </div>`;
+      if(!done) html += `<p style="color:var(--muted);font-size:12px;margin-top:.5rem">The bracket unlocks once every pool match has a score. Top ${curD.advance} in each pool (highlighted) advance.</p>`;
+    }
+  }
+
+  if(DIV.phase === 'knockout' || DIV.phase === 'complete'){
+    html += `<div style="overflow-x:auto;margin-top:1.25rem;padding-bottom:.5rem">` +
+      DIV.bracket.rounds.map((round,ri) => {
+        const cells = round.map((m,mi) => {
+          const w = teBracketWinner(m);
+          const locked = DIV.phase==='complete';
+          const inp = (side) => (m.t1!==null&&m.t2!==null)
+            ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${locked?'disabled':''} onchange="setBracketScore(${ri},${mi},'${side}',this.value)"/>`
+            : '';
+          return `<div class="br-match">
+            <div class="br-team ${w!==null&&w===m.t1?'w':''}"><span>${teamLabel(m.t1)}</span>${inp('s1')}</div>
+            <div class="br-team ${w!==null&&w===m.t2?'w':''}"><span>${m.t2===null&&m.t1!==null?'<em style="color:var(--muted)">bye</em>':teamLabel(m.t2)}</span>${inp('s2')}</div>
+          </div>`;
+        }).join('');
+        return `<div class="br-round"><h4>${teRoundName(DIV.bracket.size,ri,DIV.bracket.rounds.length)}</h4>${cells}</div>`;
+      }).join('') + `</div>`;
+
+    const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
+    if(champ !== null) html += `<p style="font-family:var(--font-display);font-size:20px;font-weight:900;color:var(--green-dark);margin-top:.5rem">🏆 Champion: ${teamLabel(champ)}</p>`;
+    if(DIV.phase === 'knockout'){
+      html += `<div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="backToPools()">← Reopen Pools</button>
+        <button class="btn btn-green" ${champ!==null?'':'disabled title="Finish the bracket first"'} onclick="completeDivision()">Mark Division Complete ✓</button>
+      </div>`;
+    }
+    if(DIV.phase === 'complete'){
+      html += `<div style="margin-top:1rem"><button class="btn btn-ghost" onclick="reopenKnockout()">← Reopen Bracket</button></div>`;
+    }
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function saveTeams(){
+  const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  if(await saveDiv()) toast(`Saved ${DIV.teams.length} ${curD.teamType==='doubles'?'teams':'players'}`);
+}
+
+async function generatePools(){
+  const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length < 3){ toast('Need at least 3 entries'); return; }
+  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  DIV.pools = teSeedPools(DIV.teams.length, curD.poolSize);
+  DIV.poolMatches = teBuildPoolMatches(DIV.pools);
+  DIV.bracket = null;
+  DIV.phase = 'pools';
+  await syncPhase();
+  renderDivisionDetail();
+  toast(`${DIV.pools.length} pool${DIV.pools.length!==1?'s':''} generated (snake-seeded)`);
+}
+
+async function setPoolScore(mi, gi, side, val){
+  DIV.poolMatches[mi].games[gi][side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  await saveDiv();
+  renderDivisionDetail();
+}
+
+async function buildKnockout(){
+  if(!tePoolsComplete(DIV.poolMatches)){ toast('Enter all pool scores first'); return; }
+  const q = teQualifiers(DIV.pools, DIV.poolMatches, DIV.teams, curD.advance);
+  if(q.length < 2){ toast('Not enough qualifiers'); return; }
+  DIV.bracket = teBuildBracket(q);
+  DIV.phase = 'knockout';
+  await syncPhase();
+  renderDivisionDetail();
+  toast(`Bracket built — ${q.length} qualifiers, ${DIV.bracket.rounds.length} round${DIV.bracket.rounds.length!==1?'s':''}`);
+}
+
+async function setBracketScore(ri, mi, side, val){
+  const m = DIV.bracket.rounds[ri][mi];
+  m[side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  // Clear downstream slots (a changed result can change who advances), then re-advance.
+  for(let r = ri+1; r < DIV.bracket.rounds.length; r++)
+    DIV.bracket.rounds[r].forEach(x => { x.t1=null; x.t2=null; });
+  teAdvanceByes(DIV.bracket);
+  await saveDiv();
+  renderDivisionDetail();
+}
+
+async function backToSetup(){ if(!confirm('Reopen team entry? Pool scores will be kept until pools are regenerated.')) return; DIV.phase='setup'; await syncPhase(); renderDivisionDetail(); }
+async function backToPools(){ if(!confirm('Reopen pools? The bracket will be rebuilt from pool results when you advance again.')) return; DIV.phase='pools'; DIV.bracket=null; await syncPhase(); renderDivisionDetail(); }
+async function completeDivision(){ DIV.phase='complete'; await syncPhase(); renderDivisionDetail(); toast('Division complete 🏆'); }
+async function reopenKnockout(){ DIV.phase='knockout'; await syncPhase(); renderDivisionDetail(); }
+
+// Keep the catalog's phase pill in step with the division state.
+async function syncPhase(){
+  curD.phase = DIV.phase==='setup' ? 'draft' : DIV.phase;
+  await Promise.all([saveDiv(), saveCatalog()]);
+  renderDivisions();
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>

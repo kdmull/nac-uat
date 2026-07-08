@@ -1,5 +1,18 @@
-const ADMIN_PW  = 'cadMium13#';
-const SCORES_PW = 'NAC';
+// Passwords are no longer shipped to the browser. The score password is
+// verified server-side by the submit-score edge function; admin access is
+// account-based (profiles.is_admin) and verified by admin-save-data.
+function nacGetScorePw(){ try{ return sessionStorage.getItem('nac_score_pw') || ''; }catch(e){ return ''; } }
+function nacSetScorePw(pw){ try{ sessionStorage.setItem('nac_score_pw', pw||''); }catch(e){} }
+async function nacVerifyScorePw(pw){
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ mode:'verify', pw })
+    });
+    if(r.ok){ nacSetScorePw(pw); return true; }
+    return false;
+  }catch(e){ return false; }
+}
 const SUPABASE_URL='https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 
@@ -127,9 +140,18 @@ async function dbGet(key){
   }catch(e){console.error('DB fetch exception:',e);return{error:true};}
 }
 async function dbSet(key,val){
+  // Admin writes go through the admin-save-data edge function, which verifies
+  // the caller's account is an admin. Anon writes to pb_league are disabled.
   try{
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/pb_league`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key,value:val,updated_at:new Date().toISOString()})});
-    if(!r.ok){console.error('DB save failed:',r.status);return false;}
+    const sess = nacGetSession();
+    if(!sess){ console.error('DB save blocked: not signed in as an admin'); return false; }
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/admin-save-data`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY,
+                'Authorization':'Bearer '+SUPABASE_KEY, 'x-user-token': sess.token },
+      body: JSON.stringify({ key, value: val })
+    });
+    if(!r.ok){ const d = await r.json().catch(()=>({})); console.error('DB save failed:', r.status, d.error||''); return false; }
     return true;
   }catch(e){console.error('DB save exception:',e);return false;}
 }
@@ -225,29 +247,6 @@ async function submitToDUPR(week, matchIdx, m, games){
   }
 }
 
-async function logScore(week, matchIdx, games, winner, team1, team2){
-  try{
-    await fetch(`${SUPABASE_URL}/rest/v1/pb_scores_log`,{
-      method:'POST',
-      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({
-        league_key: seasonKey(currentLeague?.key||'unknown', viewingSeason?.id||currentSeason?.id||'spring2026'),
-        league_name: currentLeague?.name||'unknown',
-        week,
-        match_num: matchIdx+1,
-        team1,
-        team2,
-        games,
-        winner
-      })
-    });
-  }catch(e){console.error('Score log failed:',e);}
-  // Notify the admin that a score was submitted (fire-and-forget).
-  notifyEmail('score', {
-    league: currentLeague?.name, week, match: matchIdx+1,
-    team1, team2, games, winner
-  });
-}
 
 // Fire-and-forget admin email notification via the notify-email edge function.
 function notifyEmail(type, data){
@@ -701,14 +700,28 @@ async function submitScore(){
   document.getElementById('submit-btn').disabled=true;
   const{week,idx}=currentModalMatch;
   schedule.find(w=>w.week===week).matches[idx].games=games;
-  const ok=await saveData();
-  // Log the score entry and submit to DUPR
   const m=schedule.find(w=>w.week===week).matches[idx];
   const r=seriesResult(m);
-  await logScore(week, idx, games, r.winner, r.team1, r.team2);
-  // DUPR submission is no longer automatic. Scores are recorded locally here;
-  // an admin reviews completed matches and submits them to DUPR from the admin
-  // page (satisfies DUPR's "only admins/TDs submit matches" requirement).
+  // Server applies the score to the authoritative schedule, appends the score
+  // log, and sends the admin email. The score password (or an admin session)
+  // is verified server-side. Scorers can ONLY change game scores.
+  let ok=false;
+  try{
+    const sess = nacGetSession();
+    const seasonId = viewingSeason?.id || currentSeason?.id || 'spring2026';
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY,
+                'Authorization':'Bearer '+SUPABASE_KEY,
+                ...(sess ? { 'x-user-token': sess.token } : {}) },
+      body: JSON.stringify({ mode:'match', pw: nacGetScorePw(),
+        leagueKey: currentLeague.key, seasonId, leagueName: currentLeague.name,
+        week, matchIdx: idx, games, winner: r.winner, team1: r.team1, team2: r.team2 })
+    });
+    ok = resp.ok;
+    if(!ok){ const d = await resp.json().catch(()=>({})); console.error('Score save failed:', d.error||resp.status); }
+  }catch(e){ console.error('Score save exception:', e); }
+  // DUPR submission is admin-initiated from the DUPR Matches page.
   closeModal();
   if(typeof renderScoreMatches==='function')renderScoreMatches(week);
   if(typeof renderStandings==='function')renderStandings();

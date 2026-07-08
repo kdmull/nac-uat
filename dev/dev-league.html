@@ -426,10 +426,13 @@ function showPage(id, el){
   }
 }
 
-function checkScoresAuth(){
+async function checkScoresAuth(){
   const pw=document.getElementById('scores-pw').value;
-  if(pw===SCORES_PW||pw===ADMIN_PW){
+  document.getElementById('scores-err').textContent='Checking…';
+  const ok = await nacVerifyScorePw(pw);   // verified server-side
+  if(ok){
     scoreAuthed=true;
+    document.getElementById('scores-err').textContent='';
     document.getElementById('scores-gate').style.display='none';
     document.getElementById('scores-content').style.display='block';
     renderScoreMatches(scoresWeek);
