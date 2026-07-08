@@ -86,6 +86,9 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
         <input type="password" id="login-password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:10px">
+        <a href="#" onclick="event.preventDefault();showForgot()" style="font-size:13px;color:var(--muted);text-decoration:underline">Forgot your password?</a>
+      </div>
       <div class="msg" id="login-msg"></div>
     </div>
 
@@ -121,6 +124,35 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;bord
       <button class="btn btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
       <div class="msg" id="signup-msg"></div>
     </div>
+
+    <!-- Forgot password: request a reset link -->
+    <div class="form-section" id="section-forgot">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Enter your email and we'll send you a link to reset your password.</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="forgot-email" autocomplete="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')sendResetLink()"/>
+      </div>
+      <button class="btn btn-primary" id="forgot-btn" onclick="sendResetLink()">Send Reset Link</button>
+      <div style="text-align:center;margin-top:10px">
+        <a href="#" onclick="event.preventDefault();switchTab('login')" style="font-size:13px;color:var(--muted);text-decoration:underline">Back to sign in</a>
+      </div>
+      <div class="msg" id="forgot-msg"></div>
+    </div>
+
+    <!-- Arrived from a reset email: choose a new password -->
+    <div class="form-section" id="section-reset">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Choose a new password for your account.</p>
+      <div class="form-group">
+        <label>New password</label>
+        <input type="password" id="reset-password" autocomplete="new-password" placeholder="At least 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Confirm new password</label>
+        <input type="password" id="reset-password2" autocomplete="new-password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+      </div>
+      <button class="btn btn-primary" id="reset-btn" onclick="doResetPassword()">Update Password</button>
+      <div class="msg" id="reset-msg"></div>
+    </div>
   </div>
   <p class="hint">Sign in to register for leagues and manage your profile.</p>
 </div>
@@ -131,17 +163,73 @@ const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// If already logged in, redirect to dashboard
+// A password-recovery link signs the user in, so check for it BEFORE the
+// "already logged in" redirect — otherwise reset links bounce to the index.
+function isRecoveryLink(){
+  const hash = (window.location.hash || '').replace(/^#/, '');
+  const qs = new URLSearchParams(window.location.search);
+  return /(^|&)type=recovery(&|$)/.test(hash) || qs.get('type') === 'recovery';
+}
+
+supabaseClient.auth.onAuthStateChange((event) => {
+  if(event === 'PASSWORD_RECOVERY') switchTab('reset');
+});
+
 window.addEventListener('DOMContentLoaded', async () => {
+  if(isRecoveryLink()){ switchTab('reset'); return; }
   const { data: { session } } = await supabaseClient.auth.getSession();
   if(session){ window.location.href = 'dev-index.html'; }
 });
 
 function switchTab(tab){
+  ['login','signup','forgot','reset'].forEach(t => {
+    const sec = document.getElementById('section-'+t);
+    if(sec) sec.classList.toggle('active', t===tab);
+  });
   document.getElementById('tab-login').classList.toggle('active', tab==='login');
   document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
-  document.getElementById('section-login').classList.toggle('active', tab==='login');
-  document.getElementById('section-signup').classList.toggle('active', tab==='signup');
+  // The Sign In / Create Account tabs make no sense on the reset screens.
+  const tabs = document.querySelector('.auth-tabs');
+  if(tabs) tabs.style.display = (tab==='forgot' || tab==='reset') ? 'none' : '';
+}
+
+function showForgot(){
+  const em = document.getElementById('login-email').value.trim();
+  if(em) document.getElementById('forgot-email').value = em;   // carry it over
+  switchTab('forgot');
+}
+
+// Send the reset email (Supabase mails a recovery link back to this page).
+async function sendResetLink(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const msg = document.getElementById('forgot-msg');
+  const btn = document.getElementById('forgot-btn');
+  if(!email){ msg.className='msg error'; msg.textContent='Enter your email address.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  // Don't reveal whether the address exists — same message either way.
+  msg.className='msg success';
+  msg.textContent = 'If an account exists for that email, a reset link is on its way. Check your inbox (and spam).';
+}
+
+// Set the new password using the recovery session created by the emailed link.
+async function doResetPassword(){
+  const pw = document.getElementById('reset-password').value;
+  const pw2 = document.getElementById('reset-password2').value;
+  const msg = document.getElementById('reset-msg');
+  const btn = document.getElementById('reset-btn');
+  if(pw.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if(pw !== pw2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+  btn.disabled = true; btn.textContent = 'Updating…';
+  const { error } = await supabaseClient.auth.updateUser({ password: pw });
+  btn.disabled = false; btn.textContent = 'Update Password';
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  msg.className='msg success';
+  msg.textContent = 'Password updated! Taking you to your dashboard…';
+  setTimeout(()=>{ window.location.href = 'dev-index.html'; }, 1500);
 }
 
 function fmtPhone(v){
