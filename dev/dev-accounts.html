@@ -88,6 +88,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .fg select:focus{border-color:var(--navy);background:var(--white)}
 .fg-check{display:flex;align-items:center;gap:8px;margin-bottom:1rem;font-size:14px;color:var(--navy);font-weight:600;cursor:pointer}
 .fg-check input{width:18px;height:18px;accent-color:var(--navy)}
+.pw-box{border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-top:14px;background:var(--surface)}
+.pw-box input{padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:14px}
 .edit-msg{font-size:13px;min-height:18px;margin-bottom:.5rem}
 .edit-msg.error{color:var(--danger)}.edit-msg.success{color:var(--green-dark)}
 .acct-modal-actions{display:flex;gap:10px;justify-content:flex-end}
@@ -179,6 +181,19 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <small style="color:var(--muted);font-size:12px;margin-top:4px">Admin pairing applies immediately, no acceptance needed. Both players' links update. Partner must be in the same league.</small>
     </div>
     <label class="fg-check"><input type="checkbox" id="e-admin"/> <span>Admin access</span></label>
+
+    <div class="pw-box">
+      <label style="font-weight:600;font-size:13px;color:var(--navy)">Password</label>
+      <p style="color:var(--muted);font-size:12px;margin:2px 0 8px">Emailing a reset link is preferred — the player picks their own password and you never see it.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn-ghost-sm" type="button" onclick="sendResetEmail()">Send Reset Email</button>
+        <span style="color:var(--muted);font-size:12px">or</span>
+        <input id="e-pw" type="text" autocomplete="new-password" placeholder="New password (min 8 chars)" style="flex:1;min-width:180px"/>
+        <button class="btn-ghost-sm" type="button" onclick="setUserPassword()">Set Password</button>
+      </div>
+      <div class="edit-msg" id="pw-msg"></div>
+    </div>
+
     <div class="edit-msg" id="edit-msg"></div>
     <div class="acct-modal-actions" style="justify-content:space-between">
       <button class="btn-danger-sm" id="edit-delete-btn" onclick="deleteAccount()">Delete</button>
@@ -413,6 +428,8 @@ function openEdit(id){
   document.getElementById('e-email').value = a.email || '';
   document.getElementById('e-phone').value = a.phone || '';
   document.getElementById('e-dupr').value  = a.duprId || '';
+  const pwEl = document.getElementById('e-pw'); if(pwEl) pwEl.value = '';
+  pwMsg('');
   document.getElementById('e-league').value = a.leagueId || '';
   refreshPartnerSelect();
   document.getElementById('e-league').onchange = refreshPartnerSelect;
@@ -424,6 +441,41 @@ function openEdit(id){
 function closeEdit(){
   document.getElementById('edit-modal').classList.remove('open');
   editingId = null;
+}
+
+// ── Password management (admin-gated edge function) ──
+function pwMsg(text, kind){
+  const el = document.getElementById('pw-msg');
+  if(!el) return;
+  el.textContent = text || '';
+  el.className = 'edit-msg' + (kind ? ' ' + kind : '');
+}
+
+async function sendResetEmail(){
+  if(!editingId) return;
+  const a = accounts.find(x => x.id === editingId);
+  if(!a || !a.email){ pwMsg('That account has no email on file.', 'error'); return; }
+  if(!confirm(`Email a password reset link to ${a.email}?`)) return;
+  pwMsg('Sending…');
+  try{
+    await callAdminFn('admin-set-password', { userId: editingId, mode: 'reset_email' });
+    pwMsg(`Reset link sent to ${a.email}`, 'success');
+  }catch(e){ pwMsg(e.message || 'Could not send reset email', 'error'); }
+}
+
+async function setUserPassword(){
+  if(!editingId) return;
+  const inp = document.getElementById('e-pw');
+  const pw = (inp.value || '').trim();
+  if(pw.length < 8){ pwMsg('Password must be at least 8 characters.', 'error'); return; }
+  const a = accounts.find(x => x.id === editingId);
+  if(!confirm(`Set a new password for ${a ? a.name : 'this account'}? They will need this password to sign in.`)) return;
+  pwMsg('Saving…');
+  try{
+    await callAdminFn('admin-set-password', { userId: editingId, mode: 'set', newPassword: pw });
+    inp.value = '';
+    pwMsg('Password updated. Be sure to share it with the player securely.', 'success');
+  }catch(e){ pwMsg(e.message || 'Could not set password', 'error'); }
 }
 
 async function saveEdit(){
