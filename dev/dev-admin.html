@@ -320,8 +320,8 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem;align-items:center">
         <input class="inp" id="new-d-name" placeholder="Division name (e.g. Men's 3.5 Doubles)" style="flex:2;min-width:200px"/>
         <select class="inp" id="new-d-type"><option value="doubles">Doubles</option><option value="singles">Singles</option></select>
-        <select class="inp" id="new-d-pool"><option value="n1">1 pool (everyone)</option><option value="n2">2 pools</option><option value="3">Pools of 3</option><option value="4" selected>Pools of 4</option><option value="5">Pools of 5</option></select>
-        <select class="inp" id="new-d-adv"><option value="2">Top 2 advance</option><option value="1">Top 1 advances</option><option value="4">Top 4 advance</option></select>
+        <select class="inp" id="new-d-pool"></select>
+        <select class="inp" id="new-d-adv"></select>
         <input class="inp" id="new-d-fee" type="number" min="0" placeholder="Fee $" style="width:80px"/>
         <button class="btn btn-green" onclick="addDivision()">+ Add Division</button>
       </div>
@@ -1319,6 +1319,9 @@ const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('x'+
 function teamLabel(i){ return DIV && DIV.teams[i] ? esc(DIV.teams[i].name) : (i===null?'—':'TBD'); }
 
 async function initTournamentsAdmin(){
+  const np = document.getElementById('new-d-pool'), na = document.getElementById('new-d-adv');
+  if(np) np.innerHTML = poolOptions('4');
+  if(na) na.innerHTML = advOptions(2);
   const res = await dbGet(CATALOG_KEY);
   if(res && res.data && Array.isArray(res.data.tournaments)) CAT = res.data;
   renderTournaments();
@@ -1406,18 +1409,73 @@ function selectTournament(i){
 }
 
 // ── Divisions ───────────────────────────────────────────
+let editingDivision = null;   // index of the division being edited inline
+
+// Pool/advance option lists, shared by "Add Division" and inline editing.
+function poolOptions(sel){
+  const opts = [['n1','1 pool (everyone)'],['n2','2 pools'],['3','Pools of 3'],['4','Pools of 4'],['5','Pools of 5']];
+  return opts.map(([v,l]) => `<option value="${v}" ${v===sel?'selected':''}>${l}</option>`).join('');
+}
+function advOptions(sel){
+  return [1,2,4].map(v => `<option value="${v}" ${v===sel?'selected':''}>Top ${v} advance${v===1?'s':''}</option>`).join('');
+}
+const divPoolValue = d => d.poolCount ? 'n'+d.poolCount : String(d.poolSize || 4);
+
 function renderDivisions(){
   const el = document.getElementById('division-list');
   const divs = curT.divisions || [];
-  if(!divs.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No divisions yet.</p>'; return; }
-  el.innerHTML = divs.map((d,i) => `
+  if(!divs.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No divisions yet.</p>'; editingDivision = null; return; }
+  el.innerHTML = divs.map((d,i) => {
+    if(editingDivision === i){
+      const started = d.phase && d.phase !== 'draft';
+      return `<div class="trow active" onclick="event.stopPropagation()" style="align-items:flex-start">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1">
+          <input class="inp" id="ed-name" value="${esc(d.name)}" style="flex:2;min-width:170px"/>
+          <select class="inp" id="ed-type">
+            <option value="doubles" ${d.teamType==='doubles'?'selected':''}>Doubles</option>
+            <option value="singles" ${d.teamType==='singles'?'selected':''}>Singles</option>
+          </select>
+          <select class="inp" id="ed-pool">${poolOptions(divPoolValue(d))}</select>
+          <select class="inp" id="ed-adv">${advOptions(d.advance)}</select>
+          <input class="inp" id="ed-fee" type="number" min="0" value="${d.fee||''}" placeholder="Fee $" style="width:86px"/>
+          <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="saveDivisionEdit(${i})">Save</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editingDivision=null;renderDivisions()">Cancel</button>
+        </div>
+        ${started ? `<div style="flex-basis:100%;font-size:12px;color:#8a6d00;margin-top:6px">
+          This division has already started. Changing the pool setup won't reshuffle the current pools — reopen the teams step and regenerate pools to apply it.</div>` : ''}
+      </div>`;
+    }
+    return `
     <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
       <span class="tname" style="font-size:15px">${esc(d.name)}</span>
       <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
       <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
       <span style="margin-left:auto"></span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();editingDivision=${i};renderDivisions()">Edit</button>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteDivision(${i})">Delete</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// Edits keep the division id stable so its saved pools/bracket and any existing
+// registrations (league_id 't:<tid>:<divId>') stay attached.
+async function saveDivisionEdit(i){
+  const d = curT.divisions[i];
+  const name = document.getElementById('ed-name').value.trim();
+  if(!name){ showToast('Division name cannot be empty'); return; }
+  const poolVal = document.getElementById('ed-pool').value;
+  d.name     = name;
+  d.teamType = document.getElementById('ed-type').value;
+  d.poolCount = poolVal.startsWith('n') ? parseInt(poolVal.slice(1),10) : null;
+  d.poolSize  = poolVal.startsWith('n') ? null : parseInt(poolVal,10);
+  d.advance  = parseInt(document.getElementById('ed-adv').value,10);
+  d.fee      = parseFloat(document.getElementById('ed-fee').value) || 0;
+  editingDivision = null;
+  if(await saveCatalog()){
+    if(curD && curD.id === d.id){ curD = d; renderDivisionDetail(); }
+    renderDivisions();
+    showToast('Division updated');
+  }
 }
 
 async function addDivision(){
