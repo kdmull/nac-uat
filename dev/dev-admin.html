@@ -314,8 +314,8 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem;align-items:center">
         <input class="inp" id="new-d-name" placeholder="Division name (e.g. Men's 3.5 Doubles)" style="flex:2;min-width:200px"/>
         <select class="inp" id="new-d-type"><option value="doubles">Doubles</option><option value="singles">Singles</option></select>
-        <select class="inp" id="new-d-pool"><option value="4">Pools of 4</option><option value="5">Pools of 5</option><option value="3">Pools of 3</option></select>
-        <select class="inp" id="new-d-adv"><option value="2">Top 2 advance</option><option value="1">Top 1 advances</option></select>
+        <select class="inp" id="new-d-pool"><option value="4">Pools of 4</option><option value="5">Pools of 5</option><option value="3">Pools of 3</option><option value="n1">1 pool (everyone)</option><option value="n2">2 pools</option></select>
+        <select class="inp" id="new-d-adv"><option value="2">Top 2 advance</option><option value="1">Top 1 advances</option><option value="4">Top 4 advance</option></select>
         <input class="inp" id="new-d-fee" type="number" min="0" placeholder="Fee $" style="width:80px"/>
         <button class="btn btn-green" onclick="addDivision()">+ Add Division</button>
       </div>
@@ -1376,7 +1376,7 @@ function renderDivisions(){
   el.innerHTML = divs.map((d,i) => `
     <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
       <span class="tname" style="font-size:15px">${esc(d.name)}</span>
-      <span class="tmeta">${d.teamType} · pools of ${d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
+      <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
       <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
       <span style="margin-left:auto"></span>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteDivision(${i})">Delete</button>
@@ -1386,9 +1386,11 @@ function renderDivisions(){
 async function addDivision(){
   const name = document.getElementById('new-d-name').value.trim();
   if(!name){ showToast('Enter a division name'); return; }
+  const poolVal = document.getElementById('new-d-pool').value;
   const d = { id: slug(name), name,
     teamType: document.getElementById('new-d-type').value,
-    poolSize: parseInt(document.getElementById('new-d-pool').value,10),
+    poolCount: poolVal.startsWith('n') ? parseInt(poolVal.slice(1),10) : null,
+    poolSize:  poolVal.startsWith('n') ? null : parseInt(poolVal,10),
     advance: parseInt(document.getElementById('new-d-adv').value,10),
     fee: parseFloat(document.getElementById('new-d-fee').value)||0,
     format: 'pool_knockout', phase: 'draft' };
@@ -1567,7 +1569,9 @@ async function generatePools(){
   const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
   if(lines.length < 3){ showToast('Need at least 3 entries'); return; }
   DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
-  DIV.pools = teSeedPools(DIV.teams.length, curD.poolSize);
+  DIV.pools = curD.poolCount
+    ? teSeedPoolsN(DIV.teams.length, curD.poolCount)
+    : teSeedPools(DIV.teams.length, curD.poolSize || 4);
   DIV.poolMatches = teBuildPoolMatches(DIV.pools);
   DIV.bracket = null;
   DIV.phase = 'pools';

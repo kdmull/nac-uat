@@ -19,8 +19,9 @@
 function tePoolCount(nTeams, poolSize){
   return Math.max(1, Math.round(nTeams / poolSize)) || 1;
 }
-function teSeedPools(teamCount, poolSize){
-  const nPools = tePoolCount(teamCount, poolSize);
+// Snake-seed into an EXACT number of pools (e.g. force 1 or 2 pools).
+function teSeedPoolsN(teamCount, nPools){
+  nPools = Math.max(1, Math.min(nPools, teamCount));
   const pools = Array.from({length:nPools}, () => []);
   let p = 0, dir = 1;
   for(let seedIdx = 0; seedIdx < teamCount; seedIdx++){
@@ -30,6 +31,9 @@ function teSeedPools(teamCount, poolSize){
     else if(p < 0){ p = 0; dir = 1; }
   }
   return pools;
+}
+function teSeedPools(teamCount, poolSize){
+  return teSeedPoolsN(teamCount, tePoolCount(teamCount, poolSize));
 }
 
 // Round-robin pairings for one pool (circle method). Returns rounds of [a,b] team-index pairs.
