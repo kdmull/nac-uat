@@ -482,6 +482,7 @@ async function initAdminLeague(league){
   await loadSeasons();
   viewingSeason = currentSeason;
   await loadData();
+  try{ await buildFullNameMap(currentSeason.id); }catch(e){}
   // If no saved schedule exists for this league/season, auto-load the registered
   // players (or nobody if none have registered) — never the hardcoded defaults.
   const hasSchedule = schedule && schedule.length && schedule.some(w => w.matches && w.matches.length);
@@ -534,6 +535,8 @@ function renderAdminPanel(){
   }
   delWeekBtn.style.display = schedule.length ? '' : 'none';
   const playersEl = document.getElementById('admin-players');
+  // Upgrade any stored "First L." entries to full names for display+identity.
+  PLAYERS = PLAYERS.map(p => displayName(p));
   playersEl.innerHTML = PLAYERS.length ? PLAYERS.map((p,i)=>
     `<div class="roster-row">
       <span class="roster-num">${i+1}</span>
@@ -1316,7 +1319,7 @@ let DIV = null;                       // selected division state (teams/pools/br
 const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const divKey = (t,d) => `tourney_${t.id}_${d.id}`;
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('x'+Date.now());
-function teamLabel(i){ return DIV && DIV.teams[i] ? esc(DIV.teams[i].name) : (i===null?'—':'TBD'); }
+function teamLabel(i){ return DIV && DIV.teams[i] ? esc(displayName(DIV.teams[i].name)) : (i===null?'—':'TBD'); }
 
 async function initTournamentsAdmin(){
   const np = document.getElementById('new-d-pool'), na = document.getElementById('new-d-adv');
@@ -1513,6 +1516,17 @@ async function selectDivision(i){
   const res = await dbGet(divKey(curT,curD));
   DIV = (res && res.data && res.data.teams) ? res.data
       : { teams:[], pools:[], poolMatches:[], bracket:null, phase:'setup', updated:Date.now() };
+  // Seed the display-name map from this division's registrations so any team
+  // names still stored as "First L." render as full names.
+  try{
+    const lm = await sbAuth.from('league_members')
+      .select('first_name,last_name').eq('league_id', `t:${curT.id}:${curD.id}`).eq('status','active');
+    (lm.data||[]).forEach(r => {
+      const full = `${r.first_name||''} ${r.last_name||''}`.trim();
+      const li = `${(r.first_name||'').trim()} ${((r.last_name||'').trim())[0]||''}.`.trim();
+      if(full){ FULL_NAMES[full.toLowerCase()] = full; if(li) FULL_NAMES[li.toLowerCase()] = full; }
+    });
+  }catch(e){}
   renderDivisions(); renderDivisionDetail();
 }
 
