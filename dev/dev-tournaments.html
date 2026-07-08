@@ -45,6 +45,11 @@ select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-ra
 .msg.error{background:rgba(217,59,59,.08);color:var(--danger);border:1px solid rgba(217,59,59,.25)}
 .msg.success{background:rgba(76,175,40,.08);color:var(--green-dark);border:1px solid rgba(76,175,40,.3)}
 .mine{background:rgba(76,175,40,.06);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-top:.6rem}
+.roster-toggle{display:block;margin-top:8px;font-size:11px;padding:5px 12px}
+.roster{background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-top:8px}
+.roster-list{margin:0;padding-left:20px;font-size:13px}
+.roster-list li{padding:2px 0}
+.roster-list.solo{list-style:none;padding-left:0;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 @media(max-width:600px){.page{padding:1rem}.card{padding:1rem}}
@@ -75,7 +80,9 @@ const sbT = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let CAT = { tournaments: [] };
 let me = null, myProfile = null;
 let myRegs = [];             // my league_members rows in tournament namespaces
-let counts = {};             // league_id -> registered count
+let counts = {};             // league_id -> { teams, solo }
+let rosters = {};            // league_id -> { teams:[names], solo:[names] }
+let openRosters = new Set(); // league_ids whose roster list is expanded
 
 const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const tSeason = t => `t:${t.id}`;
@@ -101,6 +108,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   render();
 });
 
+// Registered counts per division, expressed in TEAMS.
+//   doubles → each mutually-accepted pair is one team; anyone without an
+//             accepted partner is counted separately as "needing a partner".
+//   singles → one player is one team.
 async function loadCounts(){
   counts = {};
   const ids = [];
@@ -109,12 +120,75 @@ async function loadCounts(){
   try{
     const client = me ? sbT : null;
     if(!client) return;   // counts shown to signed-in users; public sees divisions without counts
-    const { data } = await client.from('league_members').select('league_id').in('league_id', ids).eq('status','active');
-    (data||[]).forEach(r => counts[r.league_id] = (counts[r.league_id]||0) + 1);
+    const { data } = await client.from('league_members')
+      .select('league_id,user_id,partner_user_id,partner_status,first_name,last_name,partner_name')
+      .in('league_id', ids).eq('status','active');
+    const byDiv = {};
+    (data||[]).forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
+    const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || 'Player';
+
+    CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => {
+      const key = dLeague(t,d);
+      const rows = byDiv[key] || [];
+      rosters[key] = { teams: [], solo: [] };
+      if(!rows.length){ counts[key] = { teams: 0, solo: 0 }; return; }
+      if(d.teamType !== 'doubles'){
+        rosters[key].teams = rows.map(nm).sort();
+        counts[key] = { teams: rows.length, solo: 0 };
+        return;
+      }
+      const seen = new Set();
+      rows.forEach(r => {
+        if(r.partner_status === 'accepted' && r.partner_user_id){
+          const pair = [r.user_id, r.partner_user_id].sort().join('|');
+          if(seen.has(pair)) return;
+          seen.add(pair);
+          const mate = rows.find(x => x.user_id === r.partner_user_id);
+          rosters[key].teams.push(`${nm(r)} & ${mate ? nm(mate) : (r.partner_name || '?')}`);
+        } else {
+          rosters[key].solo.push(nm(r) + (r.partner_status === 'pending' ? ' (partner pending)' : ''));
+        }
+      });
+      rosters[key].teams.sort(); rosters[key].solo.sort();
+      counts[key] = { teams: rosters[key].teams.length, solo: rosters[key].solo.length };
+    }));
   }catch(e){}
 }
 
+function countLabel(c, d){
+  if(!c) return '';
+  const unit = d.teamType === 'doubles' ? 'team' : 'player';
+  const parts = [`${c.teams} ${unit}${c.teams===1?'':'s'} registered`];
+  if(c.solo) parts.push(`${c.solo} needing a partner`);
+  return ' · ' + parts.join(' · ');
+}
+
 function myRegFor(t, d){ return myRegs.find(r => r.league_id === dLeague(t,d)) || null; }
+
+function toggleRoster(key){
+  if(openRosters.has(key)) openRosters.delete(key); else openRosters.add(key);
+  render();
+}
+
+// Who's signed up — visible before the division starts so players can see the field.
+function rosterBlock(t, d){
+  const key = dLeague(t,d);
+  const r = rosters[key], c = counts[key];
+  if(!r || !c || (!c.teams && !c.solo)) return '';
+  const open = openRosters.has(key);
+  const unit = d.teamType==='doubles' ? 'team' : 'player';
+  const label = open ? 'Hide who\'s registered' : `See who's registered (${c.teams} ${unit}${c.teams===1?'':'s'})`;
+  let body = '';
+  if(open){
+    const items = r.teams.map(n => `<li>${esc(n)}</li>`).join('');
+    const solos = r.solo.map(n => `<li style="color:var(--muted)">${esc(n)} <em style="font-size:11px">· looking for a partner</em></li>`).join('');
+    body = `<div class="roster">
+      ${items ? `<ol class="roster-list">${items}</ol>` : '<p style="color:var(--muted);font-size:13px;margin:0">No complete teams yet.</p>'}
+      ${solos ? `<ul class="roster-list solo">${solos}</ul>` : ''}
+    </div>`;
+  }
+  return `<button class="btn btn-ghost roster-toggle" onclick="toggleRoster('${key}')">${open?'▾':'▸'} ${label}</button>${body}`;
+}
 
 function render(){
   const el = document.getElementById('list');
@@ -148,8 +222,9 @@ function render(){
         ? `<a class="btn btn-ghost" style="margin-top:8px;display:inline-block;text-decoration:none;font-size:12px;padding:6px 14px" href="dev-tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(d.id)}">${d.phase==='complete'?'View Results':'View Live — Pools & Bracket'}</a>` : '';
       return `<div class="divrow">
         <div class="dname">${esc(d.name)}${live?` <span style="font-size:11px;font-family:var(--font-display);font-weight:700;text-transform:uppercase;color:${d.phase==='complete'?'var(--muted)':'var(--green-dark)'}">· ${d.phase==='complete'?'finished':'LIVE'}</span>`:''}</div>
-        <div class="dmeta">${d.teamType==='doubles'?'Doubles':'Singles'}${d.fee?` · $${d.fee} entry (pay at the event)`:''}${n!==undefined?` · ${n} registered`:''}</div>
+        <div class="dmeta">${d.teamType==='doubles'?'Doubles':'Singles'}${d.fee?` · $${d.fee} entry (pay at the event)`:''}${countLabel(n, d)}</div>
         ${liveBtn}
+        ${rosterBlock(t, d)}
         ${action}
         <div id="regmsg-${ti}-${di}"></div>
       </div>`;
