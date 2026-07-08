@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Tournament — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;--green:#4caf28;--green-dark:#3a8c1e;
+  --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-link:hover{color:#fff}.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.page{padding:1.5rem;max-width:1100px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1}
+.sub{color:var(--muted);font-size:14px;margin-bottom:1rem}
+.div-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.div-tab{padding:8px 16px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--white);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer}
+.div-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem}
+.section h3{font-family:var(--font-display);font-size:19px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.75rem}
+.pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
+.pill.pools{color:#8a6d00;background:rgba(212,167,0,.14)}
+.pill.knockout{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.pill.complete{color:var(--navy);background:var(--surface2)}
+.pill.draft{color:var(--muted);background:var(--surface)}
+.pool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.pool-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--white)}
+.pool-card h4{font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+table.g{width:100%;border-collapse:collapse}
+table.g th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:6px 8px;text-align:left;border-bottom:2px solid var(--border)}
+table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
+table.g tr:last-child td{border-bottom:none}
+.score-in{width:44px;padding:5px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:13px}
+.score-in:disabled{background:var(--surface);color:var(--muted)}
+.br-round{display:inline-block;vertical-align:top;margin-right:20px;min-width:200px}
+.br-round h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.br-match{border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:13px;background:var(--white)}
+.br-team{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
+.br-team.w{font-weight:700;color:var(--green-dark)}
+.btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
+.gate-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gate-box input{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px}
+.err{color:var(--danger);font-size:13px}
+.champ{font-family:var(--font-display);font-size:22px;font-weight:900;color:var(--green-dark);margin-top:.5rem}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:600px){.page{padding:1rem}.section{padding:1rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-right" id="nav-links">
+    <a class="nav-link" href="dev-index.html">Leagues</a>
+    <a class="nav-link current" href="dev-tournaments.html">Tournaments</a>
+    <a class="nav-link" href="dev-rules.html">Rules</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div id="head"><h1>Tournament</h1><p class="sub">Loading…</p></div>
+  <div class="div-tabs" id="div-tabs"></div>
+  <div id="score-gate"></div>
+  <div id="view"></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared-dev.js"></script>
+<script src="tournament-engine.js"></script>
+<script>
+let T = null;            // tournament (from catalog)
+let D = null;            // selected division config
+let DIV = null;          // division state (teams/pools/bracket)
+let canScore = false;    // pw-verified or admin
+
+const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const divKey = () => `tourney_${T.id}_${D.id}`;
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.classList.remove('show'),3000); }
+function teamLabel(i){ return (DIV && i!==null && DIV.teams[i]) ? esc(DIV.teams[i].name) : (i===null?'TBD':'?'); }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const qs = new URLSearchParams(location.search);
+  const tid = qs.get('t');
+  const res = await dbGet('nac_tournaments');
+  const cat = (res && res.data && res.data.tournaments) || [];
+  T = cat.find(x => x.id === tid) || cat.find(x => (x.divisions||[]).some(d => ['pools','knockout','complete'].includes(d.phase))) || cat[0];
+  if(!T){ document.getElementById('head').innerHTML = '<h1>Tournament</h1><p class="sub">No tournament found. <a href="dev-tournaments.html">Back to tournaments</a></p>'; return; }
+
+  document.getElementById('head').innerHTML =
+    `<h1>${esc(T.name)}</h1><p class="sub">${esc(T.date||'')}${T.location?' · '+esc(T.location):''}</p>`;
+
+  // Admins can always score; players unlock with the score password (session-cached).
+  try{ if(await checkAccountAdmin()) canScore = true; }catch(e){}
+  if(!canScore && nacGetScorePw()){
+    if(await nacVerifyScorePw(nacGetScorePw())) canScore = true;
+  }
+
+  renderDivTabs(qs.get('d'));
+});
+
+function renderDivTabs(preselect){
+  const tabs = document.getElementById('div-tabs');
+  const divs = T.divisions || [];
+  if(!divs.length){ tabs.innerHTML=''; document.getElementById('view').innerHTML='<div class="section"><p style="color:var(--muted)">No divisions yet.</p></div>'; return; }
+  tabs.innerHTML = divs.map((d,i) =>
+    `<button class="div-tab ${D&&D.id===d.id?'active':''}" onclick="selectDiv(${i})">${esc(d.name)} <span class="pill ${d.phase||'draft'}" style="margin-left:6px">${d.phase==='pools'?'pool play':d.phase==='knockout'?'bracket':d.phase==='complete'?'final':'not started'}</span></button>`).join('');
+  const pre = divs.findIndex(d => d.id === preselect);
+  const firstLive = divs.findIndex(d => ['pools','knockout','complete'].includes(d.phase));
+  selectDiv(pre >= 0 ? pre : (firstLive >= 0 ? firstLive : 0));
+}
+
+async function selectDiv(i){
+  D = T.divisions[i];
+  const res = await dbGet(divKey());
+  DIV = (res && res.data && res.data.teams) ? res.data : null;
+  renderDivTabs.__skip = true;
+  document.querySelectorAll('.div-tab').forEach((b,bi) => b.classList.toggle('active', bi===i));
+  renderScoreGate();
+  render();
+}
+
+// ── Score-entry gate (server-verified password; admins bypass) ──
+function renderScoreGate(){
+  const el = document.getElementById('score-gate');
+  const live = DIV && (DIV.phase==='pools' || DIV.phase==='knockout');
+  if(!live || canScore){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="section"><div class="gate-box">
+    <span style="font-size:13px;color:var(--muted)">Players: enter the score password to record match scores</span>
+    <input type="password" id="pw-in" placeholder="Password" onkeydown="if(event.key==='Enter')unlockScores()"/>
+    <button class="btn btn-green" onclick="unlockScores()">Unlock</button>
+    <span class="err" id="pw-err"></span>
+  </div></div>`;
+}
+async function unlockScores(){
+  const pw = document.getElementById('pw-in').value;
+  document.getElementById('pw-err').textContent = 'Checking…';
+  if(await nacVerifyScorePw(pw)){ canScore = true; renderScoreGate(); render(); toast('Score entry unlocked'); }
+  else document.getElementById('pw-err').textContent = 'Incorrect password.';
+}
+
+// ── Save (server-validated; scorers restricted to tourney_ keys) ──
+async function saveDiv(){
+  DIV.updated = Date.now();
+  try{
+    const sess = (typeof nacGetSession==='function') ? nacGetSession() : null;
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/submit-score`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY,
+                'Authorization':'Bearer '+SUPABASE_KEY,
+                ...(sess ? { 'x-user-token': sess.token } : {}) },
+      body: JSON.stringify({ mode:'playoff', pw: nacGetScorePw(), key: divKey(), value: DIV })
+    });
+    if(!r.ok){ const d = await r.json().catch(()=>({})); toast(d.error || 'Save failed'); return false; }
+    return true;
+  }catch(e){ toast('Save failed — connection error'); return false; }
+}
+
+async function reloadDiv(){
+  const res = await dbGet(divKey());
+  if(res && res.data && res.data.teams) DIV = res.data;
+  render();
+}
+
+// ── Rendering ─────────────────────────────────────────
+function render(){
+  const el = document.getElementById('view');
+  if(!DIV){
+    el.innerHTML = `<div class="section"><h3>${esc(D.name)}</h3><p style="color:var(--muted)">This division hasn't started yet. Check back once pool play begins!</p></div>`;
+    return;
+  }
+  let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:.5rem">
+    <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="reloadDiv()">↻ Refresh</button></div>`;
+
+  // Pools + standings
+  if(DIV.pools && DIV.pools.length){
+    html += `<div class="section"><h3>Pool Play</h3><div class="pool-grid">` +
+      DIV.pools.map((pool,pi) => {
+        const st = tePoolStandings(pi, DIV.pools, DIV.poolMatches, DIV.teams);
+        const standRows = st.map((r,place) => `<tr>
+          <td style="font-weight:${place<D.advance?'700':'400'};color:${place<D.advance?'var(--green-dark)':'inherit'}">${teamLabel(r.team)}</td>
+          <td>${r.won}-${r.lost}</td><td>${r.pf-r.pa>0?'+':''}${r.pf-r.pa}</td></tr>`).join('');
+        const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
+        const editable = canScore && DIV.phase==='pools';
+        const matchRows = ms.map(({m,mi}) => {
+          const g = m.games[0];
+          return `<tr><td>${teamLabel(m.t1)}</td>
+            <td style="white-space:nowrap"><input class="score-in" type="number" min="0" value="${g.s1??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s1',this.value)"/>
+                <input class="score-in" type="number" min="0" value="${g.s2??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s2',this.value)"/></td>
+            <td>${teamLabel(m.t2)}</td></tr>`;
+        }).join('');
+        return `<div class="pool-card"><h4>Pool ${String.fromCharCode(65+pi)}</h4>
+          <table class="g"><thead><tr><th>Team</th><th>W-L</th><th>+/-</th></tr></thead><tbody>${standRows}</tbody></table>
+          <div style="height:8px"></div>
+          <table class="g"><thead><tr><th></th><th>Score</th><th></th></tr></thead><tbody>${matchRows}</tbody></table>
+        </div>`;
+      }).join('') + `</div>`;
+    if(DIV.phase==='pools'){
+      html += `<p style="color:var(--muted);font-size:12px;margin-top:.75rem">Top ${D.advance} in each pool (highlighted) advance to the knockout bracket.</p>`;
+    }
+    html += `</div>`;
+  }
+
+  // Bracket
+  if(DIV.bracket){
+    const editable = canScore && DIV.phase==='knockout';
+    html += `<div class="section"><h3>Knockout Bracket</h3><div style="overflow-x:auto;padding-bottom:.5rem">` +
+      DIV.bracket.rounds.map((round,ri) => {
+        const cells = round.map((m,mi) => {
+          const w = teBracketWinner(m);
+          const inp = (side) => (m.t1!==null&&m.t2!==null)
+            ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${ri},${mi},'${side}',this.value)"/>`
+            : '';
+          return `<div class="br-match">
+            <div class="br-team ${w!==null&&w===m.t1?'w':''}"><span>${teamLabel(m.t1)}</span>${inp('s1')}</div>
+            <div class="br-team ${w!==null&&w===m.t2?'w':''}"><span>${m.t2===null&&m.t1!==null?'<em style="color:var(--muted)">bye</em>':teamLabel(m.t2)}</span>${inp('s2')}</div>
+          </div>`;
+        }).join('');
+        return `<div class="br-round"><h4>${teRoundName(DIV.bracket.size,ri,DIV.bracket.rounds.length)}</h4>${cells}</div>`;
+      }).join('') + `</div>`;
+    const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
+    if(champ !== null) html += `<p class="champ">🏆 Champion: ${teamLabel(champ)}</p>`;
+    html += `</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Score entry ───────────────────────────────────────
+async function setPoolScore(mi, side, val){
+  DIV.poolMatches[mi].games[0][side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  if(await saveDiv()) render();
+}
+
+async function setBracketScore(ri, mi, side, val){
+  const m = DIV.bracket.rounds[ri][mi];
+  m[side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  for(let r = ri+1; r < DIV.bracket.rounds.length; r++)
+    DIV.bracket.rounds[r].forEach(x => { x.t1=null; x.t2=null; });
+  teAdvanceByes(DIV.bracket);
+  if(await saveDiv()) render();
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>
