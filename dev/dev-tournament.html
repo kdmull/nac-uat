@@ -13,7 +13,7 @@
   --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
   --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
   --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
-  --radius:8px;--radius-lg:12px;
+  --radius:8px;--radius-lg:12px;--gold:#d4a017;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
 nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
@@ -66,19 +66,35 @@ table.g tr:last-child td{border-bottom:none}
 .pts-diff{font-size:13px}.pts-diff.pos{color:var(--green-dark)}.pts-diff.neg{color:var(--danger)}
 .dupr-link{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)}
 
-/* ── Real knockout bracket (JS-positioned, with connector lines) ── */
-.bkt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem}
-.bkt{position:relative}
-.bkt-head{position:absolute;font-family:var(--font-display);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center}
-.bkt-match{position:absolute;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(26,42,108,.06)}
-.bkt-match.done{border-color:rgba(76,175,40,.5)}
-.bkt-team{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 9px;font-size:13px;line-height:1.25}
-.bkt-team+.bkt-team{border-top:1px solid var(--border)}
-.bkt-team.w{background:rgba(76,175,40,.08);font-weight:700;color:var(--green-dark)}
-.bkt-team .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bkt-team .bye{color:var(--muted);font-style:italic}
-.bkt-line{position:absolute;background:rgba(26,42,108,.2)}
-.bkt-champ{position:absolute;font-family:var(--font-display);font-weight:900;color:var(--green-dark);white-space:nowrap}
+/* ── Knockout bracket (same look as the league bracket page) ── */
+.bracket-wrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:1rem}
+.bracket-inner{position:relative}
+.round-label{position:absolute;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center}
+.bracket-card{position:absolute;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 1px 4px rgba(26,42,108,.06);transition:border-color .12s}
+.bracket-card.clickable{border-color:rgba(26,42,108,.3);cursor:pointer}
+.bracket-card.clickable:hover{border-color:var(--navy)}
+.bracket-slot{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.bracket-slot:last-child{border-bottom:none}
+.bracket-slot.winner{background:rgba(76,175,40,.06)}
+.bracket-slot.winner .slot-name{color:var(--green-dark);font-weight:700}
+.slot-seed{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--muted);width:18px;flex-shrink:0}
+.slot-name{font-size:13px;font-weight:600;color:var(--navy);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-name.tbd{color:var(--muted);font-weight:400;font-style:italic}
+.slot-score{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--navy)}
+.bkt-line{position:absolute;background:var(--border)}
+.champion-wrap{position:absolute;display:flex;align-items:center}
+.champion-card{background:var(--navy);border-radius:var(--radius-lg);padding:1.5rem 1.75rem;text-align:center;min-width:170px}
+.champion-trophy{font-size:36px;margin-bottom:8px}
+.champion-label{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.6);margin-bottom:4px}
+.champion-name{font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;color:var(--gold);letter-spacing:.5px}
+.champion-name.tbd{color:rgba(255,255,255,.3);font-size:15px;font-weight:400;font-style:italic;text-transform:none}
+/* score modal */
+.modal-bg{position:fixed;inset:0;background:rgba(17,29,78,.55);display:flex;align-items:center;justify-content:center;z-index:300;padding:1rem}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:1.5rem;max-width:380px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+.modal h3{font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:1rem}
+.modal-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.modal-row span{font-size:14px;font-weight:600;color:var(--navy);flex:1}
+.modal input{width:70px;padding:8px;border:1.5px solid var(--border);border-radius:var(--radius);text-align:center;font-size:15px}
 .btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
 .btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
@@ -264,57 +280,108 @@ function poolMatchTable(pi){
   return `<table class="g" style="margin-top:10px"><thead><tr><th style="text-align:right">Team</th><th style="text-align:center">Score</th><th>Team</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-// A real bracket: JS-positioned match boxes with elbow connectors between rounds.
+// Knockout bracket rendered with the same card/connector/champion look as the
+// league bracket page. Positions are computed so each match sits centered
+// between its two feeders; connectors are drawn as elbows.
+const BK = { W:200, GX:44, H:74, GY:14, TOP:28 };
+const bkCenterY = (r,i) => { const sp=(BK.H+BK.GY)*Math.pow(2,r); return BK.TOP + i*sp + (sp-BK.H)/2 + BK.H/2; };
+
+function bkSlot(slot, score, isWinner, isBye){
+  const tbd = slot === null;
+  const seed = (!tbd && DIV.teams[slot]) ? DIV.teams[slot].seed : '';
+  const name = tbd ? (isBye ? 'bye' : 'TBD') : teamLabel(slot);
+  return `<div class="bracket-slot${isWinner?' winner':''}">
+    <span class="slot-seed">${tbd?'':seed}</span>
+    <span class="slot-name${tbd?' tbd':''}">${name}</span>
+    <span class="slot-score">${score!==null&&score!==undefined?score:''}</span>
+  </div>`;
+}
+
 function bracketHTML(){
   const B = DIV.bracket, R = B.rounds.length;
-  const W = 210, GX = 46, H = 62, GY = 16, TOP = 26;
-  const rowsR0 = B.rounds[0].length;
-  const totalH = rowsR0 * (H + GY);
-  const totalW = R * (W + GX) - GX + 6;
+  const { W, GX, H, GY, TOP } = BK;
+  const totalH = B.rounds[0].length * (H + GY);
+  const champ = teBracketComplete(B) ? teBracketWinner(B.rounds[R-1][0]) : null;
+  const totalW = R*(W+GX) + 200;
   const editable = canScore && DIV.phase==='knockout';
-  const centerY = (r,i) => { const sp=(H+GY)*Math.pow(2,r); return TOP + i*sp + (sp-H)/2 + H/2; };
 
-  let html = `<div class="bkt-wrap"><div class="bkt" style="width:${totalW}px;height:${totalH+TOP+10}px;min-width:${totalW}px">`;
+  let html = `<div class="bracket-wrap"><div class="bracket-inner" style="width:${totalW}px;height:${totalH+TOP+10}px;min-width:${totalW}px">`;
 
-  // connector elbows: each next-round match joins its two feeders
+  // elbow connectors
   for(let r=0; r<R-1; r++){
-    const x = r*(W+GX);
-    const midX = x + W + GX/2;
+    const x = r*(W+GX), midX = x + W + GX/2;
     B.rounds[r+1].forEach((_, j) => {
-      const yA = centerY(r, 2*j), yB = centerY(r, 2*j+1), yN = centerY(r+1, j);
-      html += `<div class="bkt-line" style="left:${x+W}px;top:${yA}px;width:${GX/2}px;height:2px"></div>`;
-      html += `<div class="bkt-line" style="left:${x+W}px;top:${yB}px;width:${GX/2}px;height:2px"></div>`;
-      html += `<div class="bkt-line" style="left:${midX}px;top:${yA}px;width:2px;height:${yB-yA}px"></div>`;
-      html += `<div class="bkt-line" style="left:${midX}px;top:${yN}px;width:${GX/2}px;height:2px"></div>`;
+      const yA = bkCenterY(r,2*j), yB = bkCenterY(r,2*j+1), yN = bkCenterY(r+1,j);
+      html += `<div class="bkt-line" style="left:${x+W}px;top:${yA}px;width:${GX/2}px;height:2px"></div>`
+           +  `<div class="bkt-line" style="left:${x+W}px;top:${yB}px;width:${GX/2}px;height:2px"></div>`
+           +  `<div class="bkt-line" style="left:${midX}px;top:${yA}px;width:2px;height:${yB-yA}px"></div>`
+           +  `<div class="bkt-line" style="left:${midX}px;top:${yN}px;width:${GX/2}px;height:2px"></div>`;
     });
   }
 
-  // round headers + match boxes
   B.rounds.forEach((round, r) => {
     const x = r*(W+GX);
-    html += `<div class="bkt-head" style="left:${x}px;top:0;width:${W}px">${teRoundName(B.size,r,R)}</div>`;
+    html += `<div class="round-label" style="left:${x}px;top:0;width:${W}px">${teRoundName(B.size,r,R)}</div>`;
     round.forEach((m, i) => {
-      const top = centerY(r,i) - H/2;
+      const top = bkCenterY(r,i) - H/2;
       const w = teBracketWinner(m);
       const both = m.t1!==null && m.t2!==null;
-      const inp = side => both ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${r},${i},'${side}',this.value)"/>` : '';
-      const other = side => side==='s1' ? m.t2 : m.t1;
-      const teamRow = (slot,side) => {
-        // A null slot in round 1 opposite a real team is a bye; later rounds it's TBD.
-        const label = slot !== null ? teamLabel(slot)
-          : (r===0 && other(side)!==null ? '<span class="bye">bye</span>' : '<span style="color:var(--muted)">TBD</span>');
-        return `<div class="bkt-team ${(w!==null&&slot!==null&&w===slot)?'w':''}">
-          <span class="nm">${label}</span>${inp(side)}</div>`;
-      };
-      html += `<div class="bkt-match ${w!==null?'done':''}" style="left:${x}px;top:${top}px;width:${W}px">
-        ${teamRow(m.t1,'s1')}${teamRow(m.t2,'s2')}</div>`;
+      const clickable = editable && both;
+      const byeSlot2 = r===0 && m.t1!==null && m.t2===null;
+      const byeSlot1 = r===0 && m.t2!==null && m.t1===null;
+      html += `<div class="bracket-card${clickable?' clickable':''}" style="left:${x}px;top:${top}px;width:${W}px"
+        ${clickable?`onclick="openBracketModal(${r},${i})"`:''}>
+        ${bkSlot(m.t1, m.s1, w!==null&&w===m.t1, byeSlot1)}
+        ${bkSlot(m.t2, m.s2, w!==null&&w===m.t2, byeSlot2)}
+      </div>`;
     });
   });
 
-  const champ = teBracketComplete(B) ? teBracketWinner(B.rounds[R-1][0]) : null;
+  // Champion card, vertically centred on the final
+  const finalY = bkCenterY(R-1, 0);
+  html += `<div class="champion-wrap" style="left:${R*(W+GX)}px;top:${finalY-70}px;height:140px">
+    <div class="champion-card">
+      <div class="champion-trophy">🏆</div>
+      <div class="champion-label">Champion</div>
+      <div class="champion-name${champ===null?' tbd':''}">${champ===null?'To be decided':teamLabel(champ)}</div>
+    </div></div>`;
+
   html += `</div></div>`;
-  if(champ !== null) html += `<p class="champ">🏆 Champion: ${teamLabel(champ)}</p>`;
+  if(editable) html = `<p style="font-size:13px;color:var(--green-dark);font-weight:600;margin-bottom:.5rem">✓ Click any match to enter scores</p>` + html;
   return html;
+}
+
+// ── Bracket score modal (mirrors the league bracket flow) ──
+let modalMatch = null;
+function openBracketModal(r, i){
+  modalMatch = { r, i };
+  const m = DIV.bracket.rounds[r][i];
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-bg'; wrap.id = 'bk-modal';
+  wrap.onclick = e => { if(e.target === wrap) closeBracketModal(); };
+  wrap.innerHTML = `<div class="modal">
+    <h3>${teRoundName(DIV.bracket.size, r, DIV.bracket.rounds.length)}</h3>
+    <div class="modal-row"><span>${teamLabel(m.t1)}</span><input type="number" min="0" id="bk-s1" value="${m.s1??''}"/></div>
+    <div class="modal-row"><span>${teamLabel(m.t2)}</span><input type="number" min="0" id="bk-s2" value="${m.s2??''}"/></div>
+    <div style="display:flex;gap:8px;margin-top:1rem">
+      <button class="btn btn-green" style="flex:1" onclick="saveBracketModal()">Save</button>
+      <button class="btn btn-ghost" onclick="closeBracketModal()">Cancel</button>
+    </div></div>`;
+  document.body.appendChild(wrap);
+}
+function closeBracketModal(){ const el=document.getElementById('bk-modal'); if(el) el.remove(); modalMatch=null; }
+async function saveBracketModal(){
+  if(!modalMatch) return;
+  const { r, i } = modalMatch;
+  const v1 = document.getElementById('bk-s1').value, v2 = document.getElementById('bk-s2').value;
+  const m = DIV.bracket.rounds[r][i];
+  m.s1 = v1==='' ? null : Math.max(0, parseInt(v1,10)||0);
+  m.s2 = v2==='' ? null : Math.max(0, parseInt(v2,10)||0);
+  for(let rr = r+1; rr < DIV.bracket.rounds.length; rr++)
+    DIV.bracket.rounds[rr].forEach(x => { x.t1=null; x.t2=null; });
+  teAdvanceByes(DIV.bracket);
+  closeBracketModal();
+  if(await saveDiv()) render();
 }
 
 function render(){
