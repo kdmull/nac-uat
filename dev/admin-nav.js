@@ -154,6 +154,22 @@
     })
     .catch(function(){});
 
+  // Tournament divisions register into league_members with league_id
+  // 't:<tournamentId>:<divisionId>' — map those to readable names too.
+  fetch(SB_URL+'/rest/v1/pb_league?key=eq.nac_tournaments&select=value',
+    { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY } })
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(rows){
+      var ts = rows[0] && rows[0].value && rows[0].value.tournaments;
+      if(!Array.isArray(ts)) return;
+      ts.forEach(function(t){
+        (t.divisions || []).forEach(function(d){
+          LEAGUE_NAMES['t:'+t.id+':'+d.id] = (t.name || 'Tournament') + ' — ' + (d.name || d.id);
+        });
+      });
+    })
+    .catch(function(){});
+
   function checkPartnerInvites(sess){
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
     if(current === 'dev-dashboard.html') return;   // dashboard has its own banner
@@ -165,11 +181,12 @@
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(rows){
         var seasonId = (rows[0] && rows[0].value && rows[0].value.active) || 'spring2026';
+        // Pending invites from the active league season OR any tournament (season 't:<id>')
         return fetch(SB_URL+'/rest/v1/league_members'
           + '?partner_user_id=eq.'+encodeURIComponent(sess.uid)
           + '&partner_status=eq.pending&status=eq.active'
-          + '&season_id=eq.'+encodeURIComponent(seasonId)
-          + '&select=user_id,first_name,last_name,league_id',
+          + '&or=(season_id.eq.'+encodeURIComponent(seasonId)+',season_id.like.t:*)'
+          + '&select=user_id,first_name,last_name,league_id,season_id',
           { headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+sess.token } })
           .then(function(r){ return r.ok ? r.json() : []; })
           .then(function(invites){ if(invites.length) showInviteBanner(invites, seasonId, sess); });
@@ -184,10 +201,13 @@
     invites.forEach(function(inv){
       var name = ((inv.first_name||'')+' '+(inv.last_name||'')).trim() || 'A player';
       var lg = LEAGUE_NAMES[inv.league_id] || inv.league_id;
+      var isTourney = String(inv.season_id||'').indexOf('t:') === 0;
+      var inviteSeason = inv.season_id || seasonId;   // tournaments carry their own season id
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;max-width:1100px;margin:0 auto;padding:4px 0';
       row.innerHTML = '<span style="font-size:18px">🤝</span>'
-        + '<span style="font-size:14px;color:#1a2a6c;flex:1;min-width:200px;text-align:left"><strong>'+name+'</strong> chose you as their doubles partner in <strong>'+lg+'</strong>. Accepting registers you as a team.</span>';
+        + '<span style="font-size:14px;color:#1a2a6c;flex:1;min-width:200px;text-align:left"><strong>'+name+'</strong> chose you as their doubles partner '
+        + (isTourney ? 'for the tournament ' : 'in ') + '<strong>'+lg+'</strong>. Accepting registers you as a team.</span>';
       var btns = document.createElement('div');
       btns.style.cssText = 'display:flex;gap:8px';
       var mkBtn = function(label, solid){
@@ -204,7 +224,7 @@
         fetch(SB_URL+'/functions/v1/respond-partner-invite', {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+sess.token },
-          body: JSON.stringify({ fromUserId: inv.user_id, seasonId: seasonId, action: action })
+          body: JSON.stringify({ fromUserId: inv.user_id, seasonId: inviteSeason, action: action })
         })
         .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { ok:r.ok, j:j }; }); })
         .then(function(res){
