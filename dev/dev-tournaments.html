@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Tournaments — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;--green:#4caf28;--green-dark:#3a8c1e;
+  --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-link:hover{color:#fff}.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.page{padding:2rem 1.5rem;max-width:800px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1;margin-bottom:.25rem}
+.sub{color:var(--muted);font-size:14px;margin-bottom:1.5rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem}
+.card h2{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
+.card .meta{color:var(--muted);font-size:13px;margin-bottom:.75rem}
+.pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
+.pill.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.pill.closed{color:var(--muted);background:var(--surface)}
+.pill.live{color:#8a6d00;background:rgba(212,167,0,.14)}
+.divrow{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.divrow .dname{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--navy)}
+.divrow .dmeta{font-size:12px;color:var(--muted)}
+.btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(217,59,59,.4)}.btn-danger:hover{background:rgba(217,59,59,.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:14px;color:var(--text);background:var(--white);width:100%}
+.msg{border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-top:.6rem}
+.msg.error{background:rgba(217,59,59,.08);color:var(--danger);border:1px solid rgba(217,59,59,.25)}
+.msg.success{background:rgba(76,175,40,.08);color:var(--green-dark);border:1px solid rgba(76,175,40,.3)}
+.mine{background:rgba(76,175,40,.06);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-top:.6rem}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:600px){.page{padding:1rem}.card{padding:1rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="dev-index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-right" id="nav-links">
+    <a class="nav-link" href="dev-index.html">Leagues</a>
+    <a class="nav-link current" href="dev-tournaments.html">Tournaments</a>
+    <a class="nav-link" href="dev-rules.html">Rules</a>
+  </div>
+</nav>
+
+<div class="page">
+  <h1>Tournaments</h1>
+  <p class="sub">Register for upcoming NAC tournaments. Pool play into knockout brackets.</p>
+  <div id="list"><p style="color:var(--muted)">Loading…</p></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared-dev.js"></script>
+<script>
+const sbT = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let CAT = { tournaments: [] };
+let me = null, myProfile = null;
+let myRegs = [];             // my league_members rows in tournament namespaces
+let counts = {};             // league_id -> registered count
+
+const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const tSeason = t => `t:${t.id}`;
+const dLeague = (t,d) => `t:${t.id}:${d.id}`;
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.classList.remove('show'),3200); }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const res = await dbGet('nac_tournaments');
+  if(res && res.data && Array.isArray(res.data.tournaments)) CAT = res.data;
+
+  const { data: { session } } = await sbT.auth.getSession();
+  if(session){
+    me = session.user;
+    const { data: prof } = await sbT.from('profiles').select('id,first_name,last_name,email,phone,dupr_id').eq('id', me.id).single();
+    myProfile = prof || null;
+    const seasonIds = CAT.tournaments.map(tSeason);
+    if(seasonIds.length){
+      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).in('season_id', seasonIds).eq('status','active');
+      myRegs = regs || [];
+    }
+  }
+  await loadCounts();
+  render();
+});
+
+async function loadCounts(){
+  counts = {};
+  const ids = [];
+  CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => ids.push(dLeague(t,d))));
+  if(!ids.length) return;
+  try{
+    const client = me ? sbT : null;
+    if(!client) return;   // counts shown to signed-in users; public sees divisions without counts
+    const { data } = await client.from('league_members').select('league_id').in('league_id', ids).eq('status','active');
+    (data||[]).forEach(r => counts[r.league_id] = (counts[r.league_id]||0) + 1);
+  }catch(e){}
+}
+
+function myRegFor(t, d){ return myRegs.find(r => r.league_id === dLeague(t,d)) || null; }
+
+function render(){
+  const el = document.getElementById('list');
+  const ts = CAT.tournaments.filter(t => (t.divisions||[]).length);
+  if(!ts.length){ el.innerHTML = '<div class="card"><p style="color:var(--muted)">No tournaments are posted yet — check back soon!</p></div>'; return; }
+
+  el.innerHTML = ts.map((t,ti) => {
+    const open = !!t.regOpen;
+    const divs = (t.divisions||[]).map((d,di) => {
+      const mine = myRegFor(t,d);
+      const n = counts[dLeague(t,d)];
+      let action = '';
+      if(mine){
+        const partnerBit = d.teamType==='doubles'
+          ? (mine.partner_name
+              ? ` · Partner: <strong>${esc(mine.partner_name)}</strong>${mine.partner_status==='pending'?' <span style="color:#b8860b">(pending)</span>':mine.partner_status==='accepted'?' <span style="color:var(--green-dark)">✓</span>':''}`
+              : ' · <span style="color:#b8860b">No partner selected yet</span>')
+          : '';
+        action = `<div class="mine">✓ You're registered${partnerBit}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            ${d.teamType==='doubles' ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="openRegister(${ti},${di})">${mine.partner_name?'Change Partner':'Choose Partner'}</button>`:''}
+            <button class="btn btn-danger" style="font-size:11px;padding:5px 12px" onclick="withdraw(${ti},${di})">Withdraw</button>
+          </div></div>`;
+      } else if(open){
+        action = me
+          ? `<button class="btn btn-green" style="margin-top:8px" onclick="openRegister(${ti},${di})">Register</button><div id="regform-${ti}-${di}"></div>`
+          : `<a class="btn btn-green" style="margin-top:8px;display:inline-block;text-decoration:none" href="dev-auth.html">Sign in to register</a>`;
+      }
+      return `<div class="divrow">
+        <div class="dname">${esc(d.name)}</div>
+        <div class="dmeta">${d.teamType==='doubles'?'Doubles':'Singles'}${d.fee?` · $${d.fee} entry (pay at the event)`:''}${n!==undefined?` · ${n} registered`:''}</div>
+        ${action}
+        <div id="regmsg-${ti}-${di}"></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.25rem">
+        <h2>${esc(t.name)}</h2>
+        <span class="pill ${open?'open':'closed'}">${open?'Registration Open':'Registration Closed'}</span>
+      </div>
+      <div class="meta">${esc(t.date||'Date TBA')}${t.location?' · '+esc(t.location):''}</div>
+      ${divs}
+    </div>`;
+  }).join('');
+}
+
+// ── Register flow ─────────────────────────────────────
+async function openRegister(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const holder = document.getElementById(`regform-${ti}-${di}`);
+  const mine = myRegFor(t,d);
+  // Changing partner on an existing registration reuses the same form.
+  const target = holder || document.querySelector(`#regmsg-${ti}-${di}`).previousElementSibling;
+
+  let partnerSel = '';
+  if(d.teamType === 'doubles'){
+    const { data: profs } = await sbT.from('profiles').select('id,first_name,last_name').neq('id', me.id).order('first_name');
+    partnerSel = `<div style="margin-top:8px">
+      <label style="font-size:12px;font-weight:600;color:var(--muted)">Select your partner (or leave blank to find one later)</label>
+      <select class="inp" id="psel-${ti}-${di}">
+        <option value="">— No partner yet —</option>
+        ${(profs||[]).map(p => `<option value="${p.id}" ${mine&&mine.partner_user_id===p.id?'selected':''}>${esc(((p.first_name||'')+' '+(p.last_name||'')).trim())}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  (holder || target).innerHTML = `${partnerSel}
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-green" id="regbtn-${ti}-${di}" onclick="submitRegistration(${ti},${di})">${mine?'Save Partner':'Confirm Registration'}</button>
+      <button class="btn btn-ghost" onclick="render()">Cancel</button>
+    </div>`;
+}
+
+// Fail-open DUPR gating (same policy as league registration): block only on a
+// definitive missing-BASIC_L1; allow if the check itself is unreachable.
+async function verifyDupr(duprId){
+  if(!duprId) return { eligible:false, message:'A linked DUPR account is required — connect it from your dashboard first.' };
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-entitlements`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ duprId })
+    });
+    const dta = await r.json().catch(()=>({}));
+    if(!r.ok){ console.warn('DUPR check unavailable — allowing registration'); return { eligible:true }; }
+    if(!dta.basic) return { eligible:false, message:'Your DUPR account is not currently eligible for rated play (missing BASIC_L1).' };
+    return { eligible:true };
+  }catch(e){ return { eligible:true }; }
+}
+
+async function submitRegistration(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const btn = document.getElementById(`regbtn-${ti}-${di}`);
+  const msgEl = document.getElementById(`regmsg-${ti}-${di}`);
+  btn.disabled = true;
+  msgEl.innerHTML = '';
+
+  const psel = document.getElementById(`psel-${ti}-${di}`);
+  const partnerUserId = psel ? (psel.value || null) : null;
+  const partnerName = partnerUserId ? psel.options[psel.selectedIndex].text : null;
+  const p = myProfile;
+  const existing = myRegFor(t,d);
+
+  try{
+    if(existing){
+      // Partner change on an existing registration (mutual-accept if they already chose me)
+      let status = partnerUserId ? 'pending' : null;
+      if(partnerUserId){
+        const inv = await inviteFrom(partnerUserId, t, d);
+        if(inv){ status = 'accepted'; await sbT.from('league_members').update({ partner_status:'accepted', partner_name: `${p.first_name||''} ${p.last_name||''}`.trim() }).eq('id', inv.id); }
+      }
+      const { error } = await sbT.from('league_members')
+        .update({ partner_user_id: partnerUserId, partner_name: partnerName, partner_status: status })
+        .eq('id', existing.id);
+      if(error) throw error;
+      Object.assign(existing, { partner_user_id: partnerUserId, partner_name: partnerName, partner_status: status });
+      if(partnerUserId) notifyPartnerT(partnerUserId, p, t, d, status);
+      toast(status==='accepted' ? 'Partners locked in ✓' : (partnerUserId ? 'Partner invited — pending acceptance' : 'Partner removed'));
+      render(); return;
+    }
+
+    // New registration: DUPR gate first (same rule as leagues)
+    const gate = await verifyDupr(p && p.dupr_id);
+    if(!gate.eligible){ msgEl.innerHTML = `<div class="msg error">${gate.message}</div>`; btn.disabled=false; return; }
+
+    // Mutual accept if the chosen partner already registered and picked me
+    let status = partnerUserId ? 'pending' : null;
+    let inv = null;
+    if(partnerUserId){
+      inv = await inviteFrom(partnerUserId, t, d);
+      if(inv) status = 'accepted';
+    }
+
+    const { error } = await sbT.from('league_members').insert({
+      league_id: dLeague(t,d), season_id: tSeason(t), user_id: me.id,
+      partner_user_id: partnerUserId,
+      first_name: p.first_name, last_name: p.last_name, email: p.email, phone: p.phone,
+      partner_name: partnerName, partner_status: status, status: 'active'
+    });
+    if(error){
+      if(error.code === '23505') msgEl.innerHTML = '<div class="msg error">You are already registered for this division.</div>';
+      else msgEl.innerHTML = `<div class="msg error">${esc(error.message)}</div>`;
+      btn.disabled = false; return;
+    }
+    if(inv) await sbT.from('league_members').update({ partner_status:'accepted' }).eq('id', inv.id);
+    if(partnerUserId) notifyPartnerT(partnerUserId, p, t, d, status);
+
+    const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
+    if(regs && regs.length) myRegs.push(regs[0]);
+    msgEl.innerHTML = `<div class="msg success">You're registered for ${esc(d.name)}!${status==='accepted'?' You and '+esc(partnerName)+' are partners ✓':''}</div>`;
+    await loadCounts(); render();
+    toast('Registered ✓');
+  }catch(e){
+    msgEl.innerHTML = `<div class="msg error">${esc(e.message||'Registration failed')}</div>`;
+    btn.disabled = false;
+  }
+}
+
+// Did `otherUserId` already register this division naming ME as partner?
+async function inviteFrom(otherUserId, t, d){
+  try{
+    const { data } = await sbT.from('league_members').select('id,partner_status')
+      .eq('user_id', otherUserId).eq('season_id', tSeason(t)).eq('league_id', dLeague(t,d))
+      .eq('status','active').eq('partner_user_id', me.id).maybeSingle();
+    return data || null;
+  }catch(e){ return null; }
+}
+
+function notifyPartnerT(partnerUserId, p, t, d, status){
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type:'partner', data:{ partnerUserId,
+        byName: `${p.first_name||''} ${p.last_name||''}`.trim(),
+        league: `${t.name} — ${d.name}`, status: status || 'pending' } })
+    }).catch(()=>{});
+  }catch(e){}
+}
+
+async function withdraw(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const mine = myRegFor(t,d);
+  if(!mine) return;
+  if(!confirm(`Withdraw from ${d.name}?`)) return;
+  const { error } = await sbT.from('league_members').delete().eq('id', mine.id);
+  if(error){ toast('Could not withdraw: ' + error.message); return; }
+  myRegs = myRegs.filter(r => r.id !== mine.id);
+  await loadCounts(); render();
+  toast('Withdrawn');
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>

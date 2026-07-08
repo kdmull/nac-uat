@@ -13,8 +13,7 @@
   var ADMIN_LINKS = [
     { href:'dev-admin.html',    label:'Admin' },
     { href:'dev-accounts.html', label:'Accounts' },
-    { href:'dev-dupr-matches.html', label:'DUPR' },
-    { href:'dev-tournament-admin.html', label:'Tourneys' }
+    { href:'dev-dupr-matches.html', label:'DUPR' }
   ];
 
   // Read the Supabase session from localStorage (handles v2 and v1 shapes).

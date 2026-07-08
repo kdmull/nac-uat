@@ -112,6 +112,36 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .roster-x:hover{color:var(--danger);background:rgba(217,59,59,.08)}
 .roster-empty{padding:1.5rem 1rem;text-align:center;color:var(--muted);font-size:13px}
 .roster-foot{padding:8px 14px;border-top:1px solid var(--border);background:var(--surface)}
+.inp{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:14px;color:var(--text);background:var(--white)}
+.inp:focus{outline:none;border-color:var(--navy)}
+.btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy-dark)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(217,59,59,.4)}.btn-danger:hover{background:rgba(217,59,59,.08)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
+.pill.draft{color:var(--muted);background:var(--surface)}
+.pill.pools{color:#8a6d00;background:rgba(212,167,0,.14)}
+.pill.knockout{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.pill.complete{color:var(--navy);background:var(--surface2)}
+.trow{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;flex-wrap:wrap;cursor:pointer}
+.trow:hover{background:var(--surface)}
+.trow.active{border-color:var(--navy);background:var(--surface)}
+.trow .tname{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--navy)}
+.trow .tmeta{font-size:12px;color:var(--muted)}
+table.g{width:100%;border-collapse:collapse}
+table.g th{font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:6px 8px;text-align:left;border-bottom:2px solid var(--border)}
+table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
+.score-in{width:46px;padding:5px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:13px}
+.pool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.pool-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px}
+.pool-card h4{font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.br-round{display:inline-block;vertical-align:top;margin-right:22px;min-width:210px}
+.br-round h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.br-match{border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:13px;background:var(--white)}
+.br-team{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
+.br-team.w{font-weight:700;color:var(--green-dark)}
 </style>
 </head>
 <body>
@@ -160,6 +190,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <button class="admin-tab active" data-tab="schedule" onclick="showAdminTab('schedule')">Schedule &amp; Roster</button>
         <button class="admin-tab" data-tab="dupr" onclick="showAdminTab('dupr')">DUPR</button>
         <button class="admin-tab" data-tab="data" onclick="showAdminTab('data')">Scores &amp; Sign-ups</button>
+        <button class="admin-tab" data-tab="tournaments" onclick="showAdminTab('tournaments')">Tournaments</button>
         <button class="admin-tab" data-tab="setup" onclick="showAdminTab('setup')">Seasons &amp; Leagues</button>
       </div>
     <div class="admin-section" id="score-log-section" data-admin-tab="data" style="display:none">
@@ -267,6 +298,31 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         </table>
       </div>
     </div>
+<div class="admin-section" data-admin-tab="tournaments">
+      <h3>Your Tournaments</h3>
+      <div id="tournament-list"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem">
+        <input class="inp" id="new-t-name" placeholder="Tournament name" style="flex:2;min-width:180px"/>
+        <input class="inp" id="new-t-date" type="date" style="flex:1;min-width:140px"/>
+        <input class="inp" id="new-t-loc" placeholder="Location" style="flex:1;min-width:140px"/>
+        <button class="btn btn-green" onclick="createTournament()">+ Create</button>
+      </div>
+    </div>
+
+    <div class="admin-section" id="divisions-section" data-admin-tab="tournaments" style="display:none">
+      <h3 id="divisions-title">Divisions</h3>
+      <div id="division-list"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.75rem;align-items:center">
+        <input class="inp" id="new-d-name" placeholder="Division name (e.g. Men's 3.5 Doubles)" style="flex:2;min-width:200px"/>
+        <select class="inp" id="new-d-type"><option value="doubles">Doubles</option><option value="singles">Singles</option></select>
+        <select class="inp" id="new-d-pool"><option value="4">Pools of 4</option><option value="5">Pools of 5</option><option value="3">Pools of 3</option></select>
+        <select class="inp" id="new-d-adv"><option value="2">Top 2 advance</option><option value="1">Top 1 advances</option></select>
+        <input class="inp" id="new-d-fee" type="number" min="0" placeholder="Fee $" style="width:80px"/>
+        <button class="btn btn-green" onclick="addDivision()">+ Add Division</button>
+      </div>
+    </div>
+
+    <div id="division-detail" data-admin-tab="tournaments"></div>
       <div class="admin-section" id="seasons-section" data-admin-tab="setup">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
           <h3 style="margin:0">Seasons</h3>
@@ -326,6 +382,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared-dev.js"></script>
+<script src="tournament-engine.js"></script>
 <script>
 const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -339,6 +396,7 @@ function unlockAdmin(){
   loadRegistrations();
   loadScoreLog();
   renderPlayoffSeeding();
+  initTournamentsAdmin();
   let savedTab = 'schedule';
   try{ savedTab = localStorage.getItem('nacAdminTab') || 'schedule'; }catch(e){}
   showAdminTab(savedTab);
@@ -346,10 +404,13 @@ function unlockAdmin(){
 
 // In-page section navigation: show only the selected group of sections.
 function showAdminTab(tab){
-  const valid = ['schedule','dupr','data','setup'];
+  const valid = ['schedule','dupr','data','setup','tournaments'];
   if(!valid.includes(tab)) tab = 'schedule';
   document.querySelectorAll('#admin-content [data-admin-tab]').forEach(el => {
-    el.style.display = (el.getAttribute('data-admin-tab') === tab) ? 'block' : 'none';
+    const show = el.getAttribute('data-admin-tab') === tab;
+    // Sections that manage their own visibility until activated:
+    if(show && el.id === 'divisions-section' && !window.curT){ el.style.display='none'; return; }
+    el.style.display = show ? 'block' : 'none';
   });
   document.querySelectorAll('.admin-tab').forEach(b => {
     b.classList.toggle('active', b.getAttribute('data-tab') === tab);
@@ -1237,6 +1298,323 @@ async function loadScoreLog(){
     console.error('Score log exception:', e);
     logSection.innerHTML=`<tr><td colspan="6" style="color:var(--danger);padding:1rem">Error: ${e.message}</td></tr>`;
   }
+}
+</script>
+<script>
+// ── TOURNAMENTS (ported from dev-tournament-admin) ──
+const CATALOG_KEY = 'nac_tournaments';
+let CAT = { tournaments: [] };        // the catalog
+let curT = null; window.curT = null;  // selected tournament
+let curD = null;                      // selected division
+let DIV = null;                       // selected division state (teams/pools/bracket)
+
+const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const divKey = (t,d) => `tourney_${t.id}_${d.id}`;
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,24) || ('x'+Date.now());
+function teamLabel(i){ return DIV && DIV.teams[i] ? esc(DIV.teams[i].name) : (i===null?'—':'TBD'); }
+
+async function initTournamentsAdmin(){
+  const res = await dbGet(CATALOG_KEY);
+  if(res && res.data && Array.isArray(res.data.tournaments)) CAT = res.data;
+  renderTournaments();
+}
+
+async function saveCatalog(){ const ok = await dbSet(CATALOG_KEY, CAT); if(!ok) showToast('Save failed — are you signed in as an admin?'); return ok; }
+async function saveDiv(){ DIV.updated = Date.now(); const ok = await dbSet(divKey(curT,curD), DIV); if(!ok) showToast('Save failed'); return ok; }
+
+// ── Tournaments ─────────────────────────────────────────
+function renderTournaments(){
+  const el = document.getElementById('tournament-list');
+  if(!CAT.tournaments.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No tournaments yet — create your first below.</p>'; return; }
+  el.innerHTML = CAT.tournaments.map((t,i) => `
+    <div class="trow ${curT&&curT.id===t.id?'active':''}" onclick="selectTournament(${i})">
+      <span class="tname">${esc(t.name)}</span>
+      <span class="tmeta">${esc(t.date||'')}${t.location?' · '+esc(t.location):''} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}</span>
+      <span class="pill ${t.regOpen?'knockout':'draft'}">${t.regOpen?'Reg Open':'Reg Closed'}</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();toggleReg(${i})">${t.regOpen?'Close Reg':'Open Reg'}</button>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteTournament(${i})">Delete</button>
+    </div>`).join('');
+}
+
+async function toggleReg(i){
+  CAT.tournaments[i].regOpen = !CAT.tournaments[i].regOpen;
+  await saveCatalog(); renderTournaments();
+  showToast(CAT.tournaments[i].regOpen ? 'Registration is OPEN — players can sign up on the Tournaments page' : 'Registration closed');
+}
+
+async function createTournament(){
+  const name = document.getElementById('new-t-name').value.trim();
+  if(!name){ showToast('Enter a tournament name'); return; }
+  const t = { id: slug(name)+'-'+String(Date.now()).slice(-4), name,
+              date: document.getElementById('new-t-date').value || '',
+              location: document.getElementById('new-t-loc').value.trim(), divisions: [] };
+  CAT.tournaments.push(t);
+  if(await saveCatalog()){ document.getElementById('new-t-name').value=''; document.getElementById('new-t-loc').value=''; renderTournaments(); showToast('Tournament created'); }
+}
+
+async function deleteTournament(i){
+  if(!confirm(`Delete "${CAT.tournaments[i].name}" and all its divisions?`)) return;
+  const t = CAT.tournaments[i];
+  CAT.tournaments.splice(i,1);
+  if(curT && curT.id===t.id){ curT=null; window.curT=null; curD=null; DIV=null; document.getElementById('divisions-section').style.display='none'; document.getElementById('division-detail').innerHTML=''; }
+  await saveCatalog(); renderTournaments();
+}
+
+function selectTournament(i){
+  curT = CAT.tournaments[i]; window.curT = curT; curD = null; DIV = null;
+  document.getElementById('division-detail').innerHTML='';
+  document.getElementById('divisions-section').style.display='';
+  document.getElementById('divisions-title').textContent = curT.name + ' — Divisions';
+  renderTournaments(); renderDivisions();
+}
+
+// ── Divisions ───────────────────────────────────────────
+function renderDivisions(){
+  const el = document.getElementById('division-list');
+  const divs = curT.divisions || [];
+  if(!divs.length){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">No divisions yet.</p>'; return; }
+  el.innerHTML = divs.map((d,i) => `
+    <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
+      <span class="tname" style="font-size:15px">${esc(d.name)}</span>
+      <span class="tmeta">${d.teamType} · pools of ${d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
+      <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteDivision(${i})">Delete</button>
+    </div>`).join('');
+}
+
+async function addDivision(){
+  const name = document.getElementById('new-d-name').value.trim();
+  if(!name){ showToast('Enter a division name'); return; }
+  const d = { id: slug(name), name,
+    teamType: document.getElementById('new-d-type').value,
+    poolSize: parseInt(document.getElementById('new-d-pool').value,10),
+    advance: parseInt(document.getElementById('new-d-adv').value,10),
+    fee: parseFloat(document.getElementById('new-d-fee').value)||0,
+    format: 'pool_knockout', phase: 'draft' };
+  if((curT.divisions||[]).some(x=>x.id===d.id)){ showToast('A division with that name already exists'); return; }
+  curT.divisions = curT.divisions || [];
+  curT.divisions.push(d);
+  if(await saveCatalog()){ document.getElementById('new-d-name').value=''; renderDivisions(); showToast('Division added'); }
+}
+
+async function deleteDivision(i){
+  const d = curT.divisions[i];
+  if(!confirm(`Delete division "${d.name}"?`)) return;
+  curT.divisions.splice(i,1);
+  if(curD && curD.id===d.id){ curD=null; DIV=null; document.getElementById('division-detail').innerHTML=''; }
+  await saveCatalog(); renderDivisions();
+}
+
+async function selectDivision(i){
+  curD = curT.divisions[i];
+  const res = await dbGet(divKey(curT,curD));
+  DIV = (res && res.data && res.data.teams) ? res.data
+      : { teams:[], pools:[], poolMatches:[], bracket:null, phase:'setup', updated:Date.now() };
+  renderDivisions(); renderDivisionDetail();
+}
+
+// ── Division detail: teams → pools → knockout ───────────
+function renderDivisionDetail(){
+  const el = document.getElementById('division-detail');
+  if(!curD){ el.innerHTML=''; return; }
+  let html = `<div class="section"><h3>${esc(curD.name)} — ${DIV.phase==='setup'?'Teams & Seeding':DIV.phase==='pools'?'Pool Play':DIV.phase==='knockout'?'Knockout Bracket':'Results'}</h3>`;
+
+  if(DIV.phase === 'setup'){
+    html += `
+      <p style="color:var(--muted);font-size:13px;margin-bottom:.75rem">One ${curD.teamType==='doubles'?'team':'player'} per line, strongest first (line 1 = seed 1). For doubles use "Player A & Player B".</p>
+      <textarea class="inp" id="teams-input" rows="10" style="width:100%;font-family:monospace;font-size:13px" placeholder="Smith & Jones\nDavis & Lee\n...">${DIV.teams.map(t=>esc(t.name)).join('\n')}</textarea>
+      <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-navy" onclick="loadRegistered()">↧ Load Registered (seeded by DUPR)</button>
+        <button class="btn btn-ghost" onclick="saveTeams()">Save Teams</button>
+        <button class="btn btn-green" onclick="generatePools()">Generate Pools →</button>
+      </div>
+      <div id="reg-notes" style="font-size:12px;color:var(--muted);margin-top:.5rem"></div>`;
+  }
+
+  if(DIV.phase === 'pools' || DIV.phase === 'knockout' || DIV.phase === 'complete'){
+    html += `<div class="pool-grid">` + DIV.pools.map((pool,pi) => {
+      const st = tePoolStandings(pi, DIV.pools, DIV.poolMatches, DIV.teams);
+      const standRows = st.map((r,place) => `<tr>
+        <td style="font-weight:${place<curD.advance?'700':'400'};color:${place<curD.advance?'var(--green-dark)':'inherit'}">${teamLabel(r.team)}</td>
+        <td>${r.won}-${r.lost}</td><td>${r.pf-r.pa>0?'+':''}${r.pf-r.pa}</td></tr>`).join('');
+      const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
+      const matchRows = ms.map(({m,mi}) => {
+        const g = m.games[0];
+        const locked = DIV.phase!=='pools';
+        return `<tr><td>${teamLabel(m.t1)}</td>
+          <td><input class="score-in" type="number" min="0" value="${g.s1??''}" ${locked?'disabled':''} onchange="setPoolScore(${mi},0,'s1',this.value)"/>
+              <input class="score-in" type="number" min="0" value="${g.s2??''}" ${locked?'disabled':''} onchange="setPoolScore(${mi},0,'s2',this.value)"/></td>
+          <td>${teamLabel(m.t2)}</td></tr>`;
+      }).join('');
+      return `<div class="pool-card"><h4>Pool ${String.fromCharCode(65+pi)}</h4>
+        <table class="g"><thead><tr><th>Team</th><th>W-L</th><th>+/-</th></tr></thead><tbody>${standRows}</tbody></table>
+        <div style="height:8px"></div>
+        <table class="g"><thead><tr><th>Team</th><th>Score</th><th>Team</th></tr></thead><tbody>${matchRows}</tbody></table>
+      </div>`;
+    }).join('') + `</div>`;
+
+    if(DIV.phase === 'pools'){
+      const done = tePoolsComplete(DIV.poolMatches);
+      html += `<div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="backToSetup()">← Back to Teams</button>
+        <button class="btn btn-green" ${done?'':'disabled title="Enter all pool scores first"'} onclick="buildKnockout()">Build Knockout Bracket →</button>
+      </div>`;
+      if(!done) html += `<p style="color:var(--muted);font-size:12px;margin-top:.5rem">The bracket unlocks once every pool match has a score. Top ${curD.advance} in each pool (highlighted) advance.</p>`;
+    }
+  }
+
+  if(DIV.phase === 'knockout' || DIV.phase === 'complete'){
+    html += `<div style="overflow-x:auto;margin-top:1.25rem;padding-bottom:.5rem">` +
+      DIV.bracket.rounds.map((round,ri) => {
+        const cells = round.map((m,mi) => {
+          const w = teBracketWinner(m);
+          const locked = DIV.phase==='complete';
+          const inp = (side) => (m.t1!==null&&m.t2!==null)
+            ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${locked?'disabled':''} onchange="setBracketScore(${ri},${mi},'${side}',this.value)"/>`
+            : '';
+          return `<div class="br-match">
+            <div class="br-team ${w!==null&&w===m.t1?'w':''}"><span>${teamLabel(m.t1)}</span>${inp('s1')}</div>
+            <div class="br-team ${w!==null&&w===m.t2?'w':''}"><span>${m.t2===null&&m.t1!==null?'<em style="color:var(--muted)">bye</em>':teamLabel(m.t2)}</span>${inp('s2')}</div>
+          </div>`;
+        }).join('');
+        return `<div class="br-round"><h4>${teRoundName(DIV.bracket.size,ri,DIV.bracket.rounds.length)}</h4>${cells}</div>`;
+      }).join('') + `</div>`;
+
+    const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
+    if(champ !== null) html += `<p style="font-family:var(--font-display);font-size:20px;font-weight:900;color:var(--green-dark);margin-top:.5rem">🏆 Champion: ${teamLabel(champ)}</p>`;
+    if(DIV.phase === 'knockout'){
+      html += `<div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn btn-ghost" onclick="backToPools()">← Reopen Pools</button>
+        <button class="btn btn-green" ${champ!==null?'':'disabled title="Finish the bracket first"'} onclick="completeDivision()">Mark Division Complete ✓</button>
+      </div>`;
+    }
+    if(DIV.phase === 'complete'){
+      html += `<div style="margin-top:1rem"><button class="btn btn-ghost" onclick="reopenKnockout()">← Reopen Bracket</button></div>`;
+    }
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// Pull this division's registrations, pair accepted partners into teams,
+// seed by DUPR rating (strongest first), and fill the seeding list. The list
+// stays editable — reorder lines before Generate Pools if needed.
+async function loadRegistered(){
+  const leagueId = `t:${curT.id}:${curD.id}`;
+  const notes = document.getElementById('reg-notes');
+  notes.textContent = 'Loading registrations…';
+  const { data: regs, error } = await sbAuth.from('league_members').select('*')
+    .eq('league_id', leagueId).eq('status','active');
+  if(error){ notes.textContent = 'Could not load registrations: ' + error.message; return; }
+  if(!regs || !regs.length){ notes.textContent = 'No registrations yet for this division.'; return; }
+
+  const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || (r.email||'?');
+
+  // DUPR ratings for seeding: user_id -> profiles.dupr_id -> dupr_ratings
+  const uids = [...new Set(regs.flatMap(r => [r.user_id, r.partner_user_id]).filter(Boolean))];
+  const { data: profs } = await sbAuth.from('profiles').select('id,dupr_id').in('id', uids);
+  const duprByUser = {}; (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
+  const dids = [...new Set(Object.values(duprByUser))];
+  let ratingById = {};
+  if(dids.length){
+    const { data: rts } = await sbAuth.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+    (rts||[]).forEach(x => ratingById[x.dupr_id] = x);
+  }
+  const rateOf = (uid) => {
+    const r = ratingById[duprByUser[uid]];
+    if(!r) return null;
+    const v = parseFloat(curD.teamType==='singles' ? r.singles : r.doubles);
+    return isNaN(v) ? null : v;
+  };
+
+  let entries = [], skipped = [];
+  if(curD.teamType === 'doubles'){
+    const seen = new Set();
+    regs.forEach(r => {
+      if(r.partner_status === 'accepted' && r.partner_user_id){
+        const pairKey = [r.user_id, r.partner_user_id].sort().join('|');
+        if(seen.has(pairKey)) return;
+        seen.add(pairKey);
+        const mate = regs.find(x => x.user_id === r.partner_user_id);
+        const name = `${nm(r)} & ${mate ? nm(mate) : (r.partner_name||'?')}`;
+        const ra = rateOf(r.user_id), rb = rateOf(r.partner_user_id);
+        const rating = (ra!=null && rb!=null) ? (ra+rb)/2 : (ra ?? rb ?? null);
+        entries.push({ name, rating });
+      } else {
+        skipped.push(`${nm(r)}${r.partner_name ? ' (partner "'+r.partner_name+'" pending)' : ' (no partner)'}`);
+      }
+    });
+  } else {
+    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id) }));
+  }
+
+  entries.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
+  document.getElementById('teams-input').value = entries.map(e => e.name).join('\n');
+  notes.innerHTML =
+    `Loaded <strong>${entries.length}</strong> ${curD.teamType==='doubles'?'team(s)':'player(s)'}, seeded by DUPR ${curD.teamType==='singles'?'singles':'doubles'} rating (unrated last). Reorder lines to adjust seeding.` +
+    (skipped.length ? `<br><span style="color:#b8860b">Not included (incomplete pairs): ${skipped.map(esc).join(', ')}</span>` : '');
+}
+
+async function saveTeams(){
+  const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  if(await saveDiv()) showToast(`Saved ${DIV.teams.length} ${curD.teamType==='doubles'?'teams':'players'}`);
+}
+
+async function generatePools(){
+  const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(lines.length < 3){ showToast('Need at least 3 entries'); return; }
+  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  DIV.pools = teSeedPools(DIV.teams.length, curD.poolSize);
+  DIV.poolMatches = teBuildPoolMatches(DIV.pools);
+  DIV.bracket = null;
+  DIV.phase = 'pools';
+  await syncPhase();
+  renderDivisionDetail();
+  showToast(`${DIV.pools.length} pool${DIV.pools.length!==1?'s':''} generated (snake-seeded)`);
+}
+
+async function setPoolScore(mi, gi, side, val){
+  DIV.poolMatches[mi].games[gi][side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  await saveDiv();
+  renderDivisionDetail();
+}
+
+async function buildKnockout(){
+  if(!tePoolsComplete(DIV.poolMatches)){ showToast('Enter all pool scores first'); return; }
+  const q = teQualifiers(DIV.pools, DIV.poolMatches, DIV.teams, curD.advance);
+  if(q.length < 2){ showToast('Not enough qualifiers'); return; }
+  DIV.bracket = teBuildBracket(q);
+  DIV.phase = 'knockout';
+  await syncPhase();
+  renderDivisionDetail();
+  showToast(`Bracket built — ${q.length} qualifiers, ${DIV.bracket.rounds.length} round${DIV.bracket.rounds.length!==1?'s':''}`);
+}
+
+async function setBracketScore(ri, mi, side, val){
+  const m = DIV.bracket.rounds[ri][mi];
+  m[side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
+  // Clear downstream slots (a changed result can change who advances), then re-advance.
+  for(let r = ri+1; r < DIV.bracket.rounds.length; r++)
+    DIV.bracket.rounds[r].forEach(x => { x.t1=null; x.t2=null; });
+  teAdvanceByes(DIV.bracket);
+  await saveDiv();
+  renderDivisionDetail();
+}
+
+async function backToSetup(){ if(!confirm('Reopen team entry? Pool scores will be kept until pools are regenerated.')) return; DIV.phase='setup'; await syncPhase(); renderDivisionDetail(); }
+async function backToPools(){ if(!confirm('Reopen pools? The bracket will be rebuilt from pool results when you advance again.')) return; DIV.phase='pools'; DIV.bracket=null; await syncPhase(); renderDivisionDetail(); }
+async function completeDivision(){ DIV.phase='complete'; await syncPhase(); renderDivisionDetail(); showToast('Division complete 🏆'); }
+async function reopenKnockout(){ DIV.phase='knockout'; await syncPhase(); renderDivisionDetail(); }
+
+// Keep the catalog's phase pill in step with the division state.
+async function syncPhase(){
+  curD.phase = DIV.phase==='setup' ? 'draft' : DIV.phase;
+  await Promise.all([saveDiv(), saveCatalog()]);
+  renderDivisions();
 }
 </script>
 <script src="admin-nav.js"></script>

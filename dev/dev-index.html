@@ -87,6 +87,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
   <div class="nav-actions" id="nav-actions"></div>
   <div class="nav-right" id="nav-links">
     <a class="nav-link current" href="dev-index.html">Leagues</a>
+    <a class="nav-link" href="dev-tournaments.html">Tournaments</a>
     <a class="nav-link" href="dev-rules.html">Rules</a>
   </div>
 </nav>
@@ -96,11 +97,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <p>Standings, schedules, scores, and league registration</p>
   </div>
 
-  <div class="section-label">View Leagues</div>
-  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
-
   <!-- Sign-in prompt (logged-out only) -->
-  <div class="signin-card" id="signin-card" style="margin-top:1.5rem">
+  <div class="signin-card" id="signin-card">
     <h2>Join a League</h2>
     <p>Sign in or create an account to register for leagues and connect your DUPR rating.</p>
     <div class="actions">
@@ -108,6 +106,9 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
       <a class="btn btn-green" href="dev-auth.html">Create Account</a>
     </div>
   </div>
+
+  <div class="section-label">View Leagues</div>
+  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

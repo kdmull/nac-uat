@@ -120,6 +120,7 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 <script src="tournament-engine.js"></script>
 <script>
 const CATALOG_KEY = 'nac_tournaments';
+const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let CAT = { tournaments: [] };        // the catalog
 let curT = null;                      // selected tournament
 let curD = null;                      // selected division
@@ -152,9 +153,17 @@ function renderTournaments(){
     <div class="trow ${curT&&curT.id===t.id?'active':''}" onclick="selectTournament(${i})">
       <span class="tname">${esc(t.name)}</span>
       <span class="tmeta">${esc(t.date||'')}${t.location?' · '+esc(t.location):''} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}</span>
+      <span class="pill ${t.regOpen?'knockout':'draft'}">${t.regOpen?'Reg Open':'Reg Closed'}</span>
       <span style="margin-left:auto"></span>
+      <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();toggleReg(${i})">${t.regOpen?'Close Reg':'Open Reg'}</button>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();deleteTournament(${i})">Delete</button>
     </div>`).join('');
+}
+
+async function toggleReg(i){
+  CAT.tournaments[i].regOpen = !CAT.tournaments[i].regOpen;
+  await saveCatalog(); renderTournaments();
+  toast(CAT.tournaments[i].regOpen ? 'Registration is OPEN — players can sign up on the Tournaments page' : 'Registration closed');
 }
 
 async function createTournament(){
@@ -240,9 +249,11 @@ function renderDivisionDetail(){
       <p style="color:var(--muted);font-size:13px;margin-bottom:.75rem">One ${curD.teamType==='doubles'?'team':'player'} per line, strongest first (line 1 = seed 1). For doubles use "Player A & Player B".</p>
       <textarea class="inp" id="teams-input" rows="10" style="width:100%;font-family:monospace;font-size:13px" placeholder="Smith & Jones\nDavis & Lee\n...">${DIV.teams.map(t=>esc(t.name)).join('\n')}</textarea>
       <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+        <button class="btn btn-navy" onclick="loadRegistered()">↧ Load Registered (seeded by DUPR)</button>
         <button class="btn btn-ghost" onclick="saveTeams()">Save Teams</button>
         <button class="btn btn-green" onclick="generatePools()">Generate Pools →</button>
-      </div>`;
+      </div>
+      <div id="reg-notes" style="font-size:12px;color:var(--muted);margin-top:.5rem"></div>`;
   }
 
   if(DIV.phase === 'pools' || DIV.phase === 'knockout' || DIV.phase === 'complete'){
@@ -309,6 +320,65 @@ function renderDivisionDetail(){
 
   html += `</div>`;
   el.innerHTML = html;
+}
+
+// Pull this division's registrations, pair accepted partners into teams,
+// seed by DUPR rating (strongest first), and fill the seeding list. The list
+// stays editable — reorder lines before Generate Pools if needed.
+async function loadRegistered(){
+  const leagueId = `t:${curT.id}:${curD.id}`;
+  const notes = document.getElementById('reg-notes');
+  notes.textContent = 'Loading registrations…';
+  const { data: regs, error } = await sbAuth.from('league_members').select('*')
+    .eq('league_id', leagueId).eq('status','active');
+  if(error){ notes.textContent = 'Could not load registrations: ' + error.message; return; }
+  if(!regs || !regs.length){ notes.textContent = 'No registrations yet for this division.'; return; }
+
+  const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || (r.email||'?');
+
+  // DUPR ratings for seeding: user_id -> profiles.dupr_id -> dupr_ratings
+  const uids = [...new Set(regs.flatMap(r => [r.user_id, r.partner_user_id]).filter(Boolean))];
+  const { data: profs } = await sbAuth.from('profiles').select('id,dupr_id').in('id', uids);
+  const duprByUser = {}; (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
+  const dids = [...new Set(Object.values(duprByUser))];
+  let ratingById = {};
+  if(dids.length){
+    const { data: rts } = await sbAuth.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+    (rts||[]).forEach(x => ratingById[x.dupr_id] = x);
+  }
+  const rateOf = (uid) => {
+    const r = ratingById[duprByUser[uid]];
+    if(!r) return null;
+    const v = parseFloat(curD.teamType==='singles' ? r.singles : r.doubles);
+    return isNaN(v) ? null : v;
+  };
+
+  let entries = [], skipped = [];
+  if(curD.teamType === 'doubles'){
+    const seen = new Set();
+    regs.forEach(r => {
+      if(r.partner_status === 'accepted' && r.partner_user_id){
+        const pairKey = [r.user_id, r.partner_user_id].sort().join('|');
+        if(seen.has(pairKey)) return;
+        seen.add(pairKey);
+        const mate = regs.find(x => x.user_id === r.partner_user_id);
+        const name = `${nm(r)} & ${mate ? nm(mate) : (r.partner_name||'?')}`;
+        const ra = rateOf(r.user_id), rb = rateOf(r.partner_user_id);
+        const rating = (ra!=null && rb!=null) ? (ra+rb)/2 : (ra ?? rb ?? null);
+        entries.push({ name, rating });
+      } else {
+        skipped.push(`${nm(r)}${r.partner_name ? ' (partner "'+r.partner_name+'" pending)' : ' (no partner)'}`);
+      }
+    });
+  } else {
+    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id) }));
+  }
+
+  entries.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
+  document.getElementById('teams-input').value = entries.map(e => e.name).join('\n');
+  notes.innerHTML =
+    `Loaded <strong>${entries.length}</strong> ${curD.teamType==='doubles'?'team(s)':'player(s)'}, seeded by DUPR ${curD.teamType==='singles'?'singles':'doubles'} rating (unrated last). Reorder lines to adjust seeding.` +
+    (skipped.length ? `<br><span style="color:#b8860b">Not included (incomplete pairs): ${skipped.map(esc).join(', ')}</span>` : '');
 }
 
 async function saveTeams(){
