@@ -1107,9 +1107,6 @@ function renderLeagueCatalog(){
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${(l.duprEnabled!==false)?'var(--green-dark)':'var(--danger)'};cursor:pointer" title="When off, this league's matches are NOT submitted to DUPR (they won't count toward ratings)">
         <input type="checkbox" ${(l.duprEnabled!==false)?'checked':''} onchange="toggleLeagueDupr(${i}, this.checked)"/> Counts for DUPR
       </label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${l.premium?'var(--green-dark)':'var(--muted)'};cursor:pointer" title="DUPR+ premium league — requires PREMIUM_L1 entitlement to register">
-        <input type="checkbox" ${l.premium?'checked':''} onchange="toggleLeaguePremium(${i}, this.checked)"/> DUPR+
-      </label>
       <span style="font-size:11px;color:var(--muted)">id: ${l.id}</span>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteLeague(${i})">Delete</button>
     </div>`).join('');
@@ -1124,17 +1121,6 @@ async function toggleLeagueDupr(idx, on){
   if(!ok){ l.duprEnabled = prev; showToast('Could not save — try again'); renderLeagueCatalog(); return; }
   renderLeagueCatalog();
   showToast(on ? `"${l.name}" matches will be submitted to DUPR` : `"${l.name}" is now OFF for DUPR — matches won't count`);
-}
-
-async function toggleLeaguePremium(idx, on){
-  const l = LEAGUES[idx];
-  if(!l) return;
-  const prev = l.premium;
-  l.premium = !!on;
-  const ok = await saveLeagues();
-  if(!ok){ l.premium = prev; showToast('Could not save — try again'); renderLeagueCatalog(); return; }
-  renderLeagueCatalog();
-  showToast(on ? `"${l.name}" marked DUPR+ premium` : `"${l.name}" is no longer premium`);
 }
 
 async function addLeague(){

@@ -34,6 +34,8 @@ h1{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform
 .pill.live{color:#8a6d00;background:rgba(212,167,0,.14)}
 .divrow{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
 .divrow .dname{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--navy)}
+.dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
 .divrow .dmeta{font-size:12px;color:var(--muted)}
 .btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
@@ -259,7 +261,7 @@ function render(){
       const liveBtn = live
         ? `<a class="btn btn-ghost" style="margin-top:8px;display:inline-block;text-decoration:none;font-size:12px;padding:6px 14px" href="dev-tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(d.id)}">${d.phase==='complete'?'View Results':'View Live — Pools & Bracket'}</a>` : '';
       return `<div class="divrow">
-        <div class="dname">${esc(d.name)}${live?` <span style="font-size:11px;font-family:var(--font-display);font-weight:700;text-transform:uppercase;color:${d.phase==='complete'?'var(--muted)':'var(--green-dark)'}">· ${d.phase==='complete'?'finished':'LIVE'}</span>`:''}</div>
+        <div class="dname">${esc(d.name)}${d.duprEnabled!==false?' <span class="dupr-chip" title="Matches in this division count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}${live?` <span style="font-size:11px;font-family:var(--font-display);font-weight:700;text-transform:uppercase;color:${d.phase==='complete'?'var(--muted)':'var(--green-dark)'}">· ${d.phase==='complete'?'finished':'LIVE'}</span>`:''}</div>
         <div class="dmeta">${d.teamType==='doubles'?'Doubles':'Singles'}${d.fee?` · $${d.fee} entry (pay at the event)`:''}${countLabel(n, d)}</div>
         ${liveBtn}
         ${rosterBlock(t, d)}

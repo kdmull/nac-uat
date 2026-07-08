@@ -43,6 +43,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .league-card.selected{border-color:var(--green);background:rgba(76,175,40,.04)}
 .league-card-title{font-family:var(--font-display);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
 .league-card-sub{font-size:13px;color:var(--muted);margin-top:3px}
+.dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark,#3a8c1e);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
 .league-card-type{display:inline-block;margin-top:8px;font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px}
 .type-individual{background:rgba(77,184,232,.15);color:#2a7fa8}
 .type-partner{background:rgba(168,130,255,.15);color:#7a4fd4}
@@ -368,7 +370,7 @@ function renderLeagueSelect(){
         const type = leagueRegType(l.id);
         return `<div class="league-card" onclick='selectLeague(${JSON.stringify(l).replace(/'/g,"&#39;")})'>
           <span class="league-card-check">✓</span>
-          <div class="league-card-title">${l.name}</div>
+          <div class="league-card-title">${l.name}${l.duprEnabled!==false?' <span class="dupr-chip" title="Matches in this league count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}</div>
           <div class="league-card-sub">${l.sub}</div>
           <span class="league-card-type ${type==='partner'?'type-partner':'type-individual'}">${type==='partner'?'Partner Signup':'Individual'}</span>
         </div>`;
@@ -406,7 +408,7 @@ async function selectLeague(league){
     </div>
     <div class="card">
       <div class="selected-league-badge">
-        <span>${league.name}${type==='partner'?' · Partner':' · Individual'}</span>
+        <span>${league.name}${league.duprEnabled!==false?' <span class="dupr-chip"><span class="dot"></span>DUPR</span>':''}${type==='partner'?' · Partner':' · Individual'}</span>
         <button onclick="renderLeagueSelect()" title="Change league">✕</button>
       </div>
       <h2 style="font-size:18px">Your Info</h2>
@@ -433,8 +435,8 @@ function notifyPartner(partnerUserId, byName, league, status){
 }
 
 // Check a player's DUPR entitlements via the dupr-get-entitlements edge function.
-// Returns {eligible, message}. Blocks on missing BASIC_L1, on premium leagues
-// without PREMIUM_L1, and (conservatively) when eligibility can't be verified.
+// Returns {eligible, message}. Blocks on missing BASIC_L1, and (fail-open) when
+// the eligibility check itself can't be reached.
 async function verifyDuprEligibility(duprId, league){
   if(!duprId){
     return { eligible:false, message:'A linked DUPR account is required to register. Please connect DUPR from your dashboard first.' };
@@ -443,7 +445,7 @@ async function verifyDuprEligibility(duprId, league){
     const res = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-entitlements`, {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
-      body: JSON.stringify({ duprId, premiumRequired: !!league.premium })
+      body: JSON.stringify({ duprId })
     });
     const d = await res.json().catch(()=>({}));
     if(!res.ok){
@@ -457,10 +459,6 @@ async function verifyDuprEligibility(duprId, league){
     if(!d.basic){
       return { eligible:false, message:'Your DUPR account is not currently eligible for rated play (missing the BASIC_L1 entitlement). ' +
         'If you believe this is an error, please contact DUPR support.' };
-    }
-    if(league.premium && !d.premium){
-      return { eligible:false, message:'<strong>'+ (league.name||'This league') +'</strong> is a DUPR+ premium league. ' +
-        'Your DUPR account needs the PREMIUM_L1 entitlement (an active DUPR+ membership) to register.' };
     }
     return { eligible:true };
   }catch(e){
@@ -518,8 +516,8 @@ async function confirmRegistration(){
   }
 
   // ── DUPR User Gating ──────────────────────────────────────────────
-  // Every player in a rated league must hold BASIC_L1; DUPR+ premium leagues
-  // additionally require PREMIUM_L1. Verify before creating the membership.
+  // Every player in a rated league must hold BASIC_L1. Verify before
+  // creating the membership.
   const gate = await verifyDuprEligibility(p.dupr_id, selectedLeague);
   if(!gate.eligible){
     btn.disabled=false; btn.textContent = switchMode ? 'Switch to '+selectedLeague.name : 'Register for '+selectedLeague.name;
