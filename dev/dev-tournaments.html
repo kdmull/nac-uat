@@ -50,6 +50,9 @@ select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-ra
 .roster-list{margin:0;padding-left:20px;font-size:13px}
 .roster-list li{padding:2px 0}
 .roster-list.solo{list-style:none;padding-left:0;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px}
+.rmr{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--green-dark);background:rgba(76,175,40,.1);padding:1px 6px;border-radius:4px;margin-left:2px}
+.rmr.none{color:var(--muted);background:var(--surface2);font-weight:600}
+.amp{color:var(--muted);margin:0 2px}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 @media(max-width:600px){.page{padding:1rem}.card{padding:1rem}}
@@ -123,9 +126,32 @@ async function loadCounts(){
     const { data } = await client.from('league_members')
       .select('league_id,user_id,partner_user_id,partner_status,first_name,last_name,partner_name')
       .in('league_id', ids).eq('status','active');
+    const rows_ = data || [];
     const byDiv = {};
-    (data||[]).forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
+    rows_.forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
     const nm = r => `${r.first_name||''} ${(r.last_name||'')[0]||''}.`.trim() || 'Player';
+
+    // DUPR ratings for everyone registered: user_id → dupr_id → rating
+    const uids = [...new Set(rows_.map(r => r.user_id).filter(Boolean))];
+    const duprByUser = {}, ratingByDupr = {};
+    if(uids.length){
+      try{
+        const { data: profs } = await client.from('profiles').select('id,dupr_id').in('id', uids);
+        (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
+        const dids = [...new Set(Object.values(duprByUser))];
+        if(dids.length){
+          const { data: rts } = await client.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+          (rts||[]).forEach(x => ratingByDupr[x.dupr_id] = x);
+        }
+      }catch(e){}
+    }
+    const rateOf = (uid, teamType) => {
+      const row = ratingByDupr[duprByUser[uid]];
+      if(!row) return null;
+      const v = parseFloat(teamType === 'singles' ? row.singles : row.doubles);
+      return isNaN(v) ? null : v;
+    };
+    const player = (r, teamType) => ({ name: nm(r), rating: rateOf(r.user_id, teamType), duprId: duprByUser[r.user_id] || null });
 
     CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => {
       const key = dLeague(t,d);
@@ -133,7 +159,8 @@ async function loadCounts(){
       rosters[key] = { teams: [], solo: [] };
       if(!rows.length){ counts[key] = { teams: 0, solo: 0 }; return; }
       if(d.teamType !== 'doubles'){
-        rosters[key].teams = rows.map(nm).sort();
+        rosters[key].teams = rows.map(r => ({ players:[player(r, d.teamType)] }));
+        rosters[key].teams.sort((a,b) => (b.players[0].rating ?? -1) - (a.players[0].rating ?? -1));
         counts[key] = { teams: rows.length, solo: 0 };
         return;
       }
@@ -144,12 +171,17 @@ async function loadCounts(){
           if(seen.has(pair)) return;
           seen.add(pair);
           const mate = rows.find(x => x.user_id === r.partner_user_id);
-          rosters[key].teams.push(`${nm(r)} & ${mate ? nm(mate) : (r.partner_name || '?')}`);
+          const players = [player(r, d.teamType)];
+          players.push(mate ? player(mate, d.teamType) : { name: r.partner_name || '?', rating: null, duprId: null });
+          rosters[key].teams.push({ players });
         } else {
-          rosters[key].solo.push(nm(r) + (r.partner_status === 'pending' ? ' (partner pending)' : ''));
+          rosters[key].solo.push({ ...player(r, d.teamType), pending: r.partner_status === 'pending' });
         }
       });
-      rosters[key].teams.sort(); rosters[key].solo.sort();
+      // Strongest teams first (by average DUPR, unrated last) — mirrors seeding.
+      const avg = tm => { const rs = tm.players.map(p=>p.rating).filter(v=>v!=null); return rs.length ? rs.reduce((a,b)=>a+b,0)/rs.length : -1; };
+      rosters[key].teams.sort((a,b) => avg(b) - avg(a));
+      rosters[key].solo.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
       counts[key] = { teams: rosters[key].teams.length, solo: rosters[key].solo.length };
     }));
   }catch(e){}
@@ -180,8 +212,14 @@ function rosterBlock(t, d){
   const label = open ? 'Hide who\'s registered' : `See who's registered (${c.teams} ${unit}${c.teams===1?'':'s'})`;
   let body = '';
   if(open){
-    const items = r.teams.map(n => `<li>${esc(n)}</li>`).join('');
-    const solos = r.solo.map(n => `<li style="color:var(--muted)">${esc(n)} <em style="font-size:11px">· looking for a partner</em></li>`).join('');
+    const pl = p => {
+      const rate = p.rating != null
+        ? `<span class="rmr">${p.rating.toFixed(2)}</span>`
+        : `<span class="rmr none" title="No DUPR rating yet">NR</span>`;
+      return `${esc(p.name)} ${rate}`;
+    };
+    const items = r.teams.map(tm => `<li>${tm.players.map(pl).join(' <span class="amp">&amp;</span> ')}</li>`).join('');
+    const solos = r.solo.map(p => `<li style="color:var(--muted)">${pl(p)} <em style="font-size:11px">· ${p.pending?'partner pending':'looking for a partner'}</em></li>`).join('');
     body = `<div class="roster">
       ${items ? `<ol class="roster-list">${items}</ol>` : '<p style="color:var(--muted);font-size:13px;margin:0">No complete teams yet.</p>'}
       ${solos ? `<ul class="roster-list solo">${solos}</ul>` : ''}
