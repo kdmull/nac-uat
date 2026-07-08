@@ -58,6 +58,9 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .t-badge.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
 .t-badge.live{color:#8a6d00;background:rgba(212,167,0,.16)}
 .t-badge.done{color:var(--muted);background:var(--surface2)}
+.t-badge.division{color:var(--navy);background:rgba(26,42,108,.09);text-transform:none;letter-spacing:.2px;font-weight:600;align-self:auto}
+.t-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.t-divs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 @media(max-width:600px){
   nav{padding:0 1rem}
   .nav-greeting{display:none}
@@ -190,11 +193,17 @@ async function renderTournamentCards(){
                 : done ? '<span class="t-badge done">Finished</span>'
                 : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
     const meta = [t.date, t.location].filter(Boolean).join(' · ');
-    const dcount = divs.length ? `${divs.length} division${divs.length!==1?'s':''}` : '';
+    const clean = v => String(v||'').replace(/[<>&]/g,'');
+    const divBadges = divs.length
+      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}</span>`).join('')}</div>`
+      : '';
     return `<a class="league-card" href="${href}">
-      <div class="league-card-title">${String(t.name||'').replace(/[<>&]/g,'')}</div>
-      <div class="league-card-sub">${[meta, dcount].filter(Boolean).join(' · ')}</div>
-      ${badge}
+      <div class="t-title-row">
+        <span class="league-card-title">${clean(t.name)}</span>
+        ${badge}
+      </div>
+      ${meta ? `<div class="league-card-sub">${clean(meta)}</div>` : ''}
+      ${divBadges}
     </a>`;
   }).join('');
   if(!cards) return;
