@@ -54,6 +54,10 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
 .league-card-title{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
 .league-card-sub{font-size:13px;color:var(--muted)}
+.t-badge{align-self:flex-start;font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px;margin-top:2px}
+.t-badge.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.t-badge.live{color:#8a6d00;background:rgba(212,167,0,.16)}
+.t-badge.done{color:var(--muted);background:var(--surface2)}
 @media(max-width:600px){
   nav{padding:0 1rem}
   .nav-greeting{display:none}
@@ -99,8 +103,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 
   <!-- Sign-in prompt (logged-out only) -->
   <div class="signin-card" id="signin-card">
-    <h2>Join a League</h2>
-    <p>Sign in or create an account to register for leagues and connect your DUPR rating.</p>
+    <h2>Join a League or Tournament</h2>
+    <p>Sign in or create an account to register for leagues and tournaments, and connect your DUPR rating.</p>
     <div class="actions">
       <a class="btn btn-navy" href="dev-auth.html">Sign In</a>
       <a class="btn btn-green" href="dev-auth.html">Create Account</a>
@@ -109,6 +113,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 
   <div class="section-label">View Leagues</div>
   <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
+
+  <div id="tournaments-section" style="display:none;margin-top:2rem">
+    <div class="section-label">Tournaments</div>
+    <div class="leagues-grid" id="tournaments-grid"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -155,6 +164,44 @@ async function renderLeagueCards(){
     </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
 }
 renderLeagueCards();
+
+// Tournaments: same card look as leagues. Live divisions link straight to the
+// live pools/bracket view; otherwise the card goes to the tournaments page.
+async function renderTournamentCards(){
+  const sec = document.getElementById('tournaments-section');
+  const grid = document.getElementById('tournaments-grid');
+  if(!sec || !grid || !sb) return;
+  let list = [];
+  try{
+    const { data } = await sb.from('pb_league').select('value').eq('key','nac_tournaments').maybeSingle();
+    list = (data && data.value && Array.isArray(data.value.tournaments)) ? data.value.tournaments : [];
+  }catch(e){ return; }                       // no tournaments table/data — stay hidden
+  if(!list.length) return;
+
+  const cards = list.map(t => {
+    const divs = t.divisions || [];
+    const live = divs.some(d => d.phase==='pools' || d.phase==='knockout');
+    const done = divs.length && divs.every(d => d.phase==='complete');
+    const liveDiv = divs.find(d => d.phase==='pools' || d.phase==='knockout') || divs.find(d => d.phase==='complete');
+    const href = (live || done) && liveDiv
+      ? `dev-tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(liveDiv.id)}`
+      : 'dev-tournaments.html';
+    const badge = live ? '<span class="t-badge live">Live Now</span>'
+                : done ? '<span class="t-badge done">Finished</span>'
+                : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
+    const meta = [t.date, t.location].filter(Boolean).join(' · ');
+    const dcount = divs.length ? `${divs.length} division${divs.length!==1?'s':''}` : '';
+    return `<a class="league-card" href="${href}">
+      <div class="league-card-title">${String(t.name||'').replace(/[<>&]/g,'')}</div>
+      <div class="league-card-sub">${[meta, dcount].filter(Boolean).join(' · ')}</div>
+      ${badge}
+    </a>`;
+  }).join('');
+  if(!cards) return;
+  grid.innerHTML = cards;
+  sec.style.display = '';
+}
+renderTournamentCards();
 
 window.addEventListener('DOMContentLoaded', async () => {
   if(!sb) return;  // client unavailable — leagues render from fallback; nav stays default
