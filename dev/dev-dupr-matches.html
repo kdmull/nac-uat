@@ -159,7 +159,7 @@ async function loadAll(){
   if(sLabel && currentSeason) sLabel.textContent = `Season: ${currentSeason.name}. All completed matches across every league — submit, update, or remove in DUPR.`;
 
   PAGE = {};
-  const leagues = seasonLeagues(currentSeason);
+  const leagues = seasonLeagues(currentSeason).filter(lg => lg.duprEnabled !== false);
   for(const lg of leagues){
     let sched = [];
     try{ const res = await dbGet(seasonKey(lg.key, currentSeason.id)); sched = (res.data && res.data.schedule) || []; }catch(e){}
@@ -184,7 +184,7 @@ async function loadAll(){
         });
       });
     }
-    PAGE[lg.id] = { league:lg, schedule:sched, idMap, matches };
+    PAGE[lg.id] = { league:lg, schedule:sched, idMap, matches, duprEnabled: lg.duprEnabled !== false };
   }
 
   await loadTournamentMatches();
@@ -199,6 +199,7 @@ async function loadTournamentMatches(){
 
   for(const t of cat){
     for(const d of (t.divisions || [])){
+      if(d.duprEnabled === false) continue;   // this division doesn't count for DUPR
       let DIV = null;
       try{ const r = await dbGet(`tourney_${t.id}_${d.id}`); DIV = (r.data && r.data.teams) ? r.data : null; }catch(e){}
       if(!DIV || !DIV.teams || !DIV.teams.length) continue;
@@ -277,7 +278,7 @@ async function loadTournamentMatches(){
       if(matches.length){
         PAGE[pseudoKey] = {
           league: { id: pseudoKey, key: leagueKey, name: `🏆 ${t.name} — ${d.name}` },
-          schedule, idMap, matches, isTournament: true
+          schedule, idMap, matches, isTournament: true, duprEnabled: d.duprEnabled !== false
         };
       }
     }
@@ -436,6 +437,7 @@ async function doSubmit(leagueId, week, matchNum, idSuffix){
     leagueKey: P.league.key, leagueName: P.league.name,
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
     identifier: row ? row.identifier : undefined,   // tournaments carry a custom id
+    duprEnabled: P.duprEnabled,
     idSuffix: idSuffix || undefined,
   });
   if(!d.success) console.error('DUPR SUBMIT failed:', d);

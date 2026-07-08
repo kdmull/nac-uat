@@ -1104,12 +1104,26 @@ function renderLeagueCatalog(){
       <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy);min-width:160px">${l.name}</span>
       <span style="font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;background:${l.type==='doubles'?'rgba(26,42,108,.08)':'rgba(76,175,40,.12)'};color:${l.type==='doubles'?'var(--navy)':'var(--green-dark)'}">${l.type}</span>
       <span style="flex:1;font-size:12px;color:var(--muted)">${l.sub||''}</span>
+      <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${(l.duprEnabled!==false)?'var(--green-dark)':'var(--danger)'};cursor:pointer" title="When off, this league's matches are NOT submitted to DUPR (they won't count toward ratings)">
+        <input type="checkbox" ${(l.duprEnabled!==false)?'checked':''} onchange="toggleLeagueDupr(${i}, this.checked)"/> Counts for DUPR
+      </label>
       <label style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${l.premium?'var(--green-dark)':'var(--muted)'};cursor:pointer" title="DUPR+ premium league — requires PREMIUM_L1 entitlement to register">
         <input type="checkbox" ${l.premium?'checked':''} onchange="toggleLeaguePremium(${i}, this.checked)"/> DUPR+
       </label>
       <span style="font-size:11px;color:var(--muted)">id: ${l.id}</span>
       <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteLeague(${i})">Delete</button>
     </div>`).join('');
+}
+
+async function toggleLeagueDupr(idx, on){
+  const l = LEAGUES[idx];
+  if(!l) return;
+  const prev = l.duprEnabled;
+  l.duprEnabled = !!on;
+  const ok = await saveLeagues();
+  if(!ok){ l.duprEnabled = prev; showToast('Could not save — try again'); renderLeagueCatalog(); return; }
+  renderLeagueCatalog();
+  showToast(on ? `"${l.name}" matches will be submitted to DUPR` : `"${l.name}" is now OFF for DUPR — matches won't count`);
 }
 
 async function toggleLeaguePremium(idx, on){
@@ -1438,6 +1452,9 @@ function renderDivisions(){
           <select class="inp" id="ed-pool">${poolOptions(divPoolValue(d))}</select>
           <select class="inp" id="ed-adv">${advOptions(d.advance)}</select>
           <input class="inp" id="ed-fee" type="number" min="0" value="${d.fee||''}" placeholder="Fee $" style="width:86px"/>
+          <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${(d.duprEnabled!==false)?'var(--green-dark)':'var(--danger)'};cursor:pointer" title="When off, this division's matches are NOT submitted to DUPR">
+            <input type="checkbox" id="ed-dupr" ${(d.duprEnabled!==false)?'checked':''}/> Counts for DUPR
+          </label>
           <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="saveDivisionEdit(${i})">Save</button>
           <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editingDivision=null;renderDivisions()">Cancel</button>
         </div>
@@ -1448,7 +1465,7 @@ function renderDivisions(){
     return `
     <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
       <span class="tname" style="font-size:15px">${esc(d.name)}</span>
-      <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}</span>
+      <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}${d.duprEnabled===false?' · <span style="color:var(--danger);font-weight:700">DUPR OFF</span>':''}</span>
       <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
       <span style="margin-left:auto"></span>
       <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();editingDivision=${i};renderDivisions()">Edit</button>
@@ -1470,6 +1487,7 @@ async function saveDivisionEdit(i){
   d.poolSize  = poolVal.startsWith('n') ? null : parseInt(poolVal,10);
   d.advance  = parseInt(document.getElementById('ed-adv').value,10);
   d.fee      = parseFloat(document.getElementById('ed-fee').value) || 0;
+  d.duprEnabled = document.getElementById('ed-dupr').checked;
   editingDivision = null;
   if(await saveCatalog()){
     if(curD && curD.id === d.id){ curD = d; renderDivisionDetail(); }
@@ -1488,6 +1506,7 @@ async function addDivision(){
     poolSize:  poolVal.startsWith('n') ? null : parseInt(poolVal,10),
     advance: parseInt(document.getElementById('new-d-adv').value,10),
     fee: parseFloat(document.getElementById('new-d-fee').value)||0,
+    duprEnabled: true,
     format: 'pool_knockout', phase: 'draft' };
   if((curT.divisions||[]).some(x=>x.id===d.id)){ showToast('A division with that name already exists'); return; }
   curT.divisions = curT.divisions || [];
