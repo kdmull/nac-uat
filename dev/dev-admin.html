@@ -137,11 +137,17 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 .pool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .pool-card{border:1px solid var(--border);border-radius:var(--radius);padding:12px}
 .pool-card h4{font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
-.br-round{display:inline-block;vertical-align:top;margin-right:22px;min-width:210px}
-.br-round h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-.br-match{border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:13px;background:var(--white)}
-.br-team{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
-.br-team.w{font-weight:700;color:var(--green-dark)}
+.bkt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem}
+.bkt{position:relative}
+.bkt-head{position:absolute;font-family:var(--font-display);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center}
+.bkt-match{position:absolute;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(26,42,108,.06)}
+.bkt-match.done{border-color:rgba(76,175,40,.5)}
+.bkt-team{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 9px;font-size:13px;line-height:1.25}
+.bkt-team+.bkt-team{border-top:1px solid var(--border)}
+.bkt-team.w{background:rgba(76,175,40,.08);font-weight:700;color:var(--green-dark)}
+.bkt-team .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bkt-team .bye{color:var(--muted);font-style:italic}
+.bkt-line{position:absolute;background:rgba(26,42,108,.2)}
 </style>
 </head>
 <body>
@@ -1498,22 +1504,7 @@ function renderDivisionDetail(){
   }
 
   if(DIV.phase === 'knockout' || DIV.phase === 'complete'){
-    html += `<div style="overflow-x:auto;margin-top:1.25rem;padding-bottom:.5rem">` +
-      DIV.bracket.rounds.map((round,ri) => {
-        const cells = round.map((m,mi) => {
-          const w = teBracketWinner(m);
-          const locked = DIV.phase==='complete';
-          const inp = (side) => (m.t1!==null&&m.t2!==null)
-            ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${locked?'disabled':''} onchange="setBracketScore(${ri},${mi},'${side}',this.value)"/>`
-            : '';
-          return `<div class="br-match">
-            <div class="br-team ${w!==null&&w===m.t1?'w':''}"><span>${teamLabel(m.t1)}</span>${inp('s1')}</div>
-            <div class="br-team ${w!==null&&w===m.t2?'w':''}"><span>${m.t2===null&&m.t1!==null?'<em style="color:var(--muted)">bye</em>':teamLabel(m.t2)}</span>${inp('s2')}</div>
-          </div>`;
-        }).join('');
-        return `<div class="br-round"><h4>${teRoundName(DIV.bracket.size,ri,DIV.bracket.rounds.length)}</h4>${cells}</div>`;
-      }).join('') + `</div>`;
-
+    html += adminBracketHTML();
     const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
     if(champ !== null) html += `<p style="font-family:var(--font-display);font-size:20px;font-weight:900;color:var(--green-dark);margin-top:.5rem">🏆 Champion: ${teamLabel(champ)}</p>`;
     if(DIV.phase === 'knockout'){
@@ -1574,32 +1565,80 @@ async function loadRegistered(){
         const name = `${nm(r)} & ${mate ? nm(mate) : (r.partner_name||'?')}`;
         const ra = rateOf(r.user_id), rb = rateOf(r.partner_user_id);
         const rating = (ra!=null && rb!=null) ? (ra+rb)/2 : (ra ?? rb ?? null);
-        entries.push({ name, rating });
+        entries.push({ name, rating, duprIds:[duprByUser[r.user_id], duprByUser[r.partner_user_id]].filter(Boolean) });
       } else {
         skipped.push(`${nm(r)}${r.partner_name ? ' (partner "'+r.partner_name+'" pending)' : ' (no partner)'}`);
       }
     });
   } else {
-    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id) }));
+    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id), duprIds:[duprByUser[r.user_id]].filter(Boolean) }));
   }
 
   entries.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
+  window.__loadedEntries = {}; entries.forEach(e => window.__loadedEntries[e.name] = e);
   document.getElementById('teams-input').value = entries.map(e => e.name).join('\n');
   notes.innerHTML =
     `Loaded <strong>${entries.length}</strong> ${curD.teamType==='doubles'?'team(s)':'player(s)'}, seeded by DUPR ${curD.teamType==='singles'?'singles':'doubles'} rating (unrated last). Reorder lines to adjust seeding.` +
     (skipped.length ? `<br><span style="color:#b8860b">Not included (incomplete pairs): ${skipped.map(esc).join(', ')}</span>` : '');
 }
 
+// Carry DUPR rating/ids onto a team, from the last "Load Registered" pull or a
+// previous save, so the public standings can show a DUPR column.
+function teamMeta(name, i){
+  const loaded = (window.__loadedEntries || {})[name];
+  const prev = (DIV.teams || []).find(t => t.name === name);
+  const src = loaded || prev || {};
+  return { name, seed: i+1, rating: src.rating ?? null, duprIds: src.duprIds || [] };
+}
+
+// Real bracket: positioned match boxes + elbow connectors (matches the public page).
+function adminBracketHTML(){
+  const B = DIV.bracket, R = B.rounds.length;
+  const W = 210, GX = 46, H = 62, GY = 16, TOP = 26;
+  const totalH = B.rounds[0].length * (H + GY);
+  const totalW = R * (W + GX) - GX + 6;
+  const editable = DIV.phase === 'knockout';
+  const centerY = (r,i) => { const sp=(H+GY)*Math.pow(2,r); return TOP + i*sp + (sp-H)/2 + H/2; };
+  let html = `<div class="bkt-wrap"><div class="bkt" style="width:${totalW}px;height:${totalH+TOP+10}px;min-width:${totalW}px">`;
+  for(let r=0; r<R-1; r++){
+    const x = r*(W+GX), midX = x + W + GX/2;
+    B.rounds[r+1].forEach((_, j) => {
+      const yA = centerY(r,2*j), yB = centerY(r,2*j+1), yN = centerY(r+1,j);
+      html += `<div class="bkt-line" style="left:${x+W}px;top:${yA}px;width:${GX/2}px;height:2px"></div>`
+           +  `<div class="bkt-line" style="left:${x+W}px;top:${yB}px;width:${GX/2}px;height:2px"></div>`
+           +  `<div class="bkt-line" style="left:${midX}px;top:${yA}px;width:2px;height:${yB-yA}px"></div>`
+           +  `<div class="bkt-line" style="left:${midX}px;top:${yN}px;width:${GX/2}px;height:2px"></div>`;
+    });
+  }
+  B.rounds.forEach((round, r) => {
+    const x = r*(W+GX);
+    html += `<div class="bkt-head" style="left:${x}px;top:0;width:${W}px">${teRoundName(B.size,r,R)}</div>`;
+    round.forEach((m, i) => {
+      const top = centerY(r,i) - H/2, w = teBracketWinner(m);
+      const both = m.t1!==null && m.t2!==null;
+      const inp = side => both ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${r},${i},'${side}',this.value)"/>` : '';
+      const other = side => side==='s1' ? m.t2 : m.t1;
+      const row = (slot,side) => {
+        const label = slot !== null ? teamLabel(slot)
+          : (r===0 && other(side)!==null ? '<span class="bye">bye</span>' : '<span style="color:var(--muted)">TBD</span>');
+        return `<div class="bkt-team ${(w!==null&&slot!==null&&w===slot)?'w':''}"><span class="nm">${label}</span>${inp(side)}</div>`;
+      };
+      html += `<div class="bkt-match ${w!==null?'done':''}" style="left:${x}px;top:${top}px;width:${W}px">${row(m.t1,'s1')}${row(m.t2,'s2')}</div>`;
+    });
+  });
+  return html + `</div></div>`;
+}
+
 async function saveTeams(){
   const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
-  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  DIV.teams = lines.map((name,i) => teamMeta(name, i));
   if(await saveDiv()) showToast(`Saved ${DIV.teams.length} ${curD.teamType==='doubles'?'teams':'players'}`);
 }
 
 async function generatePools(){
   const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
   if(lines.length < 3){ showToast('Need at least 3 entries'); return; }
-  DIV.teams = lines.map((name,i) => ({ name, seed: i+1 }));
+  DIV.teams = lines.map((name,i) => teamMeta(name, i));
   DIV.pools = curD.poolCount
     ? teSeedPoolsN(DIV.teams.length, curD.poolCount)
     : teSeedPools(DIV.teams.length, curD.poolSize || 4);

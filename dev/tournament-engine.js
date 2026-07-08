@@ -79,15 +79,15 @@ function teMatchResult(m){
 // Standings for one pool: matches won → point diff → points for → seed.
 function tePoolStandings(poolIdx, pools, poolMatches, teams){
   const rows = {};
-  pools[poolIdx].forEach(t => rows[t] = { team:t, played:0, won:0, lost:0, pf:0, pa:0 });
+  pools[poolIdx].forEach(t => rows[t] = { team:t, played:0, won:0, lost:0, pf:0, pa:0, streak:[] });
   poolMatches.filter(m => m.pool === poolIdx).forEach(m => {
     const r = teMatchResult(m);
     if(!r.complete) return;
     rows[m.t1].played++; rows[m.t2].played++;
     rows[m.t1].pf += r.pf1; rows[m.t1].pa += r.pf2;
     rows[m.t2].pf += r.pf2; rows[m.t2].pa += r.pf1;
-    if(r.winner === m.t1){ rows[m.t1].won++; rows[m.t2].lost++; }
-    else if(r.winner === m.t2){ rows[m.t2].won++; rows[m.t1].lost++; }
+    if(r.winner === m.t1){ rows[m.t1].won++; rows[m.t2].lost++; rows[m.t1].streak.push('W'); rows[m.t2].streak.push('L'); }
+    else if(r.winner === m.t2){ rows[m.t2].won++; rows[m.t1].lost++; rows[m.t2].streak.push('W'); rows[m.t1].streak.push('L'); }
   });
   return Object.values(rows).sort((a,b) =>
     b.won - a.won ||

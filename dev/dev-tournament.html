@@ -44,11 +44,41 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 table.g tr:last-child td{border-bottom:none}
 .score-in{width:44px;padding:5px;border:1.5px solid var(--border);border-radius:6px;text-align:center;font-size:13px}
 .score-in:disabled{background:var(--surface);color:var(--muted)}
-.br-round{display:inline-block;vertical-align:top;margin-right:20px;min-width:200px}
-.br-round h4{font-family:var(--font-display);font-size:13px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-.br-match{border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:13px;background:var(--white)}
-.br-team{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
-.br-team.w{font-weight:700;color:var(--green-dark)}
+/* ── Standings table (identical to the league page) ── */
+.standings-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 4px rgba(26,42,108,.06)}
+.standings-table thead{background:var(--navy)}
+.standings-table th{font-family:var(--font-display);font-weight:700;font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.7);padding:11px 14px;text-align:left;border-bottom:none}
+.standings-table th.num{text-align:center}
+.standings-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.standings-table td.num{text-align:center;font-weight:600}
+.standings-table tbody tr:last-child td{border-bottom:none}
+.standings-table tbody tr:hover{background:var(--surface)}
+.playoff-row{background:rgba(76,175,40,.05)}.playoff-row:hover{background:rgba(76,175,40,.1)!important}
+.playoff-row td:first-child{border-left:3px solid var(--green)}
+.cutline-row td{border-top:2px dashed rgba(76,175,40,.4)!important}
+.playoff-badge{display:inline-block;font-family:var(--font-display);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--green-dark);background:rgba(76,175,40,.12);padding:1px 6px;border-radius:3px;margin-left:6px;vertical-align:middle}
+.rank{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--muted);white-space:nowrap;display:block;text-align:center}
+.rank-1{color:#d4a017}.rank-2{color:#8a8a8a}.rank-3{color:#a0522d}
+.player-name{font-weight:600;font-size:15px;color:var(--navy)}
+.win-pct{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy)}
+.streak-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;font-family:var(--font-display);letter-spacing:.3px}
+.streak-w{color:var(--green-dark);background:rgba(76,175,40,.12)}.streak-l{color:var(--danger);background:rgba(217,59,59,.1)}
+.pts-diff{font-size:13px}.pts-diff.pos{color:var(--green-dark)}.pts-diff.neg{color:var(--danger)}
+.dupr-link{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)}
+
+/* ── Real knockout bracket (JS-positioned, with connector lines) ── */
+.bkt-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:.5rem}
+.bkt{position:relative}
+.bkt-head{position:absolute;font-family:var(--font-display);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center}
+.bkt-match{position:absolute;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(26,42,108,.06)}
+.bkt-match.done{border-color:rgba(76,175,40,.5)}
+.bkt-team{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 9px;font-size:13px;line-height:1.25}
+.bkt-team+.bkt-team{border-top:1px solid var(--border)}
+.bkt-team.w{background:rgba(76,175,40,.08);font-weight:700;color:var(--green-dark)}
+.bkt-team .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bkt-team .bye{color:var(--muted);font-style:italic}
+.bkt-line{position:absolute;background:rgba(26,42,108,.2)}
+.bkt-champ{position:absolute;font-family:var(--font-display);font-weight:900;color:var(--green-dark);white-space:nowrap}
 .btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent}
 .btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
 .btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
@@ -178,6 +208,115 @@ async function reloadDiv(){
 }
 
 // ── Rendering ─────────────────────────────────────────
+function duprCell(team){
+  if(!team || !team.duprIds || !team.duprIds.length || team.rating == null)
+    return `<span style="font-size:11px;color:var(--muted)">—</span>`;
+  const val = (typeof team.rating === 'number') ? team.rating.toFixed(2) : team.rating;
+  if(team.duprIds.length === 1)
+    return `<a href="https://dashboard.dupr.com/dashboard/player/${team.duprIds[0]}" target="_blank" rel="noopener" class="dupr-link">${val}</a>`;
+  return `<span class="dupr-link" style="border-bottom-style:dotted" title="Team average of ${team.duprIds.length} DUPR ratings">${val}</span>`;
+}
+
+function standingsTable(pi){
+  const st = tePoolStandings(pi, DIV.pools, DIV.poolMatches, DIV.teams);
+  const rows = st.map((r,i) => {
+    const tot = r.won + r.lost, pct = tot ? r.won/tot : 0, diff = r.pf - r.pa;
+    const rc = i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const dc = diff>0?'pos':diff<0?'neg':'';
+    const last = r.streak[r.streak.length-1];
+    const streak = r.streak.slice(-3).join('') || '—';
+    const adv = i < D.advance, cut = i === D.advance;
+    return `<tr class="${adv?'playoff-row':''}${cut?' cutline-row':''}">
+      <td><span class="rank ${rc}">${i+1}</span></td>
+      <td class="num">${duprCell(DIV.teams[r.team])}</td>
+      <td><span class="player-name">${teamLabel(r.team)}</span>${adv?'<span class="playoff-badge">Advances</span>':''}</td>
+      <td class="num">${r.won}</td><td class="num">${r.lost}</td>
+      <td class="num"><span class="win-pct">${Math.round(pct*100)}%</span></td>
+      <td class="num"><span class="pts-diff ${dc}">${diff>0?'+':''}${diff}</span></td>
+      <td class="num">${streak!=='—'?`<span class="streak-badge ${last==='W'?'streak-w':'streak-l'}">${streak}</span>`:'—'}</td>
+    </tr>`;
+  }).join('');
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+    <table class="standings-table" style="border:none;border-radius:0">
+      <thead><tr>
+        <th style="width:52px;white-space:nowrap">#</th>
+        <th class="num" style="width:72px">DUPR</th>
+        <th>${D.teamType==='doubles'?'Team':'Player'}</th>
+        <th class="num">W</th><th class="num">L</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function poolMatchTable(pi){
+  const editable = canScore && DIV.phase==='pools';
+  const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
+  const rows = ms.map(({m,mi}) => {
+    const g = m.games[0];
+    return `<tr><td style="text-align:right">${teamLabel(m.t1)}</td>
+      <td style="white-space:nowrap;text-align:center">
+        <input class="score-in" type="number" min="0" value="${g.s1??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s1',this.value)"/>
+        <input class="score-in" type="number" min="0" value="${g.s2??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s2',this.value)"/>
+      </td>
+      <td>${teamLabel(m.t2)}</td></tr>`;
+  }).join('');
+  return `<table class="g" style="margin-top:10px"><thead><tr><th style="text-align:right">Team</th><th style="text-align:center">Score</th><th>Team</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// A real bracket: JS-positioned match boxes with elbow connectors between rounds.
+function bracketHTML(){
+  const B = DIV.bracket, R = B.rounds.length;
+  const W = 210, GX = 46, H = 62, GY = 16, TOP = 26;
+  const rowsR0 = B.rounds[0].length;
+  const totalH = rowsR0 * (H + GY);
+  const totalW = R * (W + GX) - GX + 6;
+  const editable = canScore && DIV.phase==='knockout';
+  const centerY = (r,i) => { const sp=(H+GY)*Math.pow(2,r); return TOP + i*sp + (sp-H)/2 + H/2; };
+
+  let html = `<div class="bkt-wrap"><div class="bkt" style="width:${totalW}px;height:${totalH+TOP+10}px;min-width:${totalW}px">`;
+
+  // connector elbows: each next-round match joins its two feeders
+  for(let r=0; r<R-1; r++){
+    const x = r*(W+GX);
+    const midX = x + W + GX/2;
+    B.rounds[r+1].forEach((_, j) => {
+      const yA = centerY(r, 2*j), yB = centerY(r, 2*j+1), yN = centerY(r+1, j);
+      html += `<div class="bkt-line" style="left:${x+W}px;top:${yA}px;width:${GX/2}px;height:2px"></div>`;
+      html += `<div class="bkt-line" style="left:${x+W}px;top:${yB}px;width:${GX/2}px;height:2px"></div>`;
+      html += `<div class="bkt-line" style="left:${midX}px;top:${yA}px;width:2px;height:${yB-yA}px"></div>`;
+      html += `<div class="bkt-line" style="left:${midX}px;top:${yN}px;width:${GX/2}px;height:2px"></div>`;
+    });
+  }
+
+  // round headers + match boxes
+  B.rounds.forEach((round, r) => {
+    const x = r*(W+GX);
+    html += `<div class="bkt-head" style="left:${x}px;top:0;width:${W}px">${teRoundName(B.size,r,R)}</div>`;
+    round.forEach((m, i) => {
+      const top = centerY(r,i) - H/2;
+      const w = teBracketWinner(m);
+      const both = m.t1!==null && m.t2!==null;
+      const inp = side => both ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${r},${i},'${side}',this.value)"/>` : '';
+      const other = side => side==='s1' ? m.t2 : m.t1;
+      const teamRow = (slot,side) => {
+        // A null slot in round 1 opposite a real team is a bye; later rounds it's TBD.
+        const label = slot !== null ? teamLabel(slot)
+          : (r===0 && other(side)!==null ? '<span class="bye">bye</span>' : '<span style="color:var(--muted)">TBD</span>');
+        return `<div class="bkt-team ${(w!==null&&slot!==null&&w===slot)?'w':''}">
+          <span class="nm">${label}</span>${inp(side)}</div>`;
+      };
+      html += `<div class="bkt-match ${w!==null?'done':''}" style="left:${x}px;top:${top}px;width:${W}px">
+        ${teamRow(m.t1,'s1')}${teamRow(m.t2,'s2')}</div>`;
+    });
+  });
+
+  const champ = teBracketComplete(B) ? teBracketWinner(B.rounds[R-1][0]) : null;
+  html += `</div></div>`;
+  if(champ !== null) html += `<p class="champ">🏆 Champion: ${teamLabel(champ)}</p>`;
+  return html;
+}
+
 function render(){
   const el = document.getElementById('view');
   if(!DIV){
@@ -187,56 +326,17 @@ function render(){
   let html = `<div style="display:flex;justify-content:flex-end;margin-bottom:.5rem">
     <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="reloadDiv()">↻ Refresh</button></div>`;
 
-  // Pools + standings
   if(DIV.pools && DIV.pools.length){
-    html += `<div class="section"><h3>Pool Play</h3><div class="pool-grid">` +
-      DIV.pools.map((pool,pi) => {
-        const st = tePoolStandings(pi, DIV.pools, DIV.poolMatches, DIV.teams);
-        const standRows = st.map((r,place) => `<tr>
-          <td style="font-weight:${place<D.advance?'700':'400'};color:${place<D.advance?'var(--green-dark)':'inherit'}">${teamLabel(r.team)}</td>
-          <td>${r.won}-${r.lost}</td><td>${r.pf-r.pa>0?'+':''}${r.pf-r.pa}</td></tr>`).join('');
-        const ms = DIV.poolMatches.map((m,mi)=>({m,mi})).filter(x=>x.m.pool===pi);
-        const editable = canScore && DIV.phase==='pools';
-        const matchRows = ms.map(({m,mi}) => {
-          const g = m.games[0];
-          return `<tr><td>${teamLabel(m.t1)}</td>
-            <td style="white-space:nowrap"><input class="score-in" type="number" min="0" value="${g.s1??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s1',this.value)"/>
-                <input class="score-in" type="number" min="0" value="${g.s2??''}" ${editable?'':'disabled'} onchange="setPoolScore(${mi},'s2',this.value)"/></td>
-            <td>${teamLabel(m.t2)}</td></tr>`;
-        }).join('');
-        return `<div class="pool-card"><h4>Pool ${String.fromCharCode(65+pi)}</h4>
-          <table class="g"><thead><tr><th>Team</th><th>W-L</th><th>+/-</th></tr></thead><tbody>${standRows}</tbody></table>
-          <div style="height:8px"></div>
-          <table class="g"><thead><tr><th></th><th>Score</th><th></th></tr></thead><tbody>${matchRows}</tbody></table>
-        </div>`;
-      }).join('') + `</div>`;
-    if(DIV.phase==='pools'){
-      html += `<p style="color:var(--muted);font-size:12px;margin-top:.75rem">Top ${D.advance} in each pool (highlighted) advance to the knockout bracket.</p>`;
-    }
-    html += `</div>`;
+    html += DIV.pools.map((_,pi) => `<div class="section">
+      <h3>Pool ${String.fromCharCode(65+pi)}${DIV.pools.length===1?' — Standings':''}</h3>
+      ${standingsTable(pi)}
+      ${poolMatchTable(pi)}
+    </div>`).join('');
+    if(DIV.phase==='pools')
+      html += `<p style="color:var(--muted);font-size:12px;margin:-.5rem 0 1rem">Top ${D.advance} in each pool (highlighted) advance to the knockout bracket.</p>`;
   }
 
-  // Bracket
-  if(DIV.bracket){
-    const editable = canScore && DIV.phase==='knockout';
-    html += `<div class="section"><h3>Knockout Bracket</h3><div style="overflow-x:auto;padding-bottom:.5rem">` +
-      DIV.bracket.rounds.map((round,ri) => {
-        const cells = round.map((m,mi) => {
-          const w = teBracketWinner(m);
-          const inp = (side) => (m.t1!==null&&m.t2!==null)
-            ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${ri},${mi},'${side}',this.value)"/>`
-            : '';
-          return `<div class="br-match">
-            <div class="br-team ${w!==null&&w===m.t1?'w':''}"><span>${teamLabel(m.t1)}</span>${inp('s1')}</div>
-            <div class="br-team ${w!==null&&w===m.t2?'w':''}"><span>${m.t2===null&&m.t1!==null?'<em style="color:var(--muted)">bye</em>':teamLabel(m.t2)}</span>${inp('s2')}</div>
-          </div>`;
-        }).join('');
-        return `<div class="br-round"><h4>${teRoundName(DIV.bracket.size,ri,DIV.bracket.rounds.length)}</h4>${cells}</div>`;
-      }).join('') + `</div>`;
-    const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
-    if(champ !== null) html += `<p class="champ">🏆 Champion: ${teamLabel(champ)}</p>`;
-    html += `</div>`;
-  }
+  if(DIV.bracket) html += `<div class="section"><h3>Knockout Bracket</h3>${bracketHTML()}</div>`;
 
   el.innerHTML = html;
 }
