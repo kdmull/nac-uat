@@ -176,7 +176,7 @@ async function openRegister(ti, di){
 
   let partnerSel = '';
   if(d.teamType === 'doubles'){
-    const { data: profs } = await sbT.from('profiles').select('id,first_name,last_name').neq('id', me.id).order('first_name');
+    const profs = await availablePartners(t, d, mine ? [mine.partner_user_id] : []);
     partnerSel = `<div style="margin-top:8px">
       <label style="font-size:12px;font-weight:600;color:var(--muted)">Select your partner (or leave blank to find one later)</label>
       <select class="inp" id="psel-${ti}-${di}">
@@ -190,6 +190,24 @@ async function openRegister(ti, di){
       <button class="btn btn-green" id="regbtn-${ti}-${di}" onclick="submitRegistration(${ti},${di})">${mine?'Save Partner':'Confirm Registration'}</button>
       <button class="btn btn-ghost" onclick="render()">Cancel</button>
     </div>`;
+}
+
+// Partner dropdown: hide players already registered in this division. Anyone who
+// picked ME stays visible (so I can reciprocate), as does my current partner.
+async function availablePartners(t, d, keepIds){
+  const [profRes, regRes] = await Promise.all([
+    sbT.from('profiles').select('id,first_name,last_name').neq('id', me.id).order('first_name'),
+    sbT.from('league_members').select('user_id,partner_user_id')
+      .eq('league_id', dLeague(t,d)).eq('season_id', tSeason(t)).eq('status','active')
+  ]);
+  const taken = new Set();
+  (regRes.data || []).forEach(r => {
+    if(r.user_id === me.id) return;
+    if(r.partner_user_id === me.id) return;    // they invited me
+    taken.add(r.user_id);
+  });
+  (keepIds || []).filter(Boolean).forEach(id => taken.delete(id));
+  return (profRes.data || []).filter(p => !taken.has(p.id));
 }
 
 // Fail-open DUPR gating (same policy as league registration): block only on a

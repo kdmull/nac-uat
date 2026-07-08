@@ -224,10 +224,29 @@ function startSwitchLeague(){
   renderLeagueSelect();
 }
 
+// Partner dropdown: hide players who already have an active registration in this
+// same league/division — they're spoken for. Two exceptions stay visible:
+//   • whoever is currently selected as my partner (so Edit Partner still shows them)
+//   • anyone who picked ME as their partner (so I can reciprocate and pair up)
+async function availablePartners(leagueId, seasonId, keepIds){
+  const [profRes, regRes] = await Promise.all([
+    sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id),
+    sb.from('league_members').select('user_id,partner_user_id')
+      .eq('league_id', leagueId).eq('season_id', seasonId).eq('status','active')
+  ]);
+  const taken = new Set();
+  (regRes.data || []).forEach(r => {
+    if(r.user_id === currentUser.id) return;
+    if(r.partner_user_id === currentUser.id) return;   // they invited me
+    taken.add(r.user_id);
+  });
+  (keepIds || []).filter(Boolean).forEach(id => taken.delete(id));
+  return (profRes.data || []).filter(p => !taken.has(p.id));
+}
+
 async function startEditPartner(){
   const m = myMembership;
-  const { data: profs } = await sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id);
-  partnerOptions = profs || [];
+  partnerOptions = await availablePartners(m.league_id, m.season_id, [m.partner_user_id]);
   document.getElementById('page').innerHTML = `
     <div class="page-header"><h1>Edit Partner</h1><p>${LEAGUE_NAMES[m.league_id]||m.league_id}</p></div>
     <div class="card">
@@ -367,9 +386,8 @@ async function selectLeague(league){
   // If partner league, load other registered/available players for selection
   let partnerSection = '';
   if(type === 'partner'){
-    // Load profiles (excluding self) for partner dropdown
-    const { data: profs } = await sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id);
-    partnerOptions = profs || [];
+    // Available partners only (excludes players already registered in this league)
+    partnerOptions = await availablePartners(selectedLeague.id, currentSeason.id, []);
     partnerSection = `
       <div class="form-group">
         <label>Select Your Partner</label>
