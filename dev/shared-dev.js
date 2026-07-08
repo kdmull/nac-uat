@@ -106,7 +106,10 @@ async function buildFullNameMap(seasonId){
       FULL_NAMES[key] = full;
     };
     for(const m of (members||[])){
-      add(deriveScheduleName(m.first_name, m.last_name), `${m.first_name||''} ${m.last_name||''}`);
+      const full = `${m.first_name||''} ${m.last_name||''}`.trim();
+      add(deriveScheduleName(m.first_name, m.last_name), full);                 // current (full-name) key
+      const li = `${(m.first_name||'').trim()} ${((m.last_name||'').trim())[0]||''}.`.trim();
+      add(li, full);                                                            // legacy "First L." key → full name
       if(m.partner_name){
         const parts = m.partner_name.trim().split(/\s+/);
         if(parts.length > 1) add(`${parts[0]} ${parts[parts.length-1][0]}.`, m.partner_name);

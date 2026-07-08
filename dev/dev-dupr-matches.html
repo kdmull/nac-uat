@@ -203,6 +203,17 @@ async function loadTournamentMatches(){
       try{ const r = await dbGet(`tourney_${t.id}_${d.id}`); DIV = (r.data && r.data.teams) ? r.data : null; }catch(e){}
       if(!DIV || !DIV.teams || !DIV.teams.length) continue;
 
+      // Seed the display-name map from this division's registrations so any
+      // team names still stored as "First L." render as full names.
+      try{
+        const lmN = await fetch(`${SUPABASE_URL}/rest/v1/league_members?league_id=eq.${encodeURIComponent('t:'+t.id+':'+d.id)}&status=eq.active&select=first_name,last_name`, { headers:H() });
+        if(lmN.ok){ for(const r of await lmN.json()){
+          const full = `${r.first_name||''} ${r.last_name||''}`.trim();
+          const li = `${(r.first_name||'').trim()} ${((r.last_name||'').trim())[0]||''}.`.trim();
+          if(full){ FULL_NAMES[full.toLowerCase()] = full; if(li) FULL_NAMES[li.toLowerCase()] = full; }
+        }}
+      }catch(e){}
+
       // teams[i].name is "Full Name" (singles) or "A & B" (doubles).
       const teamPlayers = DIV.teams.map(tm => (tm.name || '').split(' & ').map(x => x.trim()).filter(Boolean));
 
