@@ -1695,7 +1695,7 @@ async function saveTeams(){
 
 async function generatePools(){
   const lines = document.getElementById('teams-input').value.split('\n').map(l=>l.trim()).filter(Boolean);
-  if(lines.length < 3){ showToast('Need at least 3 entries'); return; }
+  if(lines.length < 2){ showToast(`Need at least 2 ${curD.teamType==='doubles'?'teams':'players'}`); return; }
   DIV.teams = lines.map((name,i) => teamMeta(name, i));
   DIV.pools = curD.poolCount
     ? teSeedPoolsN(DIV.teams.length, curD.poolCount)
