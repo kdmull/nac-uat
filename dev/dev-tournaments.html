@@ -111,7 +111,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     myProfile = prof || null;
     const seasonIds = CAT.tournaments.map(tSeason);
     if(seasonIds.length){
-      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).in('season_id', seasonIds).eq('status','active');
+      const seasonInList = seasonIds.map(v => `"${v}"`).join(',');
+      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
       myRegs = regs || [];
     }
   }
@@ -131,9 +132,12 @@ async function loadCounts(){
   try{
     const client = me ? sbT : null;
     if(!client) return;   // counts shown to signed-in users; public sees divisions without counts
+    // league_id values contain colons (t:tid:did); PostgREST needs each value in
+    // the in-list double-quoted or it 400s. Build the filter explicitly.
+    const inList = ids.map(v => `"${v}"`).join(',');
     const { data } = await client.from('league_members')
       .select('league_id,user_id,partner_user_id,partner_status,first_name,last_name,partner_name')
-      .in('league_id', ids).eq('status','active');
+      .filter('league_id', 'in', `(${inList})`).eq('status','active');
     const rows_ = data || [];
     const byDiv = {};
     rows_.forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
