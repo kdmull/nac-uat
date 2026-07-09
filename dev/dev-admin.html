@@ -1744,10 +1744,17 @@ let COURTS = null;                 // { count, courts:[{id,matchRef}], updated }
 const courtsKey = () => `courts_${curT.id}`;
 
 async function loadCourts(){
-  const res = await dbGet(courtsKey());
-  if(res && res.data && Array.isArray(res.data.courts)) COURTS = res.data;
-  else COURTS = { count: 9, courts: Array.from({length:9}, (_,i)=>({ id:i+1, matchRef:null })), updated: Date.now() };
-  renderCourts();
+  const body = document.getElementById('courts-body');
+  if(body) body.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading courts…</p>';
+  try{
+    const res = await dbGet(courtsKey());
+    if(res && res.data && Array.isArray(res.data.courts)) COURTS = res.data;
+    else COURTS = { count: 9, courts: Array.from({length:9}, (_,i)=>({ id:i+1, matchRef:null })), updated: Date.now() };
+    await renderCourts();
+  }catch(e){
+    console.error('loadCourts failed', e);
+    if(body) body.innerHTML = `<p style="color:var(--danger);font-size:13px">Couldn't load courts: ${(e&&e.message)||e}. Try Refresh.</p>`;
+  }
 }
 async function saveCourts(){ COURTS.updated = Date.now(); const ok = await dbSet(courtsKey(), COURTS); if(!ok) showToast('Court save failed'); return ok; }
 
@@ -1789,9 +1796,13 @@ function collectPlayable(divStates){
 let LABELS = {};
 async function renderCourts(){
   const el = document.getElementById('courts-body');
-  if(!COURTS){ el.innerHTML = ''; return; }
-  const divStates = await loadAllDivStates();
-  const { refs, labels } = collectPlayable(divStates);
+  if(!el) return;
+  if(!COURTS){ el.innerHTML = '<p style="color:var(--muted);font-size:13px">Select a tournament to manage courts.</p>'; return; }
+  let divStates = {}, refs = [], labels = {};
+  try{
+    divStates = await loadAllDivStates();
+    const c = collectPlayable(divStates); refs = c.refs; labels = c.labels;
+  }catch(e){ console.error('collectPlayable failed', e); }
   LABELS = labels;
 
   // Release courts whose match is no longer playable (finished/edited).
