@@ -171,6 +171,12 @@ async function renderLeagueCards(){
       <div class="league-card-sub">${l.sub||''}</div>
     </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
 }
+function fmtTime(hhmm){
+  if(!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return hhmm || '';
+  let [h,m] = hhmm.split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
 renderLeagueCards();
 
 // Tournaments: same card look as leagues. Live divisions link straight to the
@@ -200,7 +206,7 @@ async function renderTournamentCards(){
     const meta = [t.date, t.location].filter(Boolean).join(' · ');
     const clean = v => String(v||'').replace(/[<>&]/g,'');
     const divBadges = divs.length
-      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`
+      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.startTime?` <span style="color:var(--muted);font-weight:600">${fmtTime(d.startTime)}</span>`:''}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`
       : '';
     return `<a class="league-card" href="${href}">
       <div class="t-title-row">

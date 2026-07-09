@@ -46,6 +46,8 @@ table.g tr:last-child td{border-bottom:none}
 .score-in:disabled{background:var(--surface);color:var(--muted)}
 .pool-match.clickable{cursor:pointer}
 .pool-match.clickable:hover{background:rgba(76,175,40,.07)}
+.court-badge{display:inline-block;margin-left:8px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#fff;background:var(--navy);padding:1px 7px;border-radius:4px;vertical-align:middle}
+.bracket-court{font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#fff;background:var(--navy);padding:2px 0;text-align:center}
 /* ── Standings table (identical to the league page) ── */
 .standings-table{width:100%;border-collapse:collapse;background:var(--white);border-radius:var(--radius-lg);overflow:hidden;border:1px solid var(--border);box-shadow:0 1px 4px rgba(26,42,108,.06)}
 .standings-table thead{background:var(--navy)}
@@ -173,11 +175,22 @@ function renderDivTabs(preselect){
   selectDiv(pre >= 0 ? pre : (firstLive >= 0 ? firstLive : 0));
 }
 
+let COURT_OF = {};   // matchRef -> court number, for this tournament
+async function loadCourtMap(){
+  COURT_OF = {};
+  try{
+    const r = await dbGet(`courts_${T.id}`);
+    const courts = (r.data && r.data.courts) || [];
+    courts.forEach(c => { if(c.matchRef) COURT_OF[c.matchRef] = c.id; });
+  }catch(e){}
+}
+
 async function selectDiv(i){
   D = T.divisions[i];
   const res = await dbGet(divKey());
   DIV = (res && res.data && res.data.teams) ? res.data : null;
   await seedTournamentNames();
+  await loadCourtMap();
   renderDivTabs.__skip = true;
   document.querySelectorAll('.div-tab').forEach((b,bi) => b.classList.toggle('active', bi===i));
   renderScoreGate();
@@ -236,6 +249,7 @@ async function saveDiv(){
 async function reloadDiv(){
   const res = await dbGet(divKey());
   if(res && res.data && res.data.teams) DIV = res.data;
+  await loadCourtMap();
   render();
 }
 
@@ -290,9 +304,11 @@ function poolMatchTable(pi){
     const played = r.complete;
     const w1 = played && r.winner===m.t1, w2 = played && r.winner===m.t2;
     const score = played ? `${g.s1}–${g.s2}` : '<span style="color:var(--muted)">vs</span>';
+    const court = COURT_OF[`${D.id}|pool|${mi}`];
+    const courtBadge = court ? `<span class="court-badge">Court ${court}</span>` : '';
     return `<tr class="pool-match${editable?' clickable':''}" ${editable?`onclick="openPoolModal(${mi})"`:''}>
       <td style="text-align:right;${w1?'font-weight:700;color:var(--green-dark)':''}">${teamLabel(m.t1)}</td>
-      <td style="white-space:nowrap;text-align:center;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--navy)">${score}</td>
+      <td style="white-space:nowrap;text-align:center;font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--navy)">${score}${courtBadge}</td>
       <td style="${w2?'font-weight:700;color:var(--green-dark)':''}">${teamLabel(m.t2)}</td>
     </tr>`;
   }).join('');
@@ -382,10 +398,12 @@ function bracketHTML(){
       const clickable = editable && both;
       const byeSlot2 = r===0 && m.t1!==null && m.t2===null;
       const byeSlot1 = r===0 && m.t2!==null && m.t1===null;
+      const court = COURT_OF[`${D.id}|bkt|${r}|${i}`];
       html += `<div class="bracket-card${clickable?' clickable':''}" style="left:${x}px;top:${top}px;width:${W}px"
         ${clickable?`onclick="openBracketModal(${r},${i})"`:''}>
         ${bkSlot(m.t1, m.s1, w!==null&&w===m.t1, byeSlot1)}
         ${bkSlot(m.t2, m.s2, w!==null&&w===m.t2, byeSlot2)}
+        ${court?`<div class="bracket-court">Court ${court}</div>`:''}
       </div>`;
     });
   });

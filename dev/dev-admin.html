@@ -148,6 +148,21 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 .bkt-team .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bkt-team .bye{color:var(--muted);font-style:italic}
 .bkt-line{position:absolute;background:rgba(26,42,108,.2)}
+
+/* Court management */
+.courts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.court-card{border:1.5px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--white)}
+.court-card.busy{border-color:rgba(26,42,108,.35)}
+.court-card.open{border-style:dashed;border-color:rgba(76,175,40,.5);background:rgba(76,175,40,.03)}
+.court-hd{font-family:var(--font-display);font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);font-size:14px;margin-bottom:6px}
+.court-div{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.court-team{font-size:14px;font-weight:600;color:var(--navy)}
+.court-vs{font-size:11px;color:var(--muted);margin:1px 0}
+.court-empty{color:var(--green-dark);font-size:13px;font-weight:600;padding:14px 4px;text-align:center}
+.court-queue{margin-top:1.25rem}
+.court-queue h4{font-family:var(--font-display);font-size:15px;font-weight:800;text-transform:uppercase;color:var(--navy);margin-bottom:.5rem}
+.queue-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:13px;background:var(--white)}
+.queue-div{font-size:11px;color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -323,11 +338,17 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
         <select class="inp" id="new-d-pool"></select>
         <select class="inp" id="new-d-adv"></select>
         <input class="inp" id="new-d-fee" type="number" min="0" placeholder="Fee $" style="width:80px"/>
+        <input class="inp" id="new-d-start" type="time" title="Start time" style="width:120px"/>
         <button class="btn btn-green" onclick="addDivision()">+ Add Division</button>
       </div>
     </div>
 
     <div id="division-detail" data-admin-tab="tournaments"></div>
+
+    <div class="admin-section" id="courts-section" data-admin-tab="tournaments" style="display:none">
+      <h3>Court Management</h3>
+      <div id="courts-body"></div>
+    </div>
       <div class="admin-section" id="seasons-section" data-admin-tab="setup">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1rem">
           <h3 style="margin:0">Seasons</h3>
@@ -1408,7 +1429,9 @@ function selectTournament(i){
   document.getElementById('division-detail').innerHTML='';
   document.getElementById('divisions-section').style.display='';
   document.getElementById('divisions-title').textContent = curT.name + ' — Divisions';
+  document.getElementById('courts-section').style.display='';
   renderTournaments(); renderDivisions();
+  loadCourts();
 }
 
 // ── Divisions ───────────────────────────────────────────
@@ -1423,6 +1446,12 @@ function advOptions(sel){
   return [1,2,4].map(v => `<option value="${v}" ${v===sel?'selected':''}>Top ${v} advance${v===1?'s':''}</option>`).join('');
 }
 const divPoolValue = d => d.poolCount ? 'n'+d.poolCount : String(d.poolSize || 4);
+function fmtTime(hhmm){
+  if(!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return hhmm || '';
+  let [h,m] = hhmm.split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
 
 function renderDivisions(){
   const el = document.getElementById('division-list');
@@ -1441,6 +1470,7 @@ function renderDivisions(){
           <select class="inp" id="ed-pool">${poolOptions(divPoolValue(d))}</select>
           <select class="inp" id="ed-adv">${advOptions(d.advance)}</select>
           <input class="inp" id="ed-fee" type="number" min="0" value="${d.fee||''}" placeholder="Fee $" style="width:86px"/>
+          <input class="inp" id="ed-start" type="time" value="${d.startTime||''}" title="Start time" style="width:118px"/>
           <label style="display:flex;align-items:center;gap:4px;font-size:11px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:${(d.duprEnabled!==false)?'var(--green-dark)':'var(--danger)'};cursor:pointer" title="When off, this division's matches are NOT submitted to DUPR">
             <input type="checkbox" id="ed-dupr" ${(d.duprEnabled!==false)?'checked':''}/> Counts for DUPR
           </label>
@@ -1454,7 +1484,7 @@ function renderDivisions(){
     return `
     <div class="trow ${curD&&curD.id===d.id?'active':''}" onclick="selectDivision(${i})">
       <span class="tname" style="font-size:15px">${esc(d.name)}</span>
-      <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}${d.duprEnabled===false?' · <span style="color:var(--danger);font-weight:700">DUPR OFF</span>':''}</span>
+      <span class="tmeta">${d.teamType} · ${d.poolCount ? d.poolCount + ' pool' + (d.poolCount>1?'s':'') : 'pools of ' + d.poolSize} · top ${d.advance} advance${d.fee?` · $${d.fee}`:''}${d.startTime?` · ⏰ ${fmtTime(d.startTime)}`:''}${d.duprEnabled===false?' · <span style="color:var(--danger);font-weight:700">DUPR OFF</span>':''}</span>
       <span class="pill ${d.phase||'draft'}" id="pill-${d.id}">${d.phase||'draft'}</span>
       <span style="margin-left:auto"></span>
       <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();editingDivision=${i};renderDivisions()">Edit</button>
@@ -1476,6 +1506,7 @@ async function saveDivisionEdit(i){
   d.poolSize  = poolVal.startsWith('n') ? null : parseInt(poolVal,10);
   d.advance  = parseInt(document.getElementById('ed-adv').value,10);
   d.fee      = parseFloat(document.getElementById('ed-fee').value) || 0;
+  d.startTime = document.getElementById('ed-start').value || '';
   d.duprEnabled = document.getElementById('ed-dupr').checked;
   editingDivision = null;
   if(await saveCatalog()){
@@ -1495,6 +1526,7 @@ async function addDivision(){
     poolSize:  poolVal.startsWith('n') ? null : parseInt(poolVal,10),
     advance: parseInt(document.getElementById('new-d-adv').value,10),
     fee: parseFloat(document.getElementById('new-d-fee').value)||0,
+    startTime: document.getElementById('new-d-start').value || '',
     duprEnabled: true,
     format: 'pool_knockout', phase: 'draft' };
   if((curT.divisions||[]).some(x=>x.id===d.id)){ showToast('A division with that name already exists'); return; }
@@ -1704,6 +1736,164 @@ function adminBracketHTML(){
     });
   });
   return html + `</div></div>`;
+}
+
+// ============ COURT MANAGEMENT (per tournament, shared across divisions) ============
+let COURTS = null;                 // { count, courts:[{id,matchRef}], updated }
+const courtsKey = () => `courts_${curT.id}`;
+
+async function loadCourts(){
+  const res = await dbGet(courtsKey());
+  if(res && res.data && Array.isArray(res.data.courts)) COURTS = res.data;
+  else COURTS = { count: 9, courts: Array.from({length:9}, (_,i)=>({ id:i+1, matchRef:null })), updated: Date.now() };
+  renderCourts();
+}
+async function saveCourts(){ COURTS.updated = Date.now(); const ok = await dbSet(courtsKey(), COURTS); if(!ok) showToast('Court save failed'); return ok; }
+
+// Load every division's state once, so we can resolve match refs → teams/labels.
+async function loadAllDivStates(){
+  const map = {};
+  for(const d of (curT.divisions||[])){
+    try{ const r = await dbGet(`tourney_${curT.id}_${d.id}`); if(r.data && r.data.teams) map[d.id] = r.data; }catch(e){}
+  }
+  return map;
+}
+
+// Build the ordered list of playable match refs across all divisions.
+// Priority: divisions in listed order; within a division pool matches before
+// bracket; earlier rounds first. Also returns a label map for display.
+function collectPlayable(divStates){
+  const refs = [], labels = {};
+  const nameOf = (DIVx, idx) => (DIVx.teams[idx] ? displayName(DIVx.teams[idx].name) : 'TBD');
+  for(const d of (curT.divisions||[])){
+    const DIVx = divStates[d.id]; if(!DIVx) continue;
+    (DIVx.poolMatches||[]).forEach((m, i) => {
+      if(!tePoolMatchOpen(m)) return;
+      const ref = `${d.id}|pool|${i}`;
+      refs.push(ref);
+      labels[ref] = { div:d.name, sub:`Pool ${String.fromCharCode(65+m.pool)}`, a:nameOf(DIVx,m.t1), b:nameOf(DIVx,m.t2) };
+    });
+    if(DIVx.bracket){
+      DIVx.bracket.rounds.forEach((round, ri) => round.forEach((m, mi) => {
+        if(!teBracketMatchOpen(m)) return;
+        const ref = `${d.id}|bkt|${ri}|${mi}`;
+        refs.push(ref);
+        labels[ref] = { div:d.name, sub:teRoundName(DIVx.bracket.size, ri, DIVx.bracket.rounds.length), a:nameOf(DIVx,m.t1), b:nameOf(DIVx,m.t2) };
+      }));
+    }
+  }
+  return { refs, labels };
+}
+
+let LABELS = {};
+async function renderCourts(){
+  const el = document.getElementById('courts-body');
+  if(!COURTS){ el.innerHTML = ''; return; }
+  const divStates = await loadAllDivStates();
+  const { refs, labels } = collectPlayable(divStates);
+  LABELS = labels;
+
+  // Release courts whose match is no longer playable (finished/edited).
+  const cleared = teReleaseFinished(COURTS.courts, refs);
+  if(cleared.length) await saveCourts();
+
+  const onCourt = new Set(COURTS.courts.filter(c=>c.matchRef).map(c=>c.matchRef));
+  const queue = refs.filter(r => !onCourt.has(r));
+
+  const controls = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
+    <label style="font-size:13px;color:var(--muted)"># Courts
+      <input class="inp" id="court-count" type="number" min="1" max="40" value="${COURTS.count}" style="width:70px;margin-left:6px" onchange="setCourtCount(this.value)"/>
+    </label>
+    <button class="btn btn-green" onclick="autoAssignCourts()">⚡ Auto-Assign Open Courts</button>
+    <button class="btn btn-ghost" onclick="renderCourts()">↻ Refresh</button>
+    <span style="font-size:12px;color:var(--muted)">${queue.length} waiting</span>
+  </div>`;
+
+  const courtCard = c => {
+    const L = c.matchRef ? LABELS[c.matchRef] : null;
+    return `<div class="court-card ${c.matchRef?'busy':'open'}">
+      <div class="court-hd">Court ${c.id}${c.matchRef?'':' <span style="color:var(--green-dark)">· open</span>'}</div>
+      ${L ? `<div class="court-match">
+          <div class="court-div">${esc(L.div)} · ${esc(L.sub)}</div>
+          <div class="court-team">${esc(L.a)}</div>
+          <div class="court-vs">vs</div>
+          <div class="court-team">${esc(L.b)}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="clearCourt(${c.id})">Clear</button>
+            <select class="inp" style="font-size:11px;padding:3px 6px" onchange="moveToCourt('${c.matchRef}', this.value); this.value=''">
+              <option value="">Move to…</option>
+              ${COURTS.courts.filter(x=>x.id!==c.id).map(x=>`<option value="${x.id}">Court ${x.id}${x.matchRef?' (swap)':''}</option>`).join('')}
+            </select>
+          </div>
+        </div>` : `<div class="court-empty" ${queue.length?`onclick="assignNextTo(${c.id})" style="cursor:pointer"`:''}>${queue.length?'+ Assign next waiting match':'No matches waiting'}</div>`}
+    </div>`;
+  };
+
+  const queueHtml = queue.length ? `<div class="court-queue">
+    <h4>Waiting Queue (${queue.length})</h4>
+    ${queue.map(ref => { const L=LABELS[ref]; return `<div class="queue-row">
+      <div style="flex:1"><span class="queue-div">${esc(L.div)} · ${esc(L.sub)}</span><br>${esc(L.a)} <span style="color:var(--muted)">vs</span> ${esc(L.b)}</div>
+      <select class="inp" style="font-size:11px;padding:4px 8px" onchange="assignToCourt('${ref}', this.value); this.value=''">
+        <option value="">Assign to…</option>
+        ${COURTS.courts.map(c=>`<option value="${c.id}">Court ${c.id}${c.matchRef?' (swap)':''}</option>`).join('')}
+      </select>
+    </div>`; }).join('')}
+  </div>` : `<p style="color:var(--muted);font-size:13px;margin-top:1rem">No matches waiting — every playable match is on a court, or divisions haven't started.</p>`;
+
+  el.innerHTML = controls +
+    `<div class="courts-grid">${COURTS.courts.map(courtCard).join('')}</div>` + queueHtml;
+}
+
+async function setCourtCount(v){
+  let n = Math.max(1, Math.min(40, parseInt(v,10)||1));
+  const cur = COURTS.courts;
+  if(n > cur.length){ for(let i=cur.length; i<n; i++) cur.push({ id:i+1, matchRef:null }); }
+  else if(n < cur.length){
+    const removed = cur.slice(n).filter(c=>c.matchRef);
+    if(removed.length && !confirm(`Removing ${cur.length-n} court(s) will unassign ${removed.length} active match(es). Continue?`)){ renderCourts(); return; }
+    COURTS.courts = cur.slice(0, n).map((c,i)=>({ id:i+1, matchRef:c.matchRef }));
+  }
+  COURTS.count = n;
+  await saveCourts(); renderCourts();
+}
+
+async function autoAssignCourts(){
+  const divStates = await loadAllDivStates();
+  const { refs } = collectPlayable(divStates);
+  const { assigned } = teAutoAssign(COURTS.courts, refs);
+  await saveCourts(); renderCourts();
+  showToast(assigned.length ? `Assigned ${assigned.length} match${assigned.length!==1?'es':''} to open courts` : 'No open courts or no waiting matches');
+}
+
+async function assignNextTo(courtId){
+  const divStates = await loadAllDivStates();
+  const { refs } = collectPlayable(divStates);
+  const onCourt = new Set(COURTS.courts.filter(c=>c.matchRef).map(c=>c.matchRef));
+  const next = refs.find(r => !onCourt.has(r));
+  if(!next){ showToast('No matches waiting'); return; }
+  const c = COURTS.courts.find(x=>x.id===courtId); if(c){ c.matchRef = next; await saveCourts(); renderCourts(); }
+}
+
+async function assignToCourt(ref, courtId){
+  courtId = parseInt(courtId,10); if(!courtId) return;
+  COURTS.courts.forEach(c => { if(c.matchRef===ref) c.matchRef=null; });   // pull from any existing court
+  const c = COURTS.courts.find(x=>x.id===courtId); if(c) c.matchRef = ref;
+  await saveCourts(); renderCourts();
+}
+
+async function moveToCourt(ref, courtId){
+  courtId = parseInt(courtId,10); if(!courtId) return;
+  const from = COURTS.courts.find(c=>c.matchRef===ref);
+  const to = COURTS.courts.find(c=>c.id===courtId);
+  if(!to) return;
+  const swap = to.matchRef;
+  to.matchRef = ref;
+  if(from && from.id !== to.id) from.matchRef = swap || null;   // swap occupant back
+  await saveCourts(); renderCourts();
+}
+
+async function clearCourt(courtId){
+  const c = COURTS.courts.find(x=>x.id===courtId); if(c){ c.matchRef=null; await saveCourts(); renderCourts(); }
 }
 
 async function saveTeams(){

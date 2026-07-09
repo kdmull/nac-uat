@@ -177,3 +177,54 @@ function teRoundName(size, roundIdx, totalRounds){
   if(remaining === 3) return 'Quarterfinals';
   return 'Round of ' + Math.pow(2, remaining);
 }
+
+// ── Court management ──────────────────────────────────────────────────────
+// Court state is stored per TOURNAMENT (shared across divisions) in pb_league
+// under key `courts_<tid>`:
+//   { count, courts: [ { id, matchRef|null } ], queuePinned: {matchRef:true} }
+// A matchRef uniquely identifies a match across divisions:
+//   `<divId>|pool|<poolIdx>|<matchIndex>`  or  `<divId>|bkt|<round>|<idx>`
+// The engine here is pure: given the set of playable matches and current court
+// state, it decides what to auto-assign. The admin page owns persistence.
+
+function teMatchRefPool(divId, matchIndex){ return `${divId}|pool|${matchIndex}`; }
+function teMatchRefBracket(divId, round, idx){ return `${divId}|bkt|${round}|${idx}`; }
+
+// Is a pool match ready to play? (both teams known, not yet scored)
+function tePoolMatchOpen(m){
+  if(m.t1 === null || m.t2 === null) return false;
+  return !teMatchResult(m).complete;
+}
+// Bracket match ready? both slots filled, not scored, not a bye
+function teBracketMatchOpen(m){
+  if(m.t1 === null || m.t2 === null) return false;
+  return teBracketWinner(m) === null;
+}
+
+// Given a list of playable match refs (in priority order) and the current court
+// array, fill empty courts with unassigned matches. Returns the mutated courts
+// plus the list of refs that got assigned. Pure aside from building new objects.
+function teAutoAssign(courts, playableRefs){
+  const onCourt = new Set(courts.filter(c => c.matchRef).map(c => c.matchRef));
+  const queue = playableRefs.filter(r => !onCourt.has(r));
+  const assigned = [];
+  for(const c of courts){
+    if(c.matchRef) continue;
+    const next = queue.shift();
+    if(!next) break;
+    c.matchRef = next;
+    assigned.push(next);
+  }
+  return { courts, assigned };
+}
+
+// Free any court whose match is no longer playable (finished or changed), so the
+// slot can take a new one. Returns refs that were cleared.
+function teReleaseFinished(courts, stillPlayable){
+  const ok = new Set(stillPlayable);
+  const cleared = [];
+  for(const c of courts){
+    if(c.matchRef && !ok.has(c.matchRef)){ cleared.push(c.matchRef); c.matchRef = null; }
+  }
+  return cleared;
+}
