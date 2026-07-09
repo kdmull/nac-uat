@@ -59,6 +59,9 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .t-badge.live{color:#8a6d00;background:rgba(212,167,0,.16)}
 .t-badge.done{color:var(--muted);background:var(--surface2)}
 .t-badge.division{color:var(--navy);background:rgba(26,42,108,.09);text-transform:none;letter-spacing:.2px;font-weight:600;align-self:auto}
+.dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark,#3a8c1e);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
+.t-badge.division .dupr-mini{color:var(--green-dark);font-weight:800;margin-left:5px}
 .t-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .t-title-row .league-card-title{line-height:1.15}
 .t-title-row .t-badge{align-self:center;margin-top:0}
@@ -164,7 +167,7 @@ async function renderLeagueCards(){
   const show = enabled ? leagues.filter(l => enabled.includes(l.id)) : leagues;
   grid.innerHTML = show.map(l => `
     <a class="league-card" href="dev-league.html?league=${l.id}">
-      <div class="league-card-title">${l.name}</div>
+      <div class="league-card-title">${l.name}${l.duprEnabled!==false?' <span class="dupr-chip" title="Matches count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}</div>
       <div class="league-card-sub">${l.sub||''}</div>
     </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
 }
@@ -197,7 +200,7 @@ async function renderTournamentCards(){
     const meta = [t.date, t.location].filter(Boolean).join(' · ');
     const clean = v => String(v||'').replace(/[<>&]/g,'');
     const divBadges = divs.length
-      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}</span>`).join('')}</div>`
+      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`
       : '';
     return `<a class="league-card" href="${href}">
       <div class="t-title-row">
