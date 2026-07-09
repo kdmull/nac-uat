@@ -326,7 +326,18 @@ async function loadDuprRatings(){
     duprRatings = {};
     const duprIds = [];
     for(const row of rows){
-      duprRatings[row.player_name] = {duprId: row.dupr_id};
+      const rec = {duprId: row.dupr_id};
+      const nm = (row.player_name||'').trim();
+      duprRatings[nm] = rec;                          // stored form (now full name)
+      // Also register a "First L." variant so a schedule still storing the old
+      // short name resolves to the same rating.
+      const parts = nm.split(/\s+/);
+      if(parts.length >= 2){
+        const li = `${parts[0]} ${parts[parts.length-1][0]}.`;
+        if(!duprRatings[li]) duprRatings[li] = rec;
+      }
+      // And the displayName() form (handles the reverse: schedule full, this short).
+      try{ const dn = displayName(nm); if(dn && !duprRatings[dn]) duprRatings[dn] = rec; }catch(e){}
       duprIds.push(row.dupr_id);
     }
     console.log('DUPR IDs to fetch ratings for:', duprIds);
@@ -545,7 +556,7 @@ async function renderStandings(){
     return`<tr class="${playoff?'playoff-row':''}${cutline?' cutline-row':''}">
       <td><span class="rank ${rc}">${i+1}</span></td>
       <td class="num">${(() => {
-        const dr = duprRatings[r.p];
+        const dr = duprRatings[r.p] || duprRatings[displayName(r.p)];
         if(!dr || !dr.duprId){
           return `<span style="font-size:11px;color:var(--muted)">—</span>`;
         }
@@ -615,7 +626,7 @@ function renderTeamStandings(){
   ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
 
   const ratingHtml = (name)=>{
-    const dr = duprRatings[name];
+    const dr = duprRatings[name] || duprRatings[displayName(name)];
     if(!dr || !dr.duprId) return null;
     const rating = dr.doubles;
     if(rating === undefined || rating === null) return null;
