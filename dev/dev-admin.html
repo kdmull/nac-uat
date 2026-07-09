@@ -436,6 +436,7 @@ function showAdminTab(tab){
     const show = el.getAttribute('data-admin-tab') === tab;
     // Sections that manage their own visibility until activated:
     if(show && el.id === 'divisions-section' && !window.curT){ el.style.display='none'; return; }
+    if(show && el.id === 'courts-section' && !window.curT){ el.style.display='none'; return; }
     el.style.display = show ? 'block' : 'none';
   });
   document.querySelectorAll('.admin-tab').forEach(b => {
