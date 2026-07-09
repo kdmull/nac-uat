@@ -1614,6 +1614,7 @@ function renderDivisionDetail(){
   }
 
   if(DIV.phase === 'knockout' || DIV.phase === 'complete'){
+    html += bracketFormatPanel();
     html += adminBracketHTML();
     const champ = teBracketComplete(DIV.bracket) ? teBracketWinner(DIV.bracket.rounds[DIV.bracket.rounds.length-1][0]) : null;
     if(champ !== null) html += `<p style="font-family:var(--font-display);font-size:20px;font-weight:900;color:var(--green-dark);margin-top:.5rem">🏆 Champion: ${teamLabel(champ)}</p>`;
@@ -1701,6 +1702,37 @@ function teamMeta(name, i){
   return { name, seed: i+1, rating: src.rating ?? null, duprIds: src.duprIds || [] };
 }
 
+// ── Playoff scoring format (per bracket + per round) ──
+function bracketFormatPanel(){
+  const rounds = DIV.bracket ? DIV.bracket.rounds.length : 0;
+  const def = DIV.bracketFormat || 'to11';
+  let perRound = '';
+  for(let r=0; r<rounds; r++){
+    const cur = (DIV.roundFormats && DIV.roundFormats[r]) || '';
+    perRound += `<label style="display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted)">
+      ${teRoundName(DIV.bracket.size, r, rounds)}
+      <select class="inp" style="font-size:12px" onchange="setRoundFormat(${r}, this.value)">
+        <option value="">Use default (${nacFormat(def).short})</option>
+        ${nacFormatOptions(cur)}
+      </select></label>`;
+  }
+  const locked = DIV.phase === 'complete';
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;${locked?'opacity:.6;pointer-events:none':''}">
+    <div style="font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:13px;color:var(--navy);margin-bottom:8px">Playoff Scoring</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end">
+      <label style="display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)">Bracket default
+        <select class="inp" onchange="setBracketFormat(this.value)">${nacFormatOptions(def)}</select></label>
+      ${perRound}
+    </div>
+  </div>`;
+}
+async function setBracketFormat(id){ DIV.bracketFormat = id; await saveDiv(); renderDivisionDetail(); }
+async function setRoundFormat(r, id){
+  DIV.roundFormats = DIV.roundFormats || {};
+  if(id) DIV.roundFormats[r] = id; else delete DIV.roundFormats[r];
+  await saveDiv(); renderDivisionDetail();
+}
+
 // Real bracket: positioned match boxes + elbow connectors (matches the public page).
 function adminBracketHTML(){
   const B = DIV.bracket, R = B.rounds.length;
@@ -1726,14 +1758,19 @@ function adminBracketHTML(){
     round.forEach((m, i) => {
       const top = centerY(r,i) - H/2, w = teBracketWinner(m);
       const both = m.t1!==null && m.t2!==null;
-      const inp = side => both ? `<input class="score-in" type="number" min="0" value="${m[side]??''}" ${editable?'':'disabled'} onchange="setBracketScore(${r},${i},'${side}',this.value)"/>` : '';
+      const fmt = teBracketFormat(DIV, r);
+      const clickable = editable && both;
+      const scoreText = side => {
+        if(fmt.games > 1){ const gw = (m.games||[]).reduce((a,g)=>{ if(g&&g.s1!=null&&g.s2!=null){ if(side==='s1'&&g.s1>g.s2)a++; if(side==='s2'&&g.s2>g.s1)a++; } return a; },0); return (m.games&&m.games.some(g=>g&&g.s1!=null))?gw:''; }
+        return m[side]!=null ? m[side] : '';
+      };
       const other = side => side==='s1' ? m.t2 : m.t1;
       const row = (slot,side) => {
         const label = slot !== null ? teamLabel(slot)
           : (r===0 && other(side)!==null ? '<span class="bye">bye</span>' : '<span style="color:var(--muted)">TBD</span>');
-        return `<div class="bkt-team ${(w!==null&&slot!==null&&w===slot)?'w':''}"><span class="nm">${label}</span>${inp(side)}</div>`;
+        return `<div class="bkt-team ${(w!==null&&slot!==null&&w===slot)?'w':''}"><span class="nm">${label}</span><span class="score-in" style="border:none;background:none;min-width:20px">${scoreText(side)}</span></div>`;
       };
-      html += `<div class="bkt-match ${w!==null?'done':''}" style="left:${x}px;top:${top}px;width:${W}px">${row(m.t1,'s1')}${row(m.t2,'s2')}</div>`;
+      html += `<div class="bkt-match ${w!==null?'done':''}" style="left:${x}px;top:${top}px;width:${W}px;${clickable?'cursor:pointer':''}" ${clickable?`onclick="openAdminBracketModal(${r},${i})"`:''}>${row(m.t1,'s1')}${row(m.t2,'s2')}</div>`;
     });
   });
   return html + `</div></div>`;
@@ -1946,13 +1983,51 @@ async function buildKnockout(){
   showToast(`Bracket built — ${q.length} qualifiers, ${DIV.bracket.rounds.length} round${DIV.bracket.rounds.length!==1?'s':''}`);
 }
 
-async function setBracketScore(ri, mi, side, val){
-  const m = DIV.bracket.rounds[ri][mi];
-  m[side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
-  // Clear downstream slots (a changed result can change who advances), then re-advance.
-  for(let r = ri+1; r < DIV.bracket.rounds.length; r++)
-    DIV.bracket.rounds[r].forEach(x => { x.t1=null; x.t2=null; });
+let adminBM = null;
+function openAdminBracketModal(r, i){
+  adminBM = { r, i };
+  const m = DIV.bracket.rounds[r][i];
+  const fmt = teBracketFormat(DIV, r);
+  const n = fmt.games;
+  if(n > 1 && !Array.isArray(m.games)) m.games = Array.from({length:n}, ()=>({s1:null,s2:null}));
+  const gameRow = (gi) => {
+    const g = (n>1 ? (m.games[gi]||{}) : { s1:m.s1, s2:m.s2 });
+    return `<div class="modal-row"><span>${n>1?`Game ${gi+1}`:teamLabel(m.t1)}</span>
+      ${n>1?`<span style="flex:1;font-size:12px;color:var(--muted)">${teamLabel(m.t1)}</span>`:''}
+      <input type="number" min="0" id="abg${gi}_1" value="${g.s1??''}" style="width:60px;padding:6px;border:1.5px solid var(--border);border-radius:6px;text-align:center"/>
+      <input type="number" min="0" id="abg${gi}_2" value="${g.s2??''}" style="width:60px;padding:6px;border:1.5px solid var(--border);border-radius:6px;text-align:center"/>
+      ${n>1?`<span style="flex:1;font-size:12px;color:var(--muted);text-align:right">${teamLabel(m.t2)}</span>`:''}</div>`;
+  };
+  let rows = '';
+  for(let gi=0; gi<n; gi++) rows += gameRow(gi);
+  const wrap = document.createElement('div');
+  wrap.style.cssText='position:fixed;inset:0;background:rgba(17,29,78,.55);display:flex;align-items:center;justify-content:center;z-index:400;padding:1rem';
+  wrap.id='abm';
+  wrap.onclick=e=>{ if(e.target===wrap) closeAdminBracketModal(); };
+  wrap.innerHTML=`<div style="background:#fff;border-radius:12px;padding:1.5rem;max-width:420px;width:100%">
+    <h3 style="font-family:var(--font-display);font-size:20px;font-weight:900;text-transform:uppercase;color:var(--navy);margin-bottom:.35rem">${teRoundName(DIV.bracket.size, r, DIV.bracket.rounds.length)}</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:1rem">${fmt.label} · ${n>1?`enter each game (to ${fmt.target})`:`${teamLabel(m.t1)} vs ${teamLabel(m.t2)}`}</p>
+    ${rows}
+    <div style="display:flex;gap:8px;margin-top:1rem"><button class="btn btn-green" style="flex:1" onclick="saveAdminBracketModal()">Save</button>
+      <button class="btn btn-ghost" onclick="closeAdminBracketModal()">Cancel</button></div></div>`;
+  document.body.appendChild(wrap);
+}
+function closeAdminBracketModal(){ const el=document.getElementById('abm'); if(el) el.remove(); adminBM=null; }
+async function saveAdminBracketModal(){
+  if(!adminBM) return;
+  const { r, i } = adminBM;
+  const m = DIV.bracket.rounds[r][i];
+  const fmt = teBracketFormat(DIV, r);
+  const rd = (id) => { const v=document.getElementById(id).value; return v===''?null:Math.max(0,parseInt(v,10)||0); };
+  if(fmt.games > 1){
+    m.games = Array.from({length:fmt.games}, (_,gi)=>({ s1:rd(`abg${gi}_1`), s2:rd(`abg${gi}_2`) }));
+    delete m.s1; delete m.s2;
+  } else {
+    m.s1 = rd('abg0_1'); m.s2 = rd('abg0_2'); delete m.games;
+  }
+  for(let rr=r+1; rr<DIV.bracket.rounds.length; rr++) DIV.bracket.rounds[rr].forEach(x=>{ x.t1=null; x.t2=null; });
   teAdvanceByes(DIV.bracket);
+  closeAdminBracketModal();
   await saveDiv();
   renderDivisionDetail();
 }

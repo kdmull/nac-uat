@@ -149,8 +149,27 @@ function teBuildBracket(qualifiers){
 function teBracketWinner(m){
   if(m.t1 !== null && m.t2 === null) return m.t1;      // bye
   if(m.t2 !== null && m.t1 === null) return m.t2;
+  // Multi-game (best-of-N): winner needs the majority of the allotted games.
+  if(Array.isArray(m.games) && m.games.length){
+    const need = Math.floor(m.games.length/2) + 1;
+    let w1 = 0, w2 = 0;
+    for(const g of m.games){ if(g && g.s1!=null && g.s2!=null){ if(g.s1>g.s2) w1++; else if(g.s2>g.s1) w2++; } }
+    if(w1 >= need) return m.t1;
+    if(w2 >= need) return m.t2;
+    return null;
+  }
+  // Single game (default): higher score wins.
   if(m.s1 == null || m.s2 == null) return null;
   return m.s1 > m.s2 ? m.t1 : (m.s2 > m.s1 ? m.t2 : null);
+}
+
+// Format for a division's bracket at a given round: per-round override, else the
+// bracket default, else single-to-11. Returns a NAC_SCORE_FORMATS entry.
+function teBracketFormat(division, roundIdx){
+  const rf = division && division.roundFormats && division.roundFormats[roundIdx];
+  const id = rf || (division && division.bracketFormat) || 'to11';
+  return (typeof nacFormat === 'function') ? nacFormat(id)
+    : ({to11:{games:1,target:11},to15:{games:1,target:15},bo3to11:{games:3,target:11}}[id] || {games:1,target:11});
 }
 
 // Push winners (incl. byes) forward into the next round's slots.

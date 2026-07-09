@@ -14,6 +14,31 @@ async function nacVerifyScorePw(pw){
   }catch(e){ return false; }
 }
 const SUPABASE_URL='https://owsvfvhlbagxxmncwmtn.supabase.co';
+
+// ── Score formats for playoffs / finals (leagues + tournaments) ──
+// A format defines how many games and the point target. Single-game formats
+// are decided by the one game's score; multi-game by winning the majority.
+const NAC_SCORE_FORMATS = {
+  to11:    { id:'to11',    games:1, target:11, label:'Single game to 11', short:'1 game to 11' },
+  to15:    { id:'to15',    games:1, target:15, label:'Single game to 15', short:'1 game to 15' },
+  bo3to11: { id:'bo3to11', games:3, target:11, label:'Best 2 of 3 to 11', short:'best 2 of 3 to 11' },
+};
+function nacFormat(id){ return NAC_SCORE_FORMATS[id] || NAC_SCORE_FORMATS.to11; }
+// Winner of a games array under a format -> 1, 2, or 0 (undecided).
+function nacGamesWinner(games, fmt){
+  const need = Math.floor((fmt.games||1)/2) + 1;
+  let w1 = 0, w2 = 0;
+  for(const g of (games||[])){
+    if(g && g.s1!=null && g.s2!=null){ if(g.s1>g.s2) w1++; else if(g.s2>g.s1) w2++; }
+  }
+  if(w1 >= need) return 1;
+  if(w2 >= need) return 2;
+  return 0;
+}
+function nacFormatOptions(sel, ids){
+  ids = ids || ['to11','to15','bo3to11'];
+  return ids.map(id => `<option value="${id}"${id===sel?' selected':''}>${nacFormat(id).label}</option>`).join('');
+}
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 
 // Default league catalog — used until/unless a custom catalog is saved in the

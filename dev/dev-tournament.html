@@ -28,7 +28,7 @@ h1{font-family:var(--font-display);font-size:30px;font-weight:900;text-transform
 .div-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
 .div-tab{padding:8px 16px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--white);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer}
 .div-tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem}
+.section{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem;max-width:100%;overflow:hidden}
 .section h3{font-family:var(--font-display);font-size:19px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.75rem}
 .pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
 .pill.pools{color:#8a6d00;background:rgba(212,167,0,.14)}
@@ -108,7 +108,20 @@ table.g tr:last-child td{border-bottom:none}
 .champ{font-family:var(--font-display);font-size:22px;font-weight:900;color:var(--green-dark);margin-top:.5rem}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-@media(max-width:600px){.page{padding:1rem}.section{padding:1rem}}
+@media(max-width:600px){
+  .page{padding:1rem}
+  .section{padding:1rem}
+  /* Standings: tighten so 8 columns fit / scroll cleanly on phones */
+  .standings-table th,.standings-table td{padding:7px 8px}
+  .standings-table th{font-size:11px;letter-spacing:.3px}
+  .standings-table td{font-size:13px}
+  .player-name{font-size:13px}
+  .win-pct{font-size:14px}
+  .rank{font-size:15px}
+  .streak-badge{padding:1px 5px;font-size:11px}
+  .playoff-badge{display:block;margin-left:0;margin-top:2px}
+  .dupr-link{font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -282,8 +295,8 @@ function standingsTable(pi){
       <td class="num">${streak!=='—'?`<span class="streak-badge ${last==='W'?'streak-w':'streak-l'}">${streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
-  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
-    <table class="standings-table" style="border:none;border-radius:0">
+  return `<div class="standings-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border);max-width:100%">
+    <table class="standings-table" style="border:none;border-radius:0;min-width:520px">
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
         <th class="num" style="width:72px">DUPR</th>
@@ -313,9 +326,9 @@ function poolMatchTable(pi){
     </tr>`;
   }).join('');
   const hint = editable ? `<p style="font-size:12px;color:var(--green-dark);font-weight:600;margin:8px 0 0">✓ Click any match to enter scores</p>` : '';
-  return `<table class="g" style="margin-top:10px"><thead><tr>
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="g" style="margin-top:10px;min-width:100%"><thead><tr>
       <th style="text-align:right">Team</th><th style="text-align:center">Score</th><th>Team</th>
-    </tr></thead><tbody>${rows}</tbody></table>${hint}`;
+    </tr></thead><tbody>${rows}</tbody></table></div>${hint}`;
 }
 
 // ── Pool score modal (same flow as the bracket) ──
@@ -365,6 +378,14 @@ function bkSlot(slot, score, isWinner, isBye){
     <span class="slot-score">${score!==null&&score!==undefined?score:''}</span>
   </div>`;
 }
+// Score shown on a bracket card slot: game wins for multi-game, else the score.
+function bkSlotScore(m, side, fmt){
+  if(fmt.games > 1){
+    if(!Array.isArray(m.games) || !m.games.some(g=>g&&g.s1!=null)) return '';
+    return m.games.reduce((a,g)=>{ if(g&&g.s1!=null&&g.s2!=null){ if(side==='s1'&&g.s1>g.s2)a++; if(side==='s2'&&g.s2>g.s1)a++; } return a; }, 0);
+  }
+  return m[side]!=null ? m[side] : '';
+}
 
 function bracketHTML(){
   const B = DIV.bracket, R = B.rounds.length;
@@ -399,10 +420,11 @@ function bracketHTML(){
       const byeSlot2 = r===0 && m.t1!==null && m.t2===null;
       const byeSlot1 = r===0 && m.t2!==null && m.t1===null;
       const court = COURT_OF[`${D.id}|bkt|${r}|${i}`];
+      const fmt = teBracketFormat(DIV, r);
       html += `<div class="bracket-card${clickable?' clickable':''}" style="left:${x}px;top:${top}px;width:${W}px"
         ${clickable?`onclick="openBracketModal(${r},${i})"`:''}>
-        ${bkSlot(m.t1, m.s1, w!==null&&w===m.t1, byeSlot1)}
-        ${bkSlot(m.t2, m.s2, w!==null&&w===m.t2, byeSlot2)}
+        ${bkSlot(m.t1, bkSlotScore(m,'s1',fmt), w!==null&&w===m.t1, byeSlot1)}
+        ${bkSlot(m.t2, bkSlotScore(m,'s2',fmt), w!==null&&w===m.t2, byeSlot2)}
         ${court?`<div class="bracket-court">Court ${court}</div>`:''}
       </div>`;
     });
@@ -427,13 +449,27 @@ let modalMatch = null;
 function openBracketModal(r, i){
   modalMatch = { r, i };
   const m = DIV.bracket.rounds[r][i];
+  const fmt = teBracketFormat(DIV, r);
+  const n = fmt.games;
+  if(n > 1 && !Array.isArray(m.games)) m.games = Array.from({length:n}, ()=>({s1:null,s2:null}));
+  let rows = '';
+  if(n > 1){
+    for(let gi=0; gi<n; gi++){ const g=m.games[gi]||{};
+      rows += `<div class="modal-row"><span style="min-width:56px">Game ${gi+1}</span>
+        <input type="number" min="0" id="bkg${gi}_1" value="${g.s1??''}" style="width:60px"/>
+        <input type="number" min="0" id="bkg${gi}_2" value="${g.s2??''}" style="width:60px"/></div>`;
+    }
+  } else {
+    rows = `<div class="modal-row"><span>${teamLabel(m.t1)}</span><input type="number" min="0" id="bkg0_1" value="${m.s1??''}"/></div>
+      <div class="modal-row"><span>${teamLabel(m.t2)}</span><input type="number" min="0" id="bkg0_2" value="${m.s2??''}"/></div>`;
+  }
   const wrap = document.createElement('div');
   wrap.className = 'modal-bg'; wrap.id = 'bk-modal';
   wrap.onclick = e => { if(e.target === wrap) closeBracketModal(); };
   wrap.innerHTML = `<div class="modal">
     <h3>${teRoundName(DIV.bracket.size, r, DIV.bracket.rounds.length)}</h3>
-    <div class="modal-row"><span>${teamLabel(m.t1)}</span><input type="number" min="0" id="bk-s1" value="${m.s1??''}"/></div>
-    <div class="modal-row"><span>${teamLabel(m.t2)}</span><input type="number" min="0" id="bk-s2" value="${m.s2??''}"/></div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:.75rem">${fmt.label}${n>1?` · ${teamLabel(m.t1)} vs ${teamLabel(m.t2)} (each game to ${fmt.target})`:''}</p>
+    ${rows}
     <div style="display:flex;gap:8px;margin-top:1rem">
       <button class="btn btn-green" style="flex:1" onclick="saveBracketModal()">Save</button>
       <button class="btn btn-ghost" onclick="closeBracketModal()">Cancel</button>
@@ -444,10 +480,15 @@ function closeBracketModal(){ const el=document.getElementById('bk-modal'); if(e
 async function saveBracketModal(){
   if(!modalMatch) return;
   const { r, i } = modalMatch;
-  const v1 = document.getElementById('bk-s1').value, v2 = document.getElementById('bk-s2').value;
   const m = DIV.bracket.rounds[r][i];
-  m.s1 = v1==='' ? null : Math.max(0, parseInt(v1,10)||0);
-  m.s2 = v2==='' ? null : Math.max(0, parseInt(v2,10)||0);
+  const fmt = teBracketFormat(DIV, r);
+  const rd = id => { const el=document.getElementById(id); const v=el?el.value:''; return v===''?null:Math.max(0,parseInt(v,10)||0); };
+  if(fmt.games > 1){
+    m.games = Array.from({length:fmt.games}, (_,gi)=>({ s1:rd(`bkg${gi}_1`), s2:rd(`bkg${gi}_2`) }));
+    delete m.s1; delete m.s2;
+  } else {
+    m.s1 = rd('bkg0_1'); m.s2 = rd('bkg0_2'); delete m.games;
+  }
   for(let rr = r+1; rr < DIV.bracket.rounds.length; rr++)
     DIV.bracket.rounds[rr].forEach(x => { x.t1=null; x.t2=null; });
   teAdvanceByes(DIV.bracket);

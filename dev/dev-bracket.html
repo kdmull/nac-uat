@@ -280,15 +280,25 @@ function initBracketFromStandings() {
   return buildBracketData(seedNames, isTeamBracket);
 }
 
-function bracketSeriesResult(match) {
+// Format for a league bracket round: 'final' can override the bracket default.
+function leagueFormat(round){
+  const id = (round==='final' && bracketData && bracketData.finalFormat)
+    ? bracketData.finalFormat
+    : (bracketData && bracketData.format) || 'bo3to11';   // legacy brackets = best of 3
+  return nacFormat(id);
+}
+
+function bracketSeriesResult(match, round) {
   if(!match) return {p1w:0,p2w:0,complete:false,winner:null};
+  const fmt = leagueFormat(round);
+  const need = Math.floor(fmt.games/2)+1;
   const games = match.games || [];
   let p1w=0, p2w=0;
   for(const g of games) {
     if(g.s1===null||g.s2===null) continue;
     if(g.s1>g.s2) p1w++; else if(g.s2>g.s1) p2w++;
   }
-  const complete = p1w>=2||p2w>=2;
+  const complete = p1w>=need || p2w>=need;
   const winner = complete ? (p1w>p2w ? match.p1 : match.p2) : null;
   return {p1w, p2w, complete, winner};
 }
@@ -309,9 +319,9 @@ function render() {
     return {name:p,w:s.w,l:s.l,pct:tot?s.w/tot:0,diff:s.pts-s.opp};
   }).sort((a,b)=>b.pct-a.pct||b.diff-a.diff);
 
-  const semi0 = bracketSeriesResult(bracketData.semis[0]);
-  const semi1 = bracketSeriesResult(bracketData.semis[1]);
-  const finalMatch = bracketSeriesResult(bracketData.final);
+  const semi0 = bracketSeriesResult(bracketData.semis[0], 'semis');
+  const semi1 = bracketSeriesResult(bracketData.semis[1], 'semis');
+  const finalMatch = bracketSeriesResult(bracketData.final, 'final');
 
   // Update final players from semi winners
   if(semi0.complete && !bracketData.final.p1) {
@@ -376,6 +386,18 @@ function render() {
           </div>`).join('')}
       </div>
     </div>
+
+    ${isBracketAdmin ? `<div style="background:var(--surface,#f0f4f9);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem">
+      <div style="font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:13px;color:var(--navy);margin-bottom:8px">Playoff Scoring</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end">
+        <label style="display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)">Semifinals
+          <select onchange="setLeagueFormat('format', this.value)" style="padding:7px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">${nacFormatOptions(bracketData.format||'bo3to11')}</select></label>
+        <label style="display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)">Final
+          <select onchange="setLeagueFormat('finalFormat', this.value)" style="padding:7px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
+            <option value="">Same as semifinals (${nacFormat(bracketData.format||'bo3to11').short})</option>
+            ${nacFormatOptions(bracketData.finalFormat||'')}</select></label>
+      </div>
+    </div>` : ''}
 
     <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 3px rgba(26,42,108,.05)">
       <div class="bracket-wrap">
@@ -445,9 +467,9 @@ function openBracketModal(round, idx) {
   currentModalSlot = {round, idx};
   document.getElementById('modal-p1').textContent = displayName(match.p1);
   document.getElementById('modal-p2').textContent = displayName(match.p2);
-  document.getElementById('modal-round-label').textContent = round==='final' ? 'Final' : `Semifinal ${idx+1}`;
+  document.getElementById('modal-round-label').textContent = (round==='final' ? 'Final' : `Semifinal ${idx+1}`) + ' · ' + leagueFormat(round).short;
   document.getElementById('submit-btn').disabled = false;
-  renderBracketModalGames(match);
+  renderBracketModalGames(match, round);
   document.getElementById('score-modal').classList.add('open');
 }
 
@@ -456,21 +478,27 @@ function closeModal() {
   currentModalSlot = null;
 }
 
-function renderBracketModalGames(match) {
-  const games = match.games && match.games.length ? match.games : [{s1:null,s2:null},{s1:null,s2:null},{s1:null,s2:null}];
-  while(games.length < 3) games.push({s1:null,s2:null});
+function renderBracketModalGames(match, round) {
+  const fmt = leagueFormat(round);
+  const n = fmt.games, need = Math.floor(n/2)+1;
+  const games = (match.games && match.games.length) ? match.games.slice() : [];
+  while(games.length < n) games.push({s1:null,s2:null});
+  games.length = n;
   let p1w=0,p2w=0;
-  for(let i=0;i<2;i++){
+  for(let i=0;i<n;i++){
     const g=games[i];
-    if(g.s1!==null&&g.s2!==null&&g.s1!==g.s2){if(g.s1>g.s2)p1w++;else p2w++;}
+    if(g && g.s1!==null&&g.s2!==null&&g.s1!==g.s2){if(g.s1>g.s2)p1w++;else p2w++;}
   }
-  const sweep = p1w>=2||p2w>=2;
+  const decided = p1w>=need||p2w>=need;
   document.getElementById('modal-games').innerHTML = games.map((g,i)=>{
-    const locked = i===2&&sweep;
+    // Lock a trailing game only once the series is already decided before it.
+    const before1 = games.slice(0,i).filter(x=>x&&x.s1!=null&&x.s2!=null&&x.s1>x.s2).length;
+    const before2 = games.slice(0,i).filter(x=>x&&x.s1!=null&&x.s2!=null&&x.s2>x.s1).length;
+    const locked = n>1 && (before1>=need || before2>=need);
     const p1win = g.s1!==null&&g.s2!==null&&g.s1>g.s2;
     const p2win = g.s1!==null&&g.s2!==null&&g.s2>g.s1;
     return `<div class="game-row${locked?' game-row-disabled':''}">
-      <span class="game-label">Game ${i+1}</span>
+      <span class="game-label">${n>1?`Game ${i+1}`:`to ${fmt.target}`}</span>
       <input class="game-input${p1win?' winner':''}" type="number" min="0" max="30" id="bg${i}_s1" value="${g.s1!==null?g.s1:''}" placeholder="0" ${locked?'disabled':''} oninput="onBracketGameInput()"/>
       <div class="game-dash">—</div>
       <input class="game-input${p2win?' winner':''}" type="number" min="0" max="30" id="bg${i}_s2" value="${g.s2!==null?g.s2:''}" placeholder="0" ${locked?'disabled':''} oninput="onBracketGameInput()"/>
@@ -480,8 +508,10 @@ function renderBracketModalGames(match) {
 }
 
 function onBracketGameInput(){
+  const fmt = currentModalSlot ? leagueFormat(currentModalSlot.round) : nacFormat('bo3to11');
+  const n = fmt.games, need = Math.floor(n/2)+1;
   let p1w=0,p2w=0;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<n;i++){
     const inp1=document.getElementById('bg'+i+'_s1');
     const inp2=document.getElementById('bg'+i+'_s2');
     if(!inp1||!inp2)continue;
@@ -491,34 +521,39 @@ function onBracketGameInput(){
       else{p2w++;inp2.classList.add('winner');inp1.classList.remove('winner');}
     }else{inp1.classList.remove('winner');inp2.classList.remove('winner');}
   }
-  let g1p1w=0,g1p2w=0;
-  for(let i=0;i<2;i++){
-    const s1=parseInt(document.getElementById('bg'+i+'_s1')?.value);
-    const s2=parseInt(document.getElementById('bg'+i+'_s2')?.value);
-    if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)g1p1w++;else g1p2w++;}
-  }
-  const sweep=g1p1w>=2||g1p2w>=2;
-  const g3s1=document.getElementById('bg2_s1'),g3s2=document.getElementById('bg2_s2');
-  const g3row=g3s1?.closest('.game-row');
-  if(g3s1&&g3s2){
-    g3s1.disabled=sweep;g3s2.disabled=sweep;
-    if(g3row){sweep?g3row.classList.add('game-row-disabled'):g3row.classList.remove('game-row-disabled');}
-    if(sweep){g3s1.value='';g3s2.value='';}
+  // Lock any trailing games once the series is decided by earlier ones.
+  for(let i=0;i<n;i++){
+    let b1=0,b2=0;
+    for(let j=0;j<i;j++){
+      const s1=parseInt(document.getElementById('bg'+j+'_s1')?.value);
+      const s2=parseInt(document.getElementById('bg'+j+'_s2')?.value);
+      if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){ if(s1>s2)b1++; else b2++; }
+    }
+    const lock = n>1 && (b1>=need || b2>=need);
+    const gs1=document.getElementById('bg'+i+'_s1'), gs2=document.getElementById('bg'+i+'_s2');
+    const grow=gs1?.closest('.game-row');
+    if(gs1&&gs2){
+      gs1.disabled=lock; gs2.disabled=lock;
+      if(grow){ lock?grow.classList.add('game-row-disabled'):grow.classList.remove('game-row-disabled'); }
+      if(lock){ gs1.value=''; gs2.value=''; }
+    }
   }
   updateBracketStatus();
 }
 
 function updateBracketStatus(){
+  const fmt = currentModalSlot ? leagueFormat(currentModalSlot.round) : nacFormat('bo3to11');
+  const n=fmt.games, need=Math.floor(n/2)+1;
   let p1w=0,p2w=0;
   const p1=document.getElementById('modal-p1').textContent;
   const p2=document.getElementById('modal-p2').textContent;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<n;i++){
     const s1=parseInt(document.getElementById('bg'+i+'_s1')?.value);
     const s2=parseInt(document.getElementById('bg'+i+'_s2')?.value);
     if(!isNaN(s1)&&!isNaN(s2)&&s1!==s2){if(s1>s2)p1w++;else p2w++;}
   }
   const el=document.getElementById('modal-series-status');
-  if(p1w>=2||p2w>=2){
+  if(p1w>=need||p2w>=need){
     const w=p1w>p2w?p1:p2;
     el.innerHTML=`<span style="color:var(--green-dark);font-weight:700">✓ ${w} wins ${Math.max(p1w,p2w)}-${Math.min(p1w,p2w)}</span>`;
   }else if(p1w>0||p2w>0){
@@ -526,11 +561,21 @@ function updateBracketStatus(){
   }else{el.textContent='';}
 }
 
+async function setLeagueFormat(field, id){
+  if(field==='finalFormat' && !id) delete bracketData.finalFormat;
+  else bracketData[field] = id;
+  await saveBracket();
+  render();
+}
+
 async function submitBracketScore(){
+  const {round,idx}=currentModalSlot;
+  const fmt=leagueFormat(round);
+  const n=fmt.games, need=Math.floor(n/2)+1;
   const games=[];
-  for(let i=0;i<3;i++){
-    const s1v=document.getElementById('bg'+i+'_s1').value;
-    const s2v=document.getElementById('bg'+i+'_s2').value;
+  for(let i=0;i<n;i++){
+    const el1=document.getElementById('bg'+i+'_s1'), el2=document.getElementById('bg'+i+'_s2');
+    const s1v=el1?el1.value:'', s2v=el2?el2.value:'';
     const s1=s1v===''?null:parseInt(s1v);
     const s2=s2v===''?null:parseInt(s2v);
     if(s1!==null||s2!==null){
@@ -543,11 +588,10 @@ async function submitBracketScore(){
 
   let p1w=0,p2w=0;
   for(const g of games){if(g.s1!==null){if(g.s1>g.s2)p1w++;else p2w++;}}
-  const {round,idx}=currentModalSlot;
   // Winner comes from the MATCH OBJECT (canonical identity), never from the
   // modal labels, which show prettified display names.
   const srcMatch = round==='final' ? bracketData.final : bracketData.semis[idx];
-  const winner = p1w>=2||p2w>=2 ? (p1w>p2w ? srcMatch.p1 : srcMatch.p2) : null;
+  const winner = (p1w>=need||p2w>=need) ? (p1w>p2w ? srcMatch.p1 : srcMatch.p2) : null;
 
   document.getElementById('submit-btn').disabled=true;
   if(round==='final'){
