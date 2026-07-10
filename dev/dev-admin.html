@@ -1720,9 +1720,18 @@ async function loadRegistered(){
 // Carry DUPR rating/ids onto a team, from the last "Load Registered" pull or a
 // previous save, so the public standings can show a DUPR column.
 function teamMeta(name, i){
-  const loaded = (window.__loadedEntries || {})[name];
-  const prev = (DIV.teams || []).find(t => t.name === name);
-  const src = loaded || prev || {};
+  const le = window.__loadedEntries || {};
+  const key = name.trim();
+  // Try exact, trimmed, and displayName-normalized matches so a small string
+  // difference between the textarea and the loaded entry doesn't drop ratings.
+  let src = le[name] || le[key];
+  if(!src){
+    const want = (typeof displayName==='function' ? displayName(key) : key).toLowerCase();
+    for(const k in le){ if((typeof displayName==='function' ? displayName(k) : k).toLowerCase() === want){ src = le[k]; break; } }
+  }
+  if(!src) src = (DIV.teams || []).find(t => t.name === name || t.name.trim() === key);
+  src = src || {};
+  console.log('[teamMeta]', name, '→ ratings:', src.ratings, 'duprIds:', src.duprIds);
   return { name, seed: i+1, rating: src.rating ?? null, ratings: src.ratings || [], duprIds: src.duprIds || [] };
 }
 
