@@ -350,22 +350,19 @@
   }
 
   function run(){
-    injectHamburgerCSS();             // mobile menu styles (everyone)
-    injectLinks();                    // base links for EVERYONE (incl. logged-out)
-    setupHamburger();                 // collapse both nav rows into one menu
+    try{ injectHamburgerCSS(); }catch(e){ console.warn('nav css', e); }
+    try{ injectLinks(); }catch(e){ console.warn('nav base links', e); }   // base links for EVERYONE
+    try{ setupHamburger(); }catch(e){ console.warn('nav hamburger', e); }
     var sess = getSession();
     if(!sess) return;                 // not signed in → public browsing as usual
     fetchProfile(sess).then(function(prof){
       if(enforceDuprLink(prof)) return;          // redirecting to connect — stop here
       injectAccountButtons();                    // My Profile + Sign Out
       if(prof && prof.is_admin){
-        // Re-run so the admin links append after the base links.
-        var nav = document.querySelector('nav');
-        if(nav){ var mark = nav.querySelector('[data-base-nav]'); }
         ADMIN_LINKS.forEach(function(l){ addAdminLink(l); });
       }
       checkPartnerInvites(sess);                 // partner invite banner
-    });
+    }).catch(function(e){ console.warn('nav profile', e); });
   }
 
   // Append a single admin link (used after base links are already present).
