@@ -187,6 +187,21 @@ async function loadAll(){
     let sched = [];
     try{ const res = await dbGet(seasonKey(lg.key, currentSeason.id)); sched = (res.data && res.data.schedule) || []; }catch(e){}
     const idMap = await leagueDuprIds(lg.id);
+    // Seed full names for THIS league so displayName() upgrades "First L." →
+    // full name (buildFullNameMap only covers a single currentLeague; here we
+    // iterate every league, so seed each one directly from its members).
+    try{
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/league_members?league_id=eq.${encodeURIComponent(lg.id)}&status=eq.active&select=first_name,last_name`, { headers:H() });
+      if(r.ok){
+        for(const row of await r.json()){
+          const full = `${row.first_name||''} ${row.last_name||''}`.trim();
+          if(!full) continue;
+          FULL_NAMES[full.toLowerCase()] = full;
+          const li = `${(row.first_name||'').trim()} ${((row.last_name||'').trim())[0]||''}.`.trim();
+          if(li) FULL_NAMES[li.toLowerCase()] = full;
+        }
+      }
+    }catch(e){}
     const matches = [];
     for(const w of sched){
       (w.matches || []).forEach((m, idx) => {
