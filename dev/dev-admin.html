@@ -1656,6 +1656,23 @@ async function loadRegistered(){
   if(dids.length){
     const { data: rts } = await sbAuth.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
     (rts||[]).forEach(x => ratingById[x.dupr_id] = x);
+    // Fallback: for any ids not yet seeded into dupr_ratings by a webhook, pull
+    // them live from the DUPR API (same as the league standings page does).
+    const missing = dids.filter(id => !ratingById[id]);
+    if(missing.length){
+      try{
+        const rr = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-ratings`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+          body: JSON.stringify({ duprIds: missing })
+        });
+        if(rr.ok){
+          const data = await rr.json();
+          const byId = data.ratings || {};   // { dupr_id: {singles, doubles} }
+          Object.keys(byId).forEach(id => { ratingById[id] = { singles:byId[id].singles, doubles:byId[id].doubles }; });
+        }
+      }catch(e){ console.warn('dupr-get-ratings fallback failed', e); }
+    }
   }
   const rateOf = (uid) => {
     const r = ratingById[duprByUser[uid]];
