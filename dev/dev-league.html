@@ -565,7 +565,7 @@ async function renderStandings(){
         if(rating === undefined || rating === null){
           return `<span style="font-size:11px;color:var(--muted)">—</span>`;
         }
-        const ratingNum = typeof rating === 'number' ? rating.toFixed(2) : rating;
+        const rn = parseFloat(rating); const ratingNum = isNaN(rn) ? rating : rn.toFixed(2);
         return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${ratingNum}</a>`;
       })()}</td>
       <td><a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(r.p)}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
@@ -630,7 +630,7 @@ function renderTeamStandings(){
     if(!dr || !dr.duprId) return null;
     const rating = dr.doubles;
     if(rating === undefined || rating === null) return null;
-    const num = typeof rating === 'number' ? rating.toFixed(2) : rating;
+    const rnum = parseFloat(rating); const num = isNaN(rnum) ? rating : rnum.toFixed(2);
     return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${num}</a>`;
   };
   const playerLink = (name)=>`<a href="dev-player.html?league=${currentLeague.id}&player=${encodeURIComponent(name)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(name)}</span></a>`;

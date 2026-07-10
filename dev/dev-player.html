@@ -286,7 +286,7 @@ const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/function
 function fmtRating(v){
   if(v === null || v === undefined || v === '') return null;
   const n = typeof v === 'number' ? v : parseFloat(v);
-  return isNaN(n) ? null : n.toFixed(3);
+  return isNaN(n) ? null : n.toFixed(2);
 }
 
 // Look up this player's DUPR id (by name, in this league) and fetch their live rating.
@@ -294,13 +294,45 @@ async function loadPlayerRating(playerName, leagueId){
   const box = document.getElementById('profile-dupr');
   if(!box) return;
   try{
-    // 1. name -> dupr_id from the dupr_players table
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&player_name=eq.${encodeURIComponent(playerName)}&select=dupr_id`,
-      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
-    );
-    const rows = r.ok ? await r.json() : [];
-    const duprId = rows.length ? rows[0].dupr_id : null;
+    const H = {'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY};
+    // Build the set of name forms this player might be stored under, since the
+    // schedule name and dupr_players.player_name can differ after the full-name
+    // migration ("Kyle M." vs "Kyle Mullins").
+    const forms = new Set();
+    const nm = (playerName||'').trim();
+    if(nm) forms.add(nm);
+    try{ if(typeof displayName==='function'){ const dn=displayName(nm); if(dn) forms.add(dn); } }catch(e){}
+    const parts = nm.split(/\s+/);
+    if(parts.length >= 2) forms.add(`${parts[0]} ${parts[parts.length-1][0]}.`);   // First L.
+
+    let duprId = null;
+    // 1a. Try in this league first, across all candidate name forms.
+    for(const form of forms){
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&player_name=eq.${encodeURIComponent(form)}&select=dupr_id`,
+        {headers:H});
+      const rows = r.ok ? await r.json() : [];
+      if(rows.length && rows[0].dupr_id){ duprId = rows[0].dupr_id; break; }
+    }
+    // 1b. Fallback: same name in ANY league (the dupr_id is the same person).
+    if(!duprId){
+      for(const form of forms){
+        const r = await fetch(
+          `${SUPABASE_URL}/rest/v1/dupr_players?player_name=eq.${encodeURIComponent(form)}&select=dupr_id&limit=1`,
+          {headers:H});
+        const rows = r.ok ? await r.json() : [];
+        if(rows.length && rows[0].dupr_id){ duprId = rows[0].dupr_id; break; }
+      }
+    }
+    // 1c. Last resort: case-insensitive match in any league.
+    if(!duprId && nm){
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/dupr_players?player_name=ilike.${encodeURIComponent(nm)}&select=dupr_id&limit=1`,
+        {headers:H});
+      const rows = r.ok ? await r.json() : [];
+      if(rows.length && rows[0].dupr_id) duprId = rows[0].dupr_id;
+    }
+
     if(!duprId){ box.innerHTML = `<span class="profile-dupr-note">Not linked to DUPR</span>`; return; }
 
     // 2. dupr_id -> live ratings via the Edge Function
