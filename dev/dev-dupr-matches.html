@@ -270,7 +270,7 @@ async function loadTournamentMatches(){
           ? { p1a:A[0], p1b:A[1], p2a:B[0], p2b:B[1], games: comp }
           : { p1:A[0], p2:B[0], games: comp };
         const matchNum = matches.length + 1;
-        schedule.push({ week:1, matches:[m] });         // one match per pseudo-week
+        schedule.push({ week: matchNum, matches:[m] });  // pseudo-week per match, keyed to matchFrom lookup
         const names = isD ? [A[0],A[1],B[0],B[1]].filter(Boolean) : [A[0],B[0]].filter(Boolean);
         const label = isD
           ? `${displayName(A[0])} &amp; ${displayName(A[1])} vs ${displayName(B[0])} &amp; ${displayName(B[1])}`
