@@ -336,6 +336,22 @@ async function loadProfile(){
     .from('profiles').select('*').eq('id', currentUser.id).single();
   if(error){ console.warn('Profile load error:', error); }
   currentProfile = data || { id: currentUser.id, email: currentUser.email };
+  // Safety net: if the profile row is missing its DUPR id but the player is in
+  // fact linked (their id lives in dupr_players, which standings use), recover
+  // it so the dashboard shows the correct linked state.
+  if(currentProfile && !currentProfile.dupr_id){
+    try{
+      const full = `${currentProfile.first_name||''} ${currentProfile.last_name||''}`.trim();
+      if(full){
+        const r = await supabaseClient.from('dupr_players')
+          .select('dupr_id,player_name').ilike('player_name', full).limit(1);
+        if(r.data && r.data[0] && r.data[0].dupr_id){
+          currentProfile.dupr_id = r.data[0].dupr_id;
+          console.log('Recovered dupr_id from dupr_players for', full);
+        }
+      }
+    }catch(e){ console.warn('dupr_id recovery failed', e); }
+  }
   myName = deriveMyName(currentProfile);
 }
 
