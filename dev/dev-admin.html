@@ -1676,13 +1676,13 @@ async function loadRegistered(){
         const name = `${nm(r)} & ${mate ? nm(mate) : (r.partner_name||'?')}`;
         const ra = rateOf(r.user_id), rb = rateOf(r.partner_user_id);
         const rating = (ra!=null && rb!=null) ? (ra+rb)/2 : (ra ?? rb ?? null);
-        entries.push({ name, rating, duprIds:[duprByUser[r.user_id], duprByUser[r.partner_user_id]].filter(Boolean) });
+        entries.push({ name, rating, ratings:[ra, rb], duprIds:[duprByUser[r.user_id], duprByUser[r.partner_user_id]] });
       } else {
         skipped.push(`${nm(r)}${r.partner_name ? ' (partner "'+r.partner_name+'" pending)' : ' (no partner)'}`);
       }
     });
   } else {
-    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id), duprIds:[duprByUser[r.user_id]].filter(Boolean) }));
+    regs.forEach(r => entries.push({ name: nm(r), rating: rateOf(r.user_id), ratings:[rateOf(r.user_id)], duprIds:[duprByUser[r.user_id]] }));
   }
 
   entries.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
@@ -1699,7 +1699,7 @@ function teamMeta(name, i){
   const loaded = (window.__loadedEntries || {})[name];
   const prev = (DIV.teams || []).find(t => t.name === name);
   const src = loaded || prev || {};
-  return { name, seed: i+1, rating: src.rating ?? null, duprIds: src.duprIds || [] };
+  return { name, seed: i+1, rating: src.rating ?? null, ratings: src.ratings || [], duprIds: src.duprIds || [] };
 }
 
 // ── Playoff scoring format (per bracket + per round) ──
