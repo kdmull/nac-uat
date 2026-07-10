@@ -1653,12 +1653,16 @@ async function loadRegistered(){
   const duprByUser = {}; (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
   const dids = [...new Set(Object.values(duprByUser))];
   let ratingById = {};
+  console.log('[LoadReg] users:', uids.length, '| with dupr_id:', Object.keys(duprByUser).length, '| unique dupr ids:', dids);
   if(dids.length){
-    const { data: rts } = await sbAuth.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+    const { data: rts, error: rtErr } = await sbAuth.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+    if(rtErr) console.warn('[LoadReg] dupr_ratings error:', rtErr);
+    console.log('[LoadReg] dupr_ratings rows:', rts);
     (rts||[]).forEach(x => ratingById[x.dupr_id] = x);
     // Fallback: for any ids not yet seeded into dupr_ratings by a webhook, pull
     // them live from the DUPR API (same as the league standings page does).
     const missing = dids.filter(id => !ratingById[id]);
+    console.log('[LoadReg] missing from dupr_ratings, trying live API:', missing);
     if(missing.length){
       try{
         const rr = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-ratings`, {
@@ -1666,13 +1670,16 @@ async function loadRegistered(){
           headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
           body: JSON.stringify({ duprIds: missing })
         });
+        console.log('[LoadReg] dupr-get-ratings status:', rr.status);
+        const data = await rr.json().catch(()=>({}));
+        console.log('[LoadReg] dupr-get-ratings body:', data);
         if(rr.ok){
-          const data = await rr.json();
           const byId = data.ratings || {};   // { dupr_id: {singles, doubles} }
           Object.keys(byId).forEach(id => { ratingById[id] = { singles:byId[id].singles, doubles:byId[id].doubles }; });
         }
-      }catch(e){ console.warn('dupr-get-ratings fallback failed', e); }
+      }catch(e){ console.warn('[LoadReg] dupr-get-ratings fallback failed', e); }
     }
+    console.log('[LoadReg] final ratingById:', ratingById);
   }
   const rateOf = (uid) => {
     const r = ratingById[duprByUser[uid]];
