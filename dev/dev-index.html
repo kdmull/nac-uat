@@ -236,11 +236,20 @@ async function renderTournamentCards(){
 renderTournamentCards();
 
 window.addEventListener('DOMContentLoaded', async () => {
-  if(!sb) return;  // client unavailable — leagues render from fallback; nav stays default
-  const { data: { session } } = await sb.auth.getSession();
+  // Always reveal the nav first — its visibility must not depend on the session
+  // check (which can fail if the supabase client didn't load).
   const signinCard = document.getElementById('signin-card');
   const mainNav = document.getElementById('main-nav');
   const navActions = document.getElementById('nav-actions');
+  if(mainNav) mainNav.style.display = 'flex';
+
+  if(!sb){
+    // Client unavailable: show the logged-out affordances and stop.
+    if(navActions) navActions.innerHTML = `<a class="nav-link" href="dev-auth.html">Sign In</a>`;
+    if(signinCard) signinCard.style.display = 'block';
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
 
   if(session){
     // Logged in — show nav with greeting + actions
