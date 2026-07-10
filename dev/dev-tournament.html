@@ -204,10 +204,68 @@ async function selectDiv(i){
   DIV = (res && res.data && res.data.teams) ? res.data : null;
   await seedTournamentNames();
   await loadCourtMap();
+  await loadDivRatings();
   renderDivTabs.__skip = true;
   document.querySelectorAll('.div-tab').forEach((b,bi) => b.classList.toggle('active', bi===i));
   renderScoreGate();
   render();
+}
+
+// Live DUPR ratings for this division, keyed by dupr_id, so standings show real
+// numbers regardless of what was baked into the saved team data. Mirrors the
+// league standings page: dupr_ratings table first, live DUPR API for the rest.
+let RATING_BY_ID = {};
+let NAME_TO_DUPR = {};   // fallback: player display-name -> dupr_id from registrations
+async function loadDivRatings(){
+  RATING_BY_ID = {}; NAME_TO_DUPR = {};
+  if(!DIV || !DIV.teams) return;
+  const H = { 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY };
+
+  // Collect dupr ids from the teams; if teams lack them, recover from this
+  // division's registrations (league_members -> profiles).
+  let ids = [...new Set(DIV.teams.flatMap(t => t.duprIds || []).filter(Boolean))];
+  try{
+    const lm = await fetch(`${SUPABASE_URL}/rest/v1/league_members?league_id=eq.${encodeURIComponent('t:'+T.id+':'+D.id)}&status=eq.active&select=user_id,first_name,last_name`, { headers:H });
+    if(lm.ok){
+      const rows = await lm.json();
+      const uids = [...new Set(rows.map(r=>r.user_id).filter(Boolean))];
+      if(uids.length){
+        const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${uids.map(encodeURIComponent).join(',')})&select=id,first_name,last_name,dupr_id`, { headers:H });
+        if(pr.ok){
+          const byUid = {}; for(const p of await pr.json()){ if(p.dupr_id){ byUid[p.id]=p.dupr_id; } }
+          rows.forEach(r => { const id=byUid[r.user_id]; if(id){ const full=`${r.first_name||''} ${r.last_name||''}`.trim(); NAME_TO_DUPR[full.toLowerCase()]=id; if(!ids.includes(id)) ids.push(id); } });
+        }
+      }
+    }
+  }catch(e){ console.warn('reg dupr recovery failed', e); }
+
+  if(!ids.length) return;
+  try{
+    const idIn = ids.map(encodeURIComponent).join(',');
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_ratings?dupr_id=in.(${idIn})&select=dupr_id,singles,doubles`, { headers:H });
+    if(r.ok){ for(const x of await r.json()) RATING_BY_ID[x.dupr_id] = x; }
+  }catch(e){ console.warn('dupr_ratings read failed', e); }
+  const missing = ids.filter(id => !RATING_BY_ID[id]);
+  if(missing.length){
+    try{
+      const rr = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-ratings`, {
+        method:'POST', headers:{ ...H, 'Content-Type':'application/json' },
+        body: JSON.stringify({ duprIds: missing })
+      });
+      if(rr.ok){ const d = await rr.json(); const byId = d.ratings || {}; Object.keys(byId).forEach(id => RATING_BY_ID[id] = byId[id]); }
+    }catch(e){ console.warn('dupr-get-ratings fallback failed', e); }
+  }
+}
+function ratingFor(duprId){
+  const rec = RATING_BY_ID[duprId];
+  if(!rec) return null;
+  const v = parseFloat(D.teamType === 'singles' ? rec.singles : rec.doubles);
+  return isNaN(v) ? null : v;
+}
+// Resolve a team's dupr ids, falling back to name→id from registrations.
+function teamDuprIds(team){
+  if(team.duprIds && team.duprIds.some(Boolean)) return team.duprIds;
+  return (team.name || '').split(' & ').map(n => NAME_TO_DUPR[n.trim().toLowerCase()] || null);
 }
 
 // Seed the display-name map so team names stored as "First L." show full.
@@ -268,14 +326,12 @@ async function reloadDiv(){
 
 // ── Rendering ─────────────────────────────────────────
 function duprCell(team){
-  if(!team || !team.duprIds || !team.duprIds.length) return `<span style="font-size:11px;color:var(--muted)">—</span>`;
-  const ratings = team.ratings || [];
-  // One chip per player: their rating (2dp) linked to their DUPR profile, or NR.
-  const chips = team.duprIds.map((id, k) => {
-    const rv = ratings[k];
+  const ids = teamDuprIds(team);
+  if(!ids || !ids.some(Boolean)) return `<span style="font-size:11px;color:var(--muted)">—</span>`;
+  const chips = ids.map((id) => {
+    const rv = id ? ratingFor(id) : null;
     const val = (typeof rv === 'number') ? rv.toFixed(2) : null;
     if(id && val) return `<a href="https://dashboard.dupr.com/dashboard/player/${id}" target="_blank" rel="noopener" class="dupr-link">${val}</a>`;
-    if(val) return `<span class="dupr-link" style="border-bottom:none">${val}</span>`;
     return `<span style="font-size:11px;color:var(--muted)">NR</span>`;
   });
   return chips.join('<span style="color:var(--muted);margin:0 3px">/</span>');
