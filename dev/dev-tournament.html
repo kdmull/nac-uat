@@ -111,18 +111,14 @@ table.g tr:last-child td{border-bottom:none}
 @media(max-width:600px){
   .page{padding:1rem}
   .section{padding:1rem}
-  /* Standings: tighten so 8 columns fit / scroll cleanly on phones */
-  .standings-table th,.standings-table td{padding:7px 8px}
-  .standings-table th{font-size:11px;letter-spacing:.3px}
-  .standings-table td{font-size:13px}
-  .player-name{font-size:13px}
-  .win-pct{font-size:14px}
+  /* Standings: match the league page — compact cells, single-line, scroll. */
+  .standings-table th,.standings-table td{padding:8px 8px;font-size:13px;white-space:nowrap}
+  .standings-table th{letter-spacing:.3px}
   .rank{font-size:15px}
+  .win-pct{font-size:14px}
+  .player-name{font-size:13px}
   .streak-badge{padding:1px 5px;font-size:11px}
-  .playoff-badge{font-size:0;padding:2px 4px;margin-left:4px;vertical-align:middle}
-  .playoff-badge::before{content:'\2713';font-size:11px}   /* ✓ instead of the word */
-  .standings-table td:nth-child(3){white-space:normal;min-width:120px}
-  .player-name{white-space:normal;word-break:break-word}
+  .playoff-badge{font-size:10px;padding:1px 5px;margin-left:5px}
   .dupr-link{font-size:13px}
 }
 </style>
@@ -356,8 +352,8 @@ function standingsTable(pi){
       <td class="num">${streak!=='—'?`<span class="streak-badge ${last==='W'?'streak-w':'streak-l'}">${streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
-  return `<div class="standings-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border);max-width:100%">
-    <table class="standings-table" style="border:none;border-radius:0;min-width:460px">
+  return `<div class="standings-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+    <table class="standings-table" style="border:none;border-radius:0">
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
         <th class="num" style="width:104px">DUPR</th>
