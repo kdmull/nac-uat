@@ -9,6 +9,14 @@
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
   var REF = 'owsvfvhlbagxxmncwmtn';
 
+  // Base links every visitor sees, in a fixed order. Injected consistently on
+  // every page so no page needs to hand-write them (which caused drift).
+  var BASE_LINKS = [
+    { href:'dev-index.html',       label:'Leagues' },
+    { href:'dev-tournaments.html', label:'Tournaments' },
+    { href:'dev-rules.html',       label:'Rules' }
+  ];
+
   // All admin destinations. The link to the current page is skipped.
   var ADMIN_LINKS = [
     { href:'dev-admin.html',    label:'Admin' },
@@ -67,22 +75,21 @@
 
   function injectLinks(){
     var nav = document.querySelector('nav');
-    if(!nav || nav.querySelector('[data-admin-nav]')) return;
-    var tabs = nav.querySelector('.nav-tabs');       // league pages
-    var rightGroup = nav.querySelector('#nav-links'); // other pages
-    var container = tabs || rightGroup || nav;
-    var cls = tabs ? 'nav-tab' : 'nav-link';
+    if(!nav || nav.querySelector('[data-base-nav]')) return;
+    // League/section pages use an in-page tab bar (.nav-tabs) as their nav; don't
+    // jam the site-wide base links in among those tabs.
+    var rightGroup = nav.querySelector('#nav-links');
+    if(!rightGroup) return;                          // no standard nav container here
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
-    ADMIN_LINKS.forEach(function(l){
-      if(l.href.toLowerCase() === current) return;   // don't link to the page we're on
-      if(nav.querySelector('a[href="'+l.href+'"]')) return;  // already present (manual link)
+    BASE_LINKS.forEach(function(l){
+      if(nav.querySelector('a[href="'+l.href+'"]')) return;   // already present
       var a = document.createElement('a');
       a.href = l.href;
       a.textContent = l.label;
-      a.setAttribute('data-admin-nav','1');
-      a.className = cls;
+      a.setAttribute('data-base-nav', '1');
+      a.className = 'nav-link' + (l.href.toLowerCase() === current ? ' current' : '');
       a.style.textDecoration = 'none';
-      container.appendChild(a);
+      rightGroup.appendChild(a);
     });
   }
 
@@ -344,15 +351,37 @@
 
   function run(){
     injectHamburgerCSS();             // mobile menu styles (everyone)
+    injectLinks();                    // base links for EVERYONE (incl. logged-out)
     setupHamburger();                 // collapse both nav rows into one menu
     var sess = getSession();
     if(!sess) return;                 // not signed in → public browsing as usual
     fetchProfile(sess).then(function(prof){
       if(enforceDuprLink(prof)) return;          // redirecting to connect — stop here
       injectAccountButtons();                    // My Profile + Sign Out
-      if(prof && prof.is_admin) injectLinks();   // admin nav links
+      if(prof && prof.is_admin){
+        // Re-run so the admin links append after the base links.
+        var nav = document.querySelector('nav');
+        if(nav){ var mark = nav.querySelector('[data-base-nav]'); }
+        ADMIN_LINKS.forEach(function(l){ addAdminLink(l); });
+      }
       checkPartnerInvites(sess);                 // partner invite banner
     });
+  }
+
+  // Append a single admin link (used after base links are already present).
+  function addAdminLink(l){
+    var nav = document.querySelector('nav'); if(!nav) return;
+    if(nav.querySelector('a[href="'+l.href+'"]')) return;
+    var tabs = nav.querySelector('.nav-tabs');
+    var container = tabs || nav.querySelector('#nav-links') || nav;
+    var cls = tabs ? 'nav-tab' : 'nav-link';
+    var current = (location.pathname.split('/').pop() || '').toLowerCase();
+    var a = document.createElement('a');
+    a.href = l.href; a.textContent = l.label;
+    a.setAttribute('data-admin-nav','1');
+    a.className = cls + (l.href.toLowerCase() === current ? ' current' : '');
+    a.style.textDecoration = 'none';
+    container.appendChild(a);
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
