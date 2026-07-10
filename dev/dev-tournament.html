@@ -119,7 +119,10 @@ table.g tr:last-child td{border-bottom:none}
   .win-pct{font-size:14px}
   .rank{font-size:15px}
   .streak-badge{padding:1px 5px;font-size:11px}
-  .playoff-badge{display:block;margin-left:0;margin-top:2px}
+  .playoff-badge{font-size:0;padding:2px 4px;margin-left:4px;vertical-align:middle}
+  .playoff-badge::before{content:'\2713';font-size:11px}   /* ✓ instead of the word */
+  .standings-table td:nth-child(3){white-space:normal;min-width:120px}
+  .player-name{white-space:normal;word-break:break-word}
   .dupr-link{font-size:13px}
 }
 </style>
@@ -166,7 +169,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if(!T){ document.getElementById('head').innerHTML = '<h1>Tournament</h1><p class="sub">No tournament found. <a href="dev-tournaments.html">Back to tournaments</a></p>'; return; }
 
   document.getElementById('head').innerHTML =
-    `<h1>${esc(T.name)}</h1><p class="sub">${esc(T.date||'')}${T.location?' · '+esc(T.location):''}</p>`;
+    `<h1>${esc(T.name)}</h1><p class="sub">${esc(nacFmtDate(T.date||''))}${T.location?' · '+esc(T.location):''}</p>`;
 
   // Admins can always score; players unlock with the score password (session-cached).
   try{ if(await checkAccountAdmin()) canScore = true; }catch(e){}
@@ -357,7 +360,7 @@ function standingsTable(pi){
     </tr>`;
   }).join('');
   return `<div class="standings-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border);max-width:100%">
-    <table class="standings-table" style="border:none;border-radius:0;min-width:520px">
+    <table class="standings-table" style="border:none;border-radius:0;min-width:460px">
       <thead><tr>
         <th style="width:52px;white-space:nowrap">#</th>
         <th class="num" style="width:104px">DUPR</th>

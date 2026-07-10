@@ -1374,7 +1374,7 @@ function renderTournaments(){
     return `
     <div class="trow ${curT&&curT.id===t.id?'active':''}" onclick="selectTournament(${i})">
       <span class="tname">${esc(t.name)}</span>
-      <span class="tmeta">${esc(t.date||'')}${t.location?' · '+esc(t.location):''} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}</span>
+      <span class="tmeta">${esc(nacFmtDate(t.date||''))}${t.location?' · '+esc(t.location):''} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}</span>
       <span class="pill ${t.regOpen?'knockout':'draft'}">${t.regOpen?'Reg Open':'Reg Closed'}</span>
       <span style="margin-left:auto"></span>
       <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();editingTournament=${i};renderTournaments()">Edit</button>

@@ -35,6 +35,13 @@ function nacGamesWinner(games, fmt){
   if(w2 >= need) return 2;
   return 0;
 }
+// Format a stored YYYY-MM-DD date as MM/DD/YYYY (no timezone shift).
+function nacFmtDate(d){
+  if(!d) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+  if(m) return `${m[2]}/${m[3]}/${m[1]}`;
+  return d;   // already free-text or unexpected format — leave as-is
+}
 function nacFormatOptions(sel, ids){
   ids = ids || ['to11','to15','bo3to11'];
   return ids.map(id => `<option value="${id}"${id===sel?' selected':''}>${nacFormat(id).label}</option>`).join('');
