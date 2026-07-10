@@ -82,7 +82,9 @@
     if(!rightGroup) return;                          // no standard nav container here
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
     BASE_LINKS.forEach(function(l){
-      if(nav.querySelector('a[href="'+l.href+'"]')) return;   // already present
+      // Only skip if the link already exists among the nav LINKS — not elsewhere
+      // in the nav (e.g. the brand logo also points to dev-index.html).
+      if(rightGroup.querySelector('a[href="'+l.href+'"]')) return;
       var a = document.createElement('a');
       a.href = l.href;
       a.textContent = l.label;
@@ -368,9 +370,11 @@
   // Append a single admin link (used after base links are already present).
   function addAdminLink(l){
     var nav = document.querySelector('nav'); if(!nav) return;
-    if(nav.querySelector('a[href="'+l.href+'"]')) return;
     var tabs = nav.querySelector('.nav-tabs');
     var container = tabs || nav.querySelector('#nav-links') || nav;
+    // Scope the dup-check to the link container so the brand logo (which may
+    // share an href) doesn't cause a real link to be skipped.
+    if(container.querySelector('a[href="'+l.href+'"]')) return;
     var cls = tabs ? 'nav-tab' : 'nav-link';
     var current = (location.pathname.split('/').pop() || '').toLowerCase();
     var a = document.createElement('a');
