@@ -187,9 +187,9 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
         <th class="num" style="width:72px">DUPR</th>
         <th id="standings-name-th">Player</th>
         <th class="num">W</th><th class="num">L</th>
-        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th>
       </tr></thead>
-      <tbody id="standings-body"><tr><td colspan="8"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
+      <tbody id="standings-body"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
   </div>
   <div id="roster-area" style="display:none"></div>
@@ -572,7 +572,6 @@ async function renderStandings(){
       <td class="num">${r.w}</td><td class="num">${r.l}</td>
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
-      <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -652,7 +651,6 @@ function renderTeamStandings(){
       <td class="num">${r.w}</td><td class="num">${r.l}</td>
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
-      <td class="num">${r.streakStr!=='—'?`<span class="streak-badge ${sc}">${r.streakStr}</span>`:'—'}</td>
     </tr>`;
   }).join('');
 }

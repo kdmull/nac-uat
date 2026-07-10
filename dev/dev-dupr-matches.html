@@ -133,8 +133,33 @@ async function leagueDuprIds(leagueId){
   try{
     const r = await fetch(`${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(leagueId)}&select=player_name,dupr_id`, { headers:H() });
     if(!r.ok) return {};
-    const map = {}; for(const row of await r.json()) map[row.player_name] = row.dupr_id; return map;
+    const map = {};
+    for(const row of await r.json()){
+      const id = row.dupr_id; if(!id) continue;
+      const nm = (row.player_name||'').trim();
+      // Key by the stored name AND its variants so a schedule name in a different
+      // form ("Kyle M." vs "Kyle Mullins") still resolves to the same id.
+      map[nm] = id;
+      map[nm.toLowerCase()] = id;
+      const parts = nm.split(/\s+/);
+      if(parts.length >= 2){
+        const li = `${parts[0]} ${parts[parts.length-1][0]}.`;
+        map[li] = id; map[li.toLowerCase()] = id;
+      }
+      try{ if(typeof displayName==='function'){ const dn=displayName(nm); if(dn){ map[dn]=id; map[dn.toLowerCase()]=id; } } }catch(e){}
+    }
+    return map;
   }catch(e){ return {}; }
+}
+// Resolve a schedule name against the (dual-keyed) id map, trying its variants.
+function idForName(idMap, name){
+  const nm = (name||'').trim();
+  if(idMap[nm]) return idMap[nm];
+  if(idMap[nm.toLowerCase()]) return idMap[nm.toLowerCase()];
+  try{ if(typeof displayName==='function'){ const dn=displayName(nm); if(idMap[dn]) return idMap[dn]; if(idMap[(dn||'').toLowerCase()]) return idMap[(dn||'').toLowerCase()]; } }catch(e){}
+  const parts = nm.split(/\s+/);
+  if(parts.length >= 2){ const li=`${parts[0]} ${parts[parts.length-1][0]}.`; if(idMap[li]) return idMap[li]; if(idMap[li.toLowerCase()]) return idMap[li.toLowerCase()]; }
+  return null;
 }
 
 async function fetchSubmitted(){
@@ -178,7 +203,7 @@ async function loadAll(){
           week:w.week, matchNum,
           identifier:`${lg.key}|${currentSeason.id}|w${w.week}|m${matchNum}`,
           label, scores, series:r.seriesStr,
-          linked: names.every(n => idMap[n]),
+          linked: names.every(n => idForName(idMap, n)),
         });
       });
     }
@@ -376,9 +401,9 @@ function buildBody(m, idMap){
   const isD = m.p1a !== undefined;
   const format = isD ? 'DOUBLES' : 'SINGLES';
   const names = isD ? [m.p1a,m.p1b,m.p2a,m.p2b].filter(Boolean) : [m.p1,m.p2].filter(Boolean);
-  if(!names.every(n => idMap[n])) return null;
-  const teamA = isD ? { player1:idMap[m.p1a], player2:idMap[m.p1b] } : { player1:idMap[m.p1] };
-  const teamB = isD ? { player1:idMap[m.p2a], player2:idMap[m.p2b] } : { player1:idMap[m.p2] };
+  if(!names.every(n => idForName(idMap, n))) return null;
+  const teamA = isD ? { player1:idForName(idMap,m.p1a), player2:idForName(idMap,m.p1b) } : { player1:idForName(idMap,m.p1) };
+  const teamB = isD ? { player1:idForName(idMap,m.p2a), player2:idForName(idMap,m.p2b) } : { player1:idForName(idMap,m.p2) };
   const comp = (m.games || []).filter(g => g.s1!=null && g.s2!=null);
   if(!comp.length) return null;
   comp.forEach((g,i) => { teamA[`game${i+1}`] = g.s1; teamB[`game${i+1}`] = g.s2; });
@@ -412,7 +437,7 @@ async function doSubmit(leagueId, week, matchNum, idSuffix){
   const slots = isD
     ? [['p1a',m.p1a],['p1b',m.p1b],['p2a',m.p2a],['p2b',m.p2b]]
     : [['p1',m.p1],['p2',m.p2]];
-  const resolved = slots.filter(([k,n]) => n).map(([k,n]) => ({ name:n, id:P.idMap[n] }));
+  const resolved = slots.filter(([k,n]) => n).map(([k,n]) => ({ name:n, id:idForName(P.idMap, n) }));
   const missing = resolved.filter(r => !r.id);
   if(missing.length){
     console.warn('DUPR submit — unresolved players:', missing, 'idMap:', P.idMap);

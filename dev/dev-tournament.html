@@ -349,7 +349,6 @@ function standingsTable(pi){
       <td class="num">${r.won}</td><td class="num">${r.lost}</td>
       <td class="num"><span class="win-pct">${Math.round(pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${diff>0?'+':''}${diff}</span></td>
-      <td class="num">${streak!=='—'?`<span class="streak-badge ${last==='W'?'streak-w':'streak-l'}">${streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
   return `<div class="standings-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
@@ -359,7 +358,7 @@ function standingsTable(pi){
         <th class="num" style="width:104px">DUPR</th>
         <th>${D.teamType==='doubles'?'Team':'Player'}</th>
         <th class="num">W</th><th class="num">L</th>
-        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
