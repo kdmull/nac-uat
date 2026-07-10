@@ -734,6 +734,16 @@ async function submitScore(){
     games.push({s1,s2});
   }
   if(games[0].s1===null){showToast('Enter at least Game 1 scores!');return;}
+  // Warn if the series isn't decided yet (best-of-3 needs one side to win 2
+  // games). Saving an unfinished series leaves the winner blank in standings.
+  {
+    let w1=0,w2=0;
+    for(const g of games){ if(g.s1!=null&&g.s2!=null){ if(g.s1>g.s2)w1++; else if(g.s2>g.s1)w2++; } }
+    if(w1<2 && w2<2){
+      const ok = confirm('This series isn\u2019t finished \u2014 one team needs to win 2 games. If you save now, no winner will be recorded and it won\u2019t count in the standings. Save anyway?');
+      if(!ok) return;
+    }
+  }
   document.getElementById('submit-btn').disabled=true;
   const{week,idx}=currentModalMatch;
   schedule.find(w=>w.week===week).matches[idx].games=games;
