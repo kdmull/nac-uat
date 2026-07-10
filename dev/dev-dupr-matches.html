@@ -379,11 +379,11 @@ function renderLeague(l){
       actions = `<button class="btn-sm green" ${dis} onclick="doSubmit('${l.league.id}',${c.week},${c.matchNum})">Submit</button>`;
     }
     return `<tr>
-      <td class="nw"><strong>Wk ${c.week} · M${c.matchNum}</strong></td>
+      <td class="nw"><strong>${l.isTournament ? (c.series || 'Match') : `Wk ${c.week} · M${c.matchNum}`}</strong></td>
       <td>${c.label}</td>
       <td class="nw">${done
         ? `<a href="${DUPR_MATCH_URL(sub.match_id || sub.match_code)}" target="_blank" rel="noopener" title="Open this match on DUPR" style="color:var(--green-dark);text-decoration:underline">${c.scores || c.series}</a>`
-        : (c.scores || c.series)}${c.scores ? ` <span class="muted sm">(${c.series})</span>` : ''}</td>
+        : (c.scores || c.series)}${(c.scores && !l.isTournament) ? ` <span class="muted sm">(${c.series})</span>` : ''}</td>
       <td>${status}</td>
       <td class="nw ar">${actions}</td>
     </tr>`;
@@ -391,7 +391,7 @@ function renderLeague(l){
   return `<div class="section">
     <div class="lg-head"><h2>${l.league.name}</h2><span class="count-pill">${l.matches.length} match${l.matches.length!==1?'es':''}</span></div>
     <div class="table-wrap"><table class="m">
-      <thead><tr><th>Week / Match</th><th>Matchup</th><th>Result</th><th>DUPR Status</th><th></th></tr></thead>
+      <thead><tr><th>Round / Match</th><th>Matchup</th><th>Result</th><th>DUPR Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>
   </div>`;
@@ -460,6 +460,8 @@ async function doSubmit(leagueId, week, matchNum, idSuffix){
     leagueKey: P.league.key, leagueName: P.league.name,
     seasonId: currentSeason.id, week, matchNum, submitterDuprId: adminDuprId,
     identifier: row ? row.identifier : undefined,   // tournaments carry a custom id
+    bracketLabel: (P.isTournament && row) ? (row.series || '') : undefined,  // round, not week
+    isTournament: !!P.isTournament,
     duprEnabled: P.duprEnabled,
     idSuffix: idSuffix || undefined,
   });
