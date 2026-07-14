@@ -301,11 +301,11 @@
 /* =============================================================
    CONFIG — fill these in
    ============================================================= */
-const SUPABASE_URL      = 'https://owsvfvhlbagxxmncwmtn.supabase.co'; // DEV project
+
+const SUPABASE_URL      = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_iYuBBWxRTIXA8h0V-wbRrw_IRgGpbyK';
-const OWNER_ID          = ''; // optional: your auth user UUID. Blank = any
-                              // signed-in user passes the client gate
-                              // (RLS still protects the data either way).
+const OWNER_ID          = '';          // or your user UUID
+
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
