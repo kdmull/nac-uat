@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Shot Tagger · NAC Pickleball</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0f24;          /* deep navy-black, derived from brand navy */
+    --panel:#121a3c;
+    --panel-2:#0d1430;
+    --line:#26327a;
+    --line-soft:#1b2456;
+    --ink:#e9ecf7;
+    --muted:#8d96bd;
+    --navy:#1a2a6c;
+    --green:#4caf28;
+    --gold:#d4a017;
+    --red:#e05555;
+    --keycap-bg:#182150;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Barlow',sans-serif;
+    font-size:15px;
+    line-height:1.45;
+  }
+  h1,h2,h3,.disp{font-family:'Barlow Condensed',sans-serif;letter-spacing:.02em}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{
+    font-family:inherit;font-size:14px;color:var(--ink);
+    background:var(--panel-2);border:1px solid var(--line);border-radius:6px;
+    padding:8px 10px;width:100%;
+  }
+  input:focus,select:focus,textarea:focus,button:focus-visible{
+    outline:2px solid var(--gold);outline-offset:1px;
+  }
+  .btn{
+    background:var(--green);color:#06210a;border:none;border-radius:6px;
+    padding:9px 18px;font-weight:600;font-size:14px;
+  }
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .btn.ghost:hover{color:var(--ink);border-color:var(--muted)}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;gap:14px;
+    padding:10px 18px;border-bottom:1px solid var(--line-soft);
+    background:var(--panel-2);
+  }
+  header h1{font-size:22px;font-weight:700;text-transform:uppercase}
+  header h1 span{color:var(--gold)}
+  .header-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted)}
+
+  /* ---------- auth / setup overlays ---------- */
+  .gate{
+    position:fixed;inset:0;background:var(--bg);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:26px;width:100%;max-width:460px;
+  }
+  .card h2{font-size:26px;text-transform:uppercase;margin-bottom:4px}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+  .divider{border-top:1px solid var(--line-soft);margin:18px 0;position:relative}
+  .divider span{
+    position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+    background:var(--panel);padding:0 10px;font-size:11px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.1em;
+  }
+
+  /* ---------- main layout ---------- */
+  .app{display:none;flex-direction:column;height:100vh}
+  .app.on{display:flex}
+  .work{flex:1;display:grid;grid-template-columns:1fr 340px;gap:0;min-height:0}
+  .video-pane{position:relative;background:#000;min-height:0}
+  #ytplayer{position:absolute;inset:0;width:100%;height:100%}
+
+  .side{
+    border-left:1px solid var(--line-soft);background:var(--panel-2);
+    display:flex;flex-direction:column;min-height:0;
+  }
+  .side section{padding:12px 14px;border-bottom:1px solid var(--line-soft)}
+  .side h3{
+    font-size:12px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;
+    font-family:'Barlow',sans-serif;
+  }
+
+  /* rally state */
+  .rally-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
+  .stat .num{font-family:'Barlow Condensed';font-size:30px;font-weight:700;line-height:1}
+  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .serve-flag{
+    display:inline-block;margin-top:2px;padding:2px 10px;border-radius:20px;
+    font-family:'Barlow Condensed';font-size:16px;font-weight:600;
+    border:1px solid var(--line);
+  }
+  .serve-flag.us{color:var(--green);border-color:var(--green)}
+  .serve-flag.them{color:var(--gold);border-color:var(--gold)}
+
+  /* ---------- combo HUD (signature) ---------- */
+  .hud{min-height:118px}
+  .hud-mode{
+    font-family:'Barlow Condensed';font-size:15px;font-weight:600;
+    text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;
+  }
+  .hud-mode.idle{color:var(--muted)}
+  .hud-mode.entry{color:var(--gold)}
+  .hud-mode.rallyend{color:var(--green)}
+  .slots{display:flex;gap:8px}
+  .slot{flex:1;text-align:center}
+  .slot .keycap{
+    display:flex;align-items:center;justify-content:center;
+    height:52px;border-radius:8px;
+    border:1px solid var(--line);border-bottom-width:4px;
+    background:var(--keycap-bg);
+    font-family:'Barlow Condensed';font-size:30px;font-weight:700;
+    color:var(--muted);transition:border-color .1s,color .1s;
+  }
+  .slot.active .keycap{border-color:var(--gold);color:var(--gold)}
+  .slot.filled .keycap{border-color:var(--green);color:var(--ink)}
+  .slot.error .keycap{border-color:var(--red);color:var(--red)}
+  .slot .slot-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:5px}
+  .slot .slot-val{font-family:'Barlow Condensed';font-size:14px;font-weight:600;min-height:17px}
+  @media (prefers-reduced-motion:no-preference){
+    .slot.active .keycap{animation:pulse 1.2s ease-in-out infinite}
+    @keyframes pulse{50%{border-color:#f0c04a}}
+  }
+
+  /* recent shots */
+  .recent{flex:1;overflow-y:auto}
+  .shot-row{
+    display:flex;gap:8px;align-items:baseline;
+    padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:13px;
+  }
+  .shot-row .t{font-family:'Barlow Condensed';font-weight:600;color:var(--gold);min-width:44px}
+  .shot-row .d{flex:1;color:var(--ink)}
+  .shot-row .q{font-weight:600}
+  .q.clean{color:var(--green)} .q.attackable{color:var(--gold)} .q.error{color:var(--red)}
+  .shot-row.rally-marker{color:var(--muted);font-style:italic;border-bottom:1px dashed var(--line)}
+  .empty-note{color:var(--muted);font-size:13px;padding:8px 0}
+
+  /* ---------- cheat sheet ---------- */
+  .cheats{
+    display:flex;gap:20px;flex-wrap:wrap;align-items:center;
+    padding:8px 18px;border-top:1px solid var(--line-soft);background:var(--panel-2);
+    font-size:12px;color:var(--muted);
+  }
+  .cheat-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .cheat-group.dim{opacity:.35}
+  .cheat-group b{
+    font-family:'Barlow Condensed';font-size:13px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.08em;
+  }
+  kbd{
+    display:inline-block;min-width:20px;text-align:center;
+    padding:1px 5px;border:1px solid var(--line);border-bottom-width:2px;
+    border-radius:4px;background:var(--keycap-bg);
+    font-family:'Barlow Condensed';font-size:13px;font-weight:600;color:var(--ink);
+  }
+  .toast{
+    position:fixed;bottom:64px;left:50%;transform:translateX(-50%);
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:8px 16px;font-size:14px;z-index:60;display:none;
+  }
+  .toast.on{display:block}
+  .toast.ok{border-color:var(--green)}
+  .toast.bad{border-color:var(--red);color:var(--red)}
+
+  @media (max-width:900px){
+    .work{grid-template-columns:1fr;grid-template-rows:42vh 1fr}
+    .side{border-left:none;border-top:1px solid var(--line-soft)}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH GATE ============ -->
+<div class="gate" id="authGate">
+  <div class="card">
+    <h2>Shot <span style="color:var(--gold)">Tagger</span></h2>
+    <p class="sub">Private analytics · sign in to continue</p>
+    <div class="field"><label for="email">Email</label><input type="email" id="email" autocomplete="email"></div>
+    <div class="field"><label for="password">Password</label><input type="password" id="password" autocomplete="current-password"></div>
+    <button class="btn" id="signInBtn">Sign in</button>
+    <p class="err" id="authErr"></p>
+  </div>
+</div>
+
+<!-- ============ SESSION SETUP ============ -->
+<div class="gate" id="setupGate" style="display:none">
+  <div class="card">
+    <h2>New <span style="color:var(--gold)">Session</span></h2>
+    <p class="sub">Paste a YouTube link for the game footage</p>
+    <div class="field"><label for="ytUrl">YouTube URL or video ID</label><input id="ytUrl" placeholder="https://youtu.be/..."></div>
+    <div class="row2">
+      <div class="field"><label for="playedOn">Date played</label><input type="date" id="playedOn"></div>
+      <div class="field"><label for="vTitle">Label</label><input id="vTitle" placeholder="Open play game 2"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="vPartner">Partner</label><input id="vPartner"></div>
+      <div class="field"><label for="vOpp">Opponents</label><input id="vOpp"></div>
+    </div>
+    <button class="btn" id="startBtn">Start tagging</button>
+    <p class="err" id="setupErr"></p>
+    <div class="divider"><span>or resume</span></div>
+    <div class="field">
+      <select id="resumeSelect"><option value="">Loading sessions…</option></select>
+    </div>
+    <button class="btn ghost" id="resumeBtn">Resume session</button>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div class="app" id="app">
+  <header>
+    <h1>NAC <span>Shot Tagger</span></h1>
+    <div class="header-right">
+      <span id="sessionLabel"></span>
+      <span id="rateLabel" class="disp" style="color:var(--gold);font-weight:600">1×</span>
+      <button class="btn ghost" id="switchBtn">Switch session</button>
+      <button class="btn ghost" id="signOutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="work">
+    <div class="video-pane"><div id="ytplayer"></div></div>
+
+    <aside class="side">
+      <section>
+        <h3>Rally state</h3>
+        <div class="rally-grid">
+          <div class="stat"><div class="num" id="rallyNum">1</div><div class="lbl">Rally</div></div>
+          <div class="stat"><div class="num" id="scoreUs" style="color:var(--green)">0</div><div class="lbl">Us</div></div>
+          <div class="stat"><div class="num" id="scoreThem" style="color:var(--gold)">0</div><div class="lbl">Them</div></div>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          <span class="serve-flag us" id="serveFlag">US SERVING</span>
+        </div>
+      </section>
+
+      <section class="hud">
+        <div class="hud-mode idle" id="hudMode">Watching — Space to tag a shot</div>
+        <div class="slots" id="slots"></div>
+      </section>
+
+      <section class="recent" id="recentWrap">
+        <h3>Recent</h3>
+        <div id="recentList"><p class="empty-note">No shots tagged yet. Press <kbd>Space</kbd> at your contact.</p></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="cheats" id="cheats">
+    <div class="cheat-group" data-g="idle">
+      <b>Idle</b>
+      <span><kbd>Space</kbd> tag shot</span>
+      <span><kbd>Enter</kbd> end rally</span>
+      <span><kbd>Z</kbd> undo</span>
+      <span><kbd>,</kbd> serve toggle</span>
+      <span><kbd>Esc</kbd> play/pause</span>
+      <span><kbd>←</kbd><kbd>→</kbd> ±3s</span>
+      <span><kbd>[</kbd><kbd>]</kbd> speed</span>
+    </div>
+    <div class="cheat-group" data-g="type">
+      <b>Type</b>
+      <span><kbd>S</kbd>erve <kbd>R</kbd>eturn <kbd>D</kbd>rop dri<kbd>V</kbd>e din<kbd>K</kbd> s<kbd>P</kbd>eedup <kbd>C</kbd>ounter <kbd>O</kbd>verhead <kbd>L</kbd>ob rese<kbd>T</kbd></span>
+    </div>
+    <div class="cheat-group" data-g="wing"><b>Wing</b><span><kbd>F</kbd>orehand <kbd>B</kbd>ackhand</span></div>
+    <div class="cheat-group" data-g="dir"><b>Dir</b><span><kbd>1</kbd> cross <kbd>2</kbd> middle <kbd>3</kbd> line</span></div>
+    <div class="cheat-group" data-g="qual"><b>Quality</b><span><kbd>J</kbd> clean <kbd>A</kbd> attackable <kbd>E</kbd> error</span></div>
+    <div class="cheat-group" data-g="errsub"><b>Error</b><span><kbd>N</kbd>et <kbd>O</kbd>ut <kbd>W</kbd>ide</span></div>
+    <div class="cheat-group" data-g="entryextra"><span><kbd>.</kbd> save partial <kbd>⌫</kbd> back <kbd>Esc</kbd> cancel</span></div>
+    <div class="cheat-group" data-g="rallyend">
+      <b>Rally end</b>
+      <span>won: <kbd>U</kbd>s <kbd>T</kbd>hem</span>
+      <span>by: <kbd>M</kbd>e <kbd>P</kbd>artner <kbd>O</kbd>pponent</span>
+      <span>how: <kbd>W</kbd>inner <kbd>E</kbd> unforced <kbd>F</kbd>orced</span>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =============================================================
+   CONFIG — fill these in
+   ============================================================= */
+const SUPABASE_URL      = 'https://owsvfvhlbagxxmncwmtn.supabase.co'; // DEV project
+const SUPABASE_ANON_KEY = 'sb_publishable_iYuBBWxRTIXA8h0V-wbRrw_IRgGpbyK';
+const OWNER_ID          = ''; // optional: your auth user UUID. Blank = any
+                              // signed-in user passes the client gate
+                              // (RLS still protects the data either way).
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* =============================================================
+   Constants / key maps
+   ============================================================= */
+const SHOT_TYPES = { S:'serve', R:'return', D:'drop', V:'drive', K:'dink',
+                     P:'speedup', C:'counter', O:'overhead', L:'lob', T:'reset' };
+const WINGS      = { F:'forehand', B:'backhand' };
+const DIRS       = { '1':'crosscourt', '2':'middle', '3':'line' };
+const QUALS      = { J:'clean', A:'attackable', E:'error' };
+const ERRSUBS    = { N:'net', O:'out', W:'wide' };
+const WONBY      = { U:'us', T:'them' };
+const ENDEDBY    = { M:'me', P:'partner', O:'opponent' };
+const ENDTYPES   = { W:'winner', E:'unforced_error', F:'forced_error' };
+const RATES      = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+const ABBR = { serve:'Serve', return:'Return', drop:'Drop', drive:'Drive',
+  dink:'Dink', speedup:'Speedup', counter:'Counter', overhead:'Overhead',
+  lob:'Lob', reset:'Reset', forehand:'FH', backhand:'BH',
+  crosscourt:'cross', middle:'mid', line:'line',
+  clean:'clean', attackable:'attackable', error:'error' };
+
+/* =============================================================
+   State
+   ============================================================= */
+let player = null, ytReady = false, pendingYtId = null;
+let video = null;               // stats_videos row
+let currentRally = null;        // {id, number, shotCount} or null
+let nextRallyNumber = 1;
+let servingTeam = 'us';
+let tally = { us:0, them:0 };
+let rateIdx = 2;                // 1x
+let undoStack = [];             // {kind:'shot'|'rallyend', ...}
+let mode = 'idle';              // idle | entry | rallyend
+let entry = null;               // {ts, type, wing, direction, quality, errorSubtype, wasPlaying}
+let rallyEnd = null;            // {wonBy, endedBy, endType}
+
+const $ = id => document.getElementById(id);
+
+/* =============================================================
+   Auth + boot
+   ============================================================= */
+async function boot() {
+  const { data:{ session } } = await sb.auth.getSession();
+  if (session) return onSignedIn(session);
+  $('authGate').style.display = 'flex';
+}
+$('signInBtn').addEventListener('click', signIn);
+$('password').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+async function signIn() {
+  $('authErr').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({
+    email: $('email').value.trim(), password: $('password').value
+  });
+  if (error) { $('authErr').textContent = error.message; return; }
+  onSignedIn(data.session);
+}
+function onSignedIn(session) {
+  if (OWNER_ID && session.user.id !== OWNER_ID) {
+    $('authGate').style.display = 'flex';
+    $('authErr').textContent = 'This account is not authorized for the tagger.';
+    return;
+  }
+  $('authGate').style.display = 'none';
+  showSetup();
+}
+$('signOutBtn').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+$('switchBtn').addEventListener('click', () => location.reload());
+
+/* =============================================================
+   Session setup / resume
+   ============================================================= */
+async function showSetup() {
+  $('setupGate').style.display = 'flex';
+  $('playedOn').value = new Date().toISOString().slice(0,10);
+  const { data, error } = await sb.from('stats_videos')
+    .select('id, title, played_on, youtube_id')
+    .order('created_at', { ascending:false }).limit(25);
+  const sel = $('resumeSelect');
+  sel.innerHTML = '';
+  if (error || !data || !data.length) {
+    sel.innerHTML = '<option value="">No previous sessions</option>';
+  } else {
+    sel.innerHTML = '<option value="">Choose a session…</option>' +
+      data.map(v => `<option value="${v.id}">${v.played_on ?? ''} · ${v.title ?? v.youtube_id}</option>`).join('');
+    sel._rows = data;
+  }
+}
+
+function parseYouTubeId(input) {
+  input = input.trim();
+  if (/^[\w-]{11}$/.test(input)) return input;
+  try {
+    const u = new URL(input);
+    if (u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('/')[0];
+    if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2];
+    if (u.searchParams.get('v')) return u.searchParams.get('v');
+  } catch(e){}
+  return null;
+}
+
+$('startBtn').addEventListener('click', async () => {
+  $('setupErr').textContent = '';
+  const ytId = parseYouTubeId($('ytUrl').value);
+  if (!ytId) { $('setupErr').textContent = 'Could not read a YouTube video id from that.'; return; }
+  const { data, error } = await sb.from('stats_videos').insert({
+    youtube_id: ytId,
+    played_on:  $('playedOn').value || null,
+    title:      $('vTitle').value.trim() || null,
+    partner:    $('vPartner').value.trim() || null,
+    opponents:  $('vOpp').value.trim() || null
+  }).select().single();
+  if (error) { $('setupErr').textContent = error.message; return; }
+  enterApp(data);
+});
+
+$('resumeBtn').addEventListener('click', async () => {
+  const id = $('resumeSelect').value;
+  if (!id) return;
+  const { data, error } = await sb.from('stats_videos').select('*').eq('id', id).single();
+  if (error) { $('setupErr').textContent = error.message; return; }
+  await enterApp(data, true);
+});
+
+async function enterApp(videoRow, resuming = false) {
+  video = videoRow;
+  $('setupGate').style.display = 'none';
+  $('app').classList.add('on');
+  $('sessionLabel').textContent = [video.played_on, video.title].filter(Boolean).join(' · ');
+
+  let seekTo = 0;
+  if (resuming) {
+    const { data: rallies } = await sb.from('stats_rallies')
+      .select('*').eq('video_id', video.id).order('rally_number');
+    if (rallies && rallies.length) {
+      for (const r of rallies) if (r.won_by) tally[r.won_by]++;
+      const last = rallies[rallies.length - 1];
+      if (!last.won_by) {
+        const { count } = await sb.from('stats_shots')
+          .select('id', { count:'exact', head:true }).eq('rally_id', last.id);
+        currentRally = { id:last.id, number:last.rally_number, shotCount:count || 0 };
+        nextRallyNumber = last.rally_number;
+        servingTeam = last.serving_team || 'us';
+        seekTo = last.start_sec || 0;
+      } else {
+        nextRallyNumber = last.rally_number + 1;
+        seekTo = last.end_sec || 0;
+      }
+    }
+    const { data: shots } = await sb.from('stats_shots')
+      .select('*').eq('video_id', video.id)
+      .order('created_at', { ascending:false }).limit(10);
+    if (shots) for (const s of shots.reverse()) addRecentRow(shotLabel(s), s.timestamp_sec, s.quality);
+    if (shots && shots.length) seekTo = Math.max(seekTo, shots[shots.length-1].timestamp_sec);
+  }
+  refreshHUD(); refreshRallyPanel();
+  loadPlayer(video.youtube_id, Math.max(0, seekTo - 2));
+}
+
+/* =============================================================
+   YouTube player
+   ============================================================= */
+const tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
+window.onYouTubeIframeAPIReady = () => {
+  ytReady = true;
+  if (pendingYtId) loadPlayer(pendingYtId.id, pendingYtId.start);
+};
+function loadPlayer(ytId, start = 0) {
+  if (!ytReady) { pendingYtId = { id: ytId, start }; return; }
+  player = new YT.Player('ytplayer', {
+    videoId: ytId,
+    playerVars: { start: Math.floor(start), rel: 0, modestbranding: 1 },
+    events: { onReady: () => player.setPlaybackRate(RATES[rateIdx]) }
+  });
+}
+const vtime  = () => player && player.getCurrentTime ? player.getCurrentTime() : 0;
+const vpause = () => player && player.pauseVideo && player.pauseVideo();
+const vplay  = () => player && player.playVideo && player.playVideo();
+const isPlaying = () => player && player.getPlayerState && player.getPlayerState() === 1;
+
+/* =============================================================
+   HUD rendering
+   ============================================================= */
+const ENTRY_SLOTS = [
+  { key:'type',         lbl:'Type' },
+  { key:'wing',         lbl:'Wing' },
+  { key:'direction',    lbl:'Dir'  },
+  { key:'quality',      lbl:'Qual' },
+  { key:'errorSubtype', lbl:'Err'  },
+];
+const RE_SLOTS = [
+  { key:'wonBy',   lbl:'Won by' },
+  { key:'endedBy', lbl:'Ended by' },
+  { key:'endType', lbl:'How' },
+];
+
+function entryStep() {
+  if (!entry.type) return 'type';
+  if (!entry.wing) return 'wing';
+  if (!entry.direction) return 'direction';
+  if (!entry.quality) return 'quality';
+  if (entry.quality === 'error' && !entry.errorSubtype) return 'errorSubtype';
+  return null;
+}
+function rallyEndStep() {
+  if (!rallyEnd.wonBy) return 'wonBy';
+  if (!rallyEnd.endedBy) return 'endedBy';
+  if (!rallyEnd.endType) return 'endType';
+  return null;
+}
+
+function refreshHUD() {
+  const hudMode = $('hudMode'), slots = $('slots');
+  slots.innerHTML = '';
+  let defs = [], obj = null, active = null;
+  if (mode === 'entry') {
+    defs = ENTRY_SLOTS.filter(d => d.key !== 'errorSubtype' || entry.quality === 'error');
+    obj = entry; active = entryStep();
+    hudMode.className = 'hud-mode entry';
+    hudMode.textContent = 'Tagging shot @ ' + fmtTime(entry.ts);
+  } else if (mode === 'rallyend') {
+    defs = RE_SLOTS; obj = rallyEnd; active = rallyEndStep();
+    hudMode.className = 'hud-mode rallyend';
+    hudMode.textContent = 'Rally ' + (currentRally ? currentRally.number : nextRallyNumber) + ' — how did it end?';
+  } else {
+    hudMode.className = 'hud-mode idle';
+    hudMode.textContent = 'Watching — Space to tag a shot';
+  }
+  for (const d of defs) {
+    const val = obj ? obj[d.key] : null;
+    const div = document.createElement('div');
+    div.className = 'slot' + (val ? ' filled' : '') + (d.key === active ? ' active' : '')
+      + (d.key === 'quality' && val === 'error' ? ' error' : '');
+    div.innerHTML = `<div class="keycap">${val ? keyFor(d.key, val) : '·'}</div>
+      <div class="slot-lbl">${d.lbl}</div>
+      <div class="slot-val">${val ? (ABBR[val] || pretty(val)) : ''}</div>`;
+    slots.appendChild(div);
+  }
+  // cheat sheet highlighting
+  const activeGroups = mode === 'idle' ? ['idle']
+    : mode === 'rallyend' ? ['rallyend','entryextra']
+    : [entryStep() === 'type' ? 'type'
+      : entryStep() === 'wing' ? 'wing'
+      : entryStep() === 'direction' ? 'dir'
+      : entryStep() === 'quality' ? 'qual' : 'errsub', 'entryextra'];
+  document.querySelectorAll('.cheat-group').forEach(g =>
+    g.classList.toggle('dim', !activeGroups.includes(g.dataset.g)));
+}
+function keyFor(field, val) {
+  const maps = { type:SHOT_TYPES, wing:WINGS, direction:DIRS, quality:QUALS,
+                 errorSubtype:ERRSUBS, wonBy:WONBY, endedBy:ENDEDBY, endType:ENDTYPES };
+  const m = maps[field];
+  for (const k in m) if (m[k] === val) return k;
+  return '·';
+}
+function pretty(v){ return v.replace('_',' '); }
+
+function refreshRallyPanel() {
+  $('rallyNum').textContent = currentRally ? currentRally.number : nextRallyNumber;
+  $('scoreUs').textContent = tally.us;
+  $('scoreThem').textContent = tally.them;
+  const f = $('serveFlag');
+  f.textContent = servingTeam === 'us' ? 'US SERVING' : 'THEM SERVING';
+  f.className = 'serve-flag ' + servingTeam;
+}
+
+/* =============================================================
+   Recent list / toast / time format
+   ============================================================= */
+function fmtTime(sec) {
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0');
+}
+function shotLabel(s) {
+  return [ABBR[s.shot_type], s.wing ? ABBR[s.wing] : null,
+          s.direction ? ABBR[s.direction] : null].filter(Boolean).join(' · ');
+}
+function addRecentRow(desc, ts, quality, isRallyMarker = false) {
+  const list = $('recentList');
+  const note = list.querySelector('.empty-note'); if (note) note.remove();
+  const row = document.createElement('div');
+  row.className = 'shot-row' + (isRallyMarker ? ' rally-marker' : '');
+  row.innerHTML = `<span class="t">${fmtTime(ts)}</span><span class="d">${desc}</span>`
+    + (quality ? `<span class="q ${quality}">${ABBR[quality]}</span>` : '');
+  list.prepend(row);
+  while (list.children.length > 14) list.lastChild.remove();
+}
+let toastTimer = null;
+function toast(msg, bad = false) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast on ' + (bad ? 'bad' : 'ok');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', 1800);
+}
+
+/* =============================================================
+   DB operations
+   ============================================================= */
+async function ensureRally(startSec) {
+  if (currentRally) return currentRally;
+  const { data, error } = await sb.from('stats_rallies').insert({
+    video_id: video.id, rally_number: nextRallyNumber,
+    serving_team: servingTeam, start_sec: startSec
+  }).select().single();
+  if (error) { toast('Rally save failed: ' + error.message, true); throw error; }
+  currentRally = { id: data.id, number: data.rally_number, shotCount: 0, created: true };
+  refreshRallyPanel();
+  return currentRally;
+}
+
+async function commitShot() {
+  try {
+    const r = await ensureRally(entry.ts);
+    const createdRally = !!r.created; r.created = false;
+    const row = {
+      video_id: video.id, rally_id: r.id,
+      shot_number: r.shotCount + 1, timestamp_sec: entry.ts,
+      shot_type: entry.type, wing: entry.wing || null,
+      direction: entry.direction || null, quality: entry.quality || null,
+      error_subtype: entry.errorSubtype || null
+    };
+    const { data, error } = await sb.from('stats_shots').insert(row).select().single();
+    if (error) { toast('Shot save failed: ' + error.message, true); return; }
+    r.shotCount++;
+    undoStack.push({ kind:'shot', id:data.id, rallyId:r.id, createdRally });
+    addRecentRow(shotLabel(row), row.timestamp_sec, row.quality);
+    toast('Saved: ' + shotLabel(row));
+  } finally {
+    const resume = entry.wasPlaying;
+    entry = null; mode = 'idle'; refreshHUD();
+    if (resume) vplay();
+  }
+}
+
+async function commitRallyEnd() {
+  const endSec = vtime();
+  try {
+    const r = await ensureRally(endSec);
+    r.created = false;
+    const patch = { won_by: rallyEnd.wonBy, ended_by: rallyEnd.endedBy,
+                    end_type: rallyEnd.endType, end_sec: endSec };
+    const { error } = await sb.from('stats_rallies').update(patch).eq('id', r.id);
+    if (error) { toast('Rally save failed: ' + error.message, true); return; }
+    tally[rallyEnd.wonBy]++;
+    undoStack.push({ kind:'rallyend', rallyId:r.id, rally:{...r}, wonBy:rallyEnd.wonBy });
+    addRecentRow(`Rally ${r.number}: ${rallyEnd.wonBy.toUpperCase()} · ${pretty(rallyEnd.endType)} (${rallyEnd.endedBy})`, endSec, null, true);
+    nextRallyNumber = r.number + 1;
+    currentRally = null;
+    toast(`Rally ${r.number} → ${rallyEnd.wonBy}`);
+  } finally {
+    const resume = rallyEnd.wasPlaying;
+    rallyEnd = null; mode = 'idle';
+    refreshHUD(); refreshRallyPanel();
+    if (resume) vplay();
+  }
+}
+
+async function undoLast() {
+  const u = undoStack.pop();
+  if (!u) { toast('Nothing to undo', true); return; }
+  if (u.kind === 'shot') {
+    const { error } = await sb.from('stats_shots').delete().eq('id', u.id);
+    if (error) { toast('Undo failed: ' + error.message, true); undoStack.push(u); return; }
+    if (currentRally && currentRally.id === u.rallyId) {
+      currentRally.shotCount--;
+      if (u.createdRally && currentRally.shotCount <= 0) {
+        await sb.from('stats_rallies').delete().eq('id', u.rallyId);
+        currentRally = null;
+      }
+    }
+    toast('Shot removed');
+  } else if (u.kind === 'rallyend') {
+    const { error } = await sb.from('stats_rallies').update({
+      won_by:null, ended_by:null, end_type:null, end_sec:null
+    }).eq('id', u.rallyId);
+    if (error) { toast('Undo failed: ' + error.message, true); undoStack.push(u); return; }
+    tally[u.wonBy]--;
+    currentRally = { id:u.rally.id, number:u.rally.number, shotCount:u.rally.shotCount };
+    nextRallyNumber = u.rally.number;
+    toast('Rally end removed — rally ' + u.rally.number + ' reopened');
+  }
+  const first = $('recentList').firstElementChild;
+  if (first && !first.classList.contains('empty-note')) first.remove();
+  refreshHUD(); refreshRallyPanel();
+}
+
+/* =============================================================
+   Keyboard state machine
+   ============================================================= */
+document.addEventListener('keydown', (e) => {
+  if (!video) return;                                   // app not active
+  const t = e.target.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+  const k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+
+  /* ---------- IDLE ---------- */
+  if (mode === 'idle') {
+    if (k === ' ') {
+      e.preventDefault();
+      entry = { ts: vtime(), wasPlaying: isPlaying() };
+      vpause(); mode = 'entry'; refreshHUD(); return;
+    }
+    if (k === 'Enter') {
+      e.preventDefault();
+      rallyEnd = { wasPlaying: isPlaying() };
+      vpause(); mode = 'rallyend'; refreshHUD(); return;
+    }
+    if (k === 'Z') { undoLast(); return; }
+    if (k === ',') {
+      servingTeam = servingTeam === 'us' ? 'them' : 'us';
+      if (currentRally) sb.from('stats_rallies')
+        .update({ serving_team: servingTeam }).eq('id', currentRally.id).then(()=>{});
+      refreshRallyPanel(); return;
+    }
+    if (k === 'Escape') { isPlaying() ? vpause() : vplay(); return; }
+    if (k === 'ArrowLeft')  { e.preventDefault(); player && player.seekTo(Math.max(0, vtime() - (e.shiftKey?10:3)), true); return; }
+    if (k === 'ArrowRight') { e.preventDefault(); player && player.seekTo(vtime() + (e.shiftKey?10:3), true); return; }
+    if (k === '[' || k === ']') {
+      rateIdx = Math.min(RATES.length-1, Math.max(0, rateIdx + (k === ']' ? 1 : -1)));
+      player && player.setPlaybackRate(RATES[rateIdx]);
+      $('rateLabel').textContent = RATES[rateIdx] + '×'; return;
+    }
+    return;
+  }
+
+  /* ---------- ENTRY ---------- */
+  if (mode === 'entry') {
+    e.preventDefault();
+    if (k === 'Escape') {
+      const resume = entry.wasPlaying;
+      entry = null; mode = 'idle'; refreshHUD();
+      if (resume) vplay(); return;
+    }
+    if (k === 'Backspace') {
+      if (entry.errorSubtype) entry.errorSubtype = null;
+      else if (entry.quality) entry.quality = null;
+      else if (entry.direction) entry.direction = null;
+      else if (entry.wing) entry.wing = null;
+      else entry.type = null;
+      refreshHUD(); return;
+    }
+    if (k === '.') {                                    // save partial
+      if (entry.type) commitShot();
+      return;
+    }
+    const step = entryStep();
+    if (step === 'type' && SHOT_TYPES[k])          entry.type = SHOT_TYPES[k];
+    else if (step === 'wing' && WINGS[k])          entry.wing = WINGS[k];
+    else if (step === 'direction' && DIRS[k])      entry.direction = DIRS[k];
+    else if (step === 'quality' && QUALS[k])       entry.quality = QUALS[k];
+    else if (step === 'errorSubtype' && ERRSUBS[k]) entry.errorSubtype = ERRSUBS[k];
+    else return;                                        // ignore stray keys
+    if (entryStep() === null) { commitShot(); return; }
+    refreshHUD(); return;
+  }
+
+  /* ---------- RALLY END ---------- */
+  if (mode === 'rallyend') {
+    e.preventDefault();
+    if (k === 'Escape') {
+      const resume = rallyEnd.wasPlaying;
+      rallyEnd = null; mode = 'idle'; refreshHUD();
+      if (resume) vplay(); return;
+    }
+    if (k === 'Backspace') {
+      if (rallyEnd.endType) rallyEnd.endType = null;
+      else if (rallyEnd.endedBy) rallyEnd.endedBy = null;
+      else rallyEnd.wonBy = null;
+      refreshHUD(); return;
+    }
+    const step = rallyEndStep();
+    if (step === 'wonBy' && WONBY[k])        rallyEnd.wonBy = WONBY[k];
+    else if (step === 'endedBy' && ENDEDBY[k]) rallyEnd.endedBy = ENDEDBY[k];
+    else if (step === 'endType' && ENDTYPES[k]) rallyEnd.endType = ENDTYPES[k];
+    else return;
+    if (rallyEndStep() === null) { commitRallyEnd(); return; }
+    refreshHUD(); return;
+  }
+});
+
+boot();
+</script>
+</body>
+</html>
