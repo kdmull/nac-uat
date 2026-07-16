@@ -171,6 +171,19 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
   </div>
 </div>
 
+<div class="modal-overlay" id="participants-modal">
+  <div class="modal">
+    <h3>Edit Playoff Participants</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem">Choose the four players and their seeds. Seed 1 plays Seed 4, Seed 2 plays Seed 3.</p>
+    <div id="participants-rows"></div>
+    <p class="err" id="participants-err" style="min-height:18px;margin:6px 0 0"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeParticipants()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveParticipants()">Save Participants</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="shared.js"></script>
@@ -178,6 +191,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 const BRACKET_KEY = 'bracket_singles';
 let bracketData = null;
 let bracketAuthed = false;
+let isAdminAuthed = false;   // true only when the ADMIN password was used (not scores)
 let currentModalSlot = null; // {round, matchIndex}
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -321,7 +335,8 @@ function render() {
     </div>` : `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap">
       <span style="font-size:13px;color:var(--green-dark);font-weight:600">✓ Click any match to enter scores</span>
-      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;margin-left:auto" onclick="resetBracket()">Reset Bracket</button>
+      ${isAdminAuthed ? `<button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;margin-left:auto" onclick="openEditParticipants()">Edit Participants</button>` : ''}
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px${isAdminAuthed?'':';margin-left:auto'}" onclick="resetBracket()">Reset Bracket</button>
     </div>`;
 
   document.getElementById('main-content').innerHTML = `
@@ -391,6 +406,7 @@ function checkBracketAuth() {
   const pw = document.getElementById('bracket-pw').value;
   if(pw===SCORES_PW||pw===ADMIN_PW) {
     bracketAuthed = true;
+    isAdminAuthed = (pw===ADMIN_PW);   // participant editing requires admin, like the admin page
     render();
   } else {
     document.getElementById('bracket-err').textContent = 'Incorrect password.';
@@ -523,6 +539,67 @@ async function submitBracketScore(){
   closeModal();
   render();
   showToast('Score saved!');
+}
+
+// ── Edit Participants (manually pick the 4 bracket players + seeds) ──────────
+function openEditParticipants(){
+  if(!isAdminAuthed){ showToast('Admin password required to edit participants'); return; }
+  const stats = getStats();
+  const active = getActivePlayers();
+  // All active players, ordered by record, as the options for each seed slot.
+  const ranked = active.map(p => {
+    const s = stats[p] || {w:0,l:0,pts:0,opp:0};
+    const tot = s.w + s.l;
+    return {name:p, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp};
+  }).sort((a,b) => b.pct-a.pct||b.diff-a.diff);
+
+  // Current picks by seed (fall back to standings order if none set yet).
+  const cur = {};
+  (bracketData.seeds||[]).forEach(s => { if(s.seed>=1 && s.seed<=4) cur[s.seed] = s.name; });
+
+  const rowsEl = document.getElementById('participants-rows');
+  rowsEl.innerHTML = [1,2,3,4].map(seed => {
+    const opts = ['<option value="">— select player —</option>']
+      .concat(ranked.map(r => `<option value="${r.name.replace(/"/g,'&quot;')}"${cur[seed]===r.name?' selected':''}>${r.name} (${r.w}-${r.l})</option>`))
+      .join('');
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-family:var(--font-display,inherit);font-weight:800;color:var(--navy);min-width:58px">Seed ${seed}</span>
+      <select id="seed-pick-${seed}" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px">${opts}</select>
+    </div>`;
+  }).join('');
+  document.getElementById('participants-err').textContent = '';
+  document.getElementById('participants-modal').classList.add('open');
+}
+function closeParticipants(){ document.getElementById('participants-modal').classList.remove('open'); }
+
+async function saveParticipants(){
+  const picks = [1,2,3,4].map(seed => (document.getElementById('seed-pick-'+seed).value||'').trim());
+  const err = document.getElementById('participants-err');
+  if(picks.some(p => !p)){ err.textContent = 'Pick a player for all four seeds.'; return; }
+  const uniq = new Set(picks);
+  if(uniq.size !== 4){ err.textContent = 'Each player can only appear once.'; return; }
+
+  // If a match already has scores, warn — changing players clears the bracket.
+  const played = (bracketData.semis||[]).some(m => (m.games||[]).some(g=>g&&g.s1!=null))
+    || (bracketData.final && (bracketData.final.games||[]).some(g=>g&&g.s1!=null));
+  if(played && !confirm('Changing participants will clear any scores already entered in the bracket. Continue?')) return;
+
+  const stats = getStats();
+  const rec = name => { const s = stats[name]||{w:0,l:0,pts:0,opp:0}; const tot=s.w+s.l; return {name, w:s.w, l:s.l, pct:tot?s.w/tot:0, diff:s.pts-s.opp}; };
+
+  bracketData = {
+    seeds: picks.map((name,i) => ({ ...rec(name), seed:i+1 })),
+    semis: [
+      { p1: picks[0], p2: picks[3], games:[], winner:null },   // Seed 1 vs Seed 4
+      { p1: picks[1], p2: picks[2], games:[], winner:null },   // Seed 2 vs Seed 3
+    ],
+    final: { p1:null, p2:null, games:[], winner:null },
+    champion: null,
+  };
+  await saveBracket();
+  closeParticipants();
+  render();
+  showToast('Participants updated!');
 }
 
 async function resetBracket(){
