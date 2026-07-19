@@ -286,7 +286,7 @@
         'nav .nav-greeting{display:none!important}' +
         'nav{position:relative;justify-content:flex-start!important;flex-wrap:nowrap!important}' +
         'nav .nav-brand{width:auto!important;margin:0 auto 0 0!important;justify-content:flex-start!important;padding:.5rem 0!important;flex:0 1 auto}' +
-        'nav .nav-logo{height:64px!important}' +
+        'nav .nav-logo{height:80px!important}' +
       '}';
     document.head.appendChild(st);
   }
