@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>League Rules — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-actions{display:flex;align-items:center;flex-wrap:wrap}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
+.nav-link:hover{color:#fff}
+.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-btn{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:all .12s;border:1.5px solid transparent;white-space:nowrap}
+.nav-btn-ghost{color:#fff;border-color:rgba(255,255,255,.4)}
+.nav-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+.nav-btn-ghost.current{border-color:var(--green);color:#fff}
+.nav-btn-solid{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-btn-solid:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.nav-greeting{color:rgba(255,255,255,.85);font-size:14px;font-weight:600;margin-right:1rem}
+.wrap{max-width:780px;margin:0 auto;padding:2rem 1.5rem}
+.page-head{text-align:center;padding:1rem 0 2rem}
+.page-head h1{font-family:var(--font-display);font-size:38px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);line-height:1}
+.page-head p{color:var(--muted);font-size:15px;margin-top:.5rem}
+.rule-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem 1.75rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem}
+.rule-card h2{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.85rem;padding-bottom:.5rem;border-bottom:2px solid var(--green)}
+.rule-card p{margin-bottom:.7rem}
+.rule-card p:last-child{margin-bottom:0}
+.rule-card ul{list-style:none;display:flex;flex-direction:column;gap:.55rem;margin:.25rem 0 .2rem}
+.rule-card li{position:relative;padding-left:1.4rem}
+.rule-card li::before{content:'';position:absolute;left:0;top:.55em;width:7px;height:7px;border-radius:2px;background:var(--green)}
+.rule-card strong{color:var(--navy)}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem}
+.toc a{font-family:var(--font-display);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;text-decoration:none;transition:all .12s}
+.toc a:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.back-link{display:inline-block;margin-top:1rem;font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none}
+.back-link:hover{color:var(--green-dark)}
+@media(max-width:600px){
+  nav{padding:0 1rem}.nav-greeting{display:none}
+  .wrap{padding:1.5rem 1rem}
+  .page-head h1{font-size:28px}
+  .rule-card{padding:1.2rem}
+}
+/* --- mobile nav (responsive: logo centered on top, links centered below) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap;justify-content:center}
+  .nav-brand{width:100%;display:flex;justify-content:center;margin-right:0;padding:.5rem 0 .25rem}
+  .nav-logo{height:56px}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none}
+  .nav-actions,.nav-right,[data-account-nav]{display:flex;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}
+  .nav-link{flex:0 1 auto;padding:.7rem .6rem;font-size:13px;text-align:center;white-space:nowrap}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important;text-align:center}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
+}
+</style>
+</head>
+<body>
+<nav id="main-nav">
+  <a class="nav-brand" href="index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-actions" id="nav-actions"></div>
+  <div class="nav-right" id="nav-links">
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>League Rules</h1>
+    <p>How NAC Pickleball leagues are run, scored, and decided.</p>
+  </div>
+
+  <div class="toc">
+    <a href="#format">Format</a>
+    <a href="#scoring">Match Play &amp; Scoring</a>
+    <a href="#schedule">Schedule &amp; Byes</a>
+    <a href="#subs">Subs &amp; Missed Weeks</a>
+    <a href="#dupr">DUPR &amp; Ratings</a>
+    <a href="#standings">Standings &amp; Tiebreakers</a>
+    <a href="#conduct">Code of Conduct</a>
+  </div>
+
+  <div class="rule-card" id="format">
+    <h2>League Format</h2>
+    <p>NAC runs six leagues each season: one singles league and five doubles leagues divided by age and skill band:</p>
+    <ul>
+      <li><strong>All Ages Beginner</strong> — under 3.0 rating</li>
+      <li><strong>19–49 Intermediate</strong> and <strong>50+ Intermediate</strong> — 3.0 to 3.4 rating</li>
+      <li><strong>19–49 Advanced</strong> and <strong>50+ Advanced</strong> — 3.5 and up rating</li>
+      <li><strong>Singles</strong> — open to all skill levels</li>
+    </ul>
+    <p>Each league plays a round-robin season so that players or teams face a rotating set of opponents week to week.</p>
+  </div>
+
+  <div class="rule-card" id="scoring">
+    <h2>Match Play &amp; Scoring</h2>
+    <p>Each weekly matchup is a <strong>best-of-three series</strong> — the player or team that wins two games wins the series. Enter all three game scores when a third game is played; the winner is decided by games won.</p>
+    <p>Games are played to <strong>11 points, win by 2</strong>.</p>
+    <p>Players report their own scores from their dashboard, or scores are entered by the league organizer. Submitted results count toward DUPR for players whose DUPR accounts are linked.</p>
+  </div>
+
+  <div class="rule-card" id="schedule">
+    <h2>Schedule &amp; Byes</h2>
+    <p>The season schedule is posted once the organizer publishes it; until then, the league page shows the roster rather than standings. Your personal weekly matchups appear on your dashboard.</p>
+    <p>When a league has an odd number of players or teams, one sits out each week on a rotating <strong>bye</strong>. A bye is not counted as a win or a loss.</p>
+  </div>
+
+  <div class="rule-card" id="subs">
+    <h2>Substitutes &amp; Missed Weeks</h2>
+    <p>If you can't make your scheduled week, let your opponent and the organizer know as early as possible so the match can be rescheduled or a substitute arranged.</p>
+  </div>
+
+  <div class="rule-card" id="dupr">
+    <h2>DUPR &amp; Ratings</h2>
+    <p>A linked <strong>DUPR account is required</strong> before registering for a league. Linking lets your league results count toward your DUPR rating and keeps players in the correct skill band.</p>
+    <p>Your current doubles and singles ratings are shown on your profile and on your player page once your account is connected.</p>
+  </div>
+
+  <div class="rule-card" id="standings">
+    <h2>Standings &amp; Tiebreakers</h2>
+    <p>Standings are ordered by <strong>win percentage</strong>. When players are tied, the next tiebreaker is <strong>point differential</strong> (total points scored minus points allowed).</p>
+  </div>
+
+  <div class="rule-card" id="conduct">
+    <h2>Code of Conduct</h2>
+    <ul>
+      <li>Call lines fairly and honestly; when in doubt, replay the point.</li>
+      <li>Show up on time and ready to play your scheduled matches.</li>
+      <li>Treat opponents, partners, and staff with respect.</li>
+      <li>Report scores promptly and accurately.</li>
+    </ul>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Leagues</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const navActions = document.getElementById('nav-actions');
+  const { data: { session } } = await sb.auth.getSession();
+
+  if(session){
+    let firstName = '';
+    try{
+      const { data } = await sb.from('profiles').select('first_name').eq('id', session.user.id).single();
+      if(data && data.first_name) firstName = data.first_name;
+    }catch(e){}
+    navActions.innerHTML = `
+      ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
+      <a class="nav-link" href="dashboard.html">My Profile</a>
+      <a class="nav-link" href="#" onclick="doLogout();return false;">Sign Out</a>`;
+  } else {
+    navActions.innerHTML = `<a class="nav-link" href="auth.html">Sign In</a>`;
+  }
+});
+
+async function doLogout(){
+  await sb.auth.signOut();
+  window.location.href = 'index.html';
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>

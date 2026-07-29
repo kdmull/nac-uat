@@ -15,60 +15,269 @@
   --white:#ffffff;--off-white:#f4f7fb;
   --surface:#f0f4f9;--surface2:#e3eaf4;
   --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
   --font-display:'Barlow Condensed',sans-serif;
   --font-body:'Barlow',sans-serif;
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-actions{display:flex;align-items:center;flex-wrap:wrap}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
+.nav-link:hover{color:#fff}
+.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-btn{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:all .12s;border:1.5px solid transparent;white-space:nowrap}
+.nav-btn-ghost{color:#fff;border-color:rgba(255,255,255,.4)}
+.nav-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
+.nav-btn-ghost.current{border-color:var(--green);color:#fff}
+.nav-btn-solid{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-btn-solid:hover{background:var(--green-dark);border-color:var(--green-dark)}
+.nav-greeting{color:rgba(255,255,255,.85);font-size:14px;font-weight:600;margin-right:1rem}
 .home-wrap{max-width:700px;margin:0 auto;padding:2rem 1.5rem}
-.home-header{text-align:center;padding:2.5rem 0 2rem}
-.home-header img{height:120px;width:auto;object-fit:contain}
+.home-header{text-align:center;padding:2rem 0 1.5rem}
+.home-header img{height:110px;width:auto;object-fit:contain}
 .home-header p{color:var(--muted);font-size:15px;margin-top:1rem}
+/* Sign-in prompt card (only shows when logged out) */
+.signin-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:2rem;text-align:center;display:none}
+.signin-card h2{font-family:var(--font-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.25rem}
+.signin-card p{color:var(--muted);font-size:14px;margin-bottom:1.2rem}
+.signin-card .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.signin-card .btn{font-family:var(--font-display);font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:11px 26px;border-radius:var(--radius);text-decoration:none;border:1.5px solid transparent;transition:all .12s}
+.btn-navy{background:var(--navy);color:#fff;border-color:var(--navy)}.btn-navy:hover{background:var(--navy-dark)}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
+.section-label{font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;text-align:center}
 .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .league-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(26,42,108,.05);display:flex;flex-direction:column;gap:6px;text-decoration:none}
 .league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
 .league-card-title{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
 .league-card-sub{font-size:13px;color:var(--muted)}
+.t-badge{align-self:flex-start;font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px;margin-top:2px}
+.t-badge.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.t-badge.live{color:#8a6d00;background:rgba(212,167,0,.16)}
+.t-badge.done{color:var(--muted);background:var(--surface2)}
+.t-badge.division{color:var(--navy);background:rgba(26,42,108,.09);text-transform:none;letter-spacing:.2px;font-weight:600;align-self:auto}
+.dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark,#3a8c1e);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
+.t-badge.division .dupr-mini{color:var(--green-dark);font-weight:800;margin-left:5px}
+.t-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.t-title-row .league-card-title{line-height:1.15}
+.t-title-row .t-badge{align-self:center;margin-top:0}
+.t-divs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 @media(max-width:600px){
-  .home-header img{height:90px}
+  nav{padding:0 1rem}
+  .nav-greeting{display:none}
+  .home-header img{height:80px}
+  .home-wrap{padding:1.5rem 1rem}
   .league-card{padding:1.2rem}
   .league-card-title{font-size:17px}
   .leagues-grid{grid-template-columns:1fr}
 }
+/* --- mobile nav (responsive: logo centered on top, links centered below) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap;justify-content:center}
+  .nav-brand{width:100%;display:flex;justify-content:center;margin-right:0;padding:.5rem 0 .25rem}
+  .nav-logo{height:56px}
+  .home-header img{display:none}
+  .home-header{padding-top:.5rem}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none}
+  .nav-actions,.nav-right,[data-account-nav]{display:flex;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}
+  .nav-link{flex:0 1 auto;padding:.7rem .6rem;font-size:13px;text-align:center;white-space:nowrap}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important;text-align:center}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
+}
 </style>
 </head>
 <body>
+<nav id="main-nav" style="display:none">
+  <a class="nav-brand" href="index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-actions" id="nav-actions"></div>
+  <div class="nav-right" id="nav-links">
+  </div>
+</nav>
 <div class="home-wrap">
   <div class="home-header">
     <img src="logo.png" onerror="this.style.display='none'" alt="NAC Pickleball"/>
-    <p>Select a league to view standings, schedule, and scores</p>
+    <p>Standings, schedules, scores, and league registration</p>
   </div>
-  <div class="leagues-grid">
-    <a class="league-card" href="league.html?league=beginner">
-      <div class="league-card-title">All Ages Beginner</div>
-      <div class="league-card-sub">Under 3.0 rating</div>
-    </a>
-    <a class="league-card" href="league.html?league=int1949">
-      <div class="league-card-title">19-49 Intermediate</div>
-      <div class="league-card-sub">3.0 – 3.4 rating</div>
-    </a>
-    <a class="league-card" href="league.html?league=int50">
-      <div class="league-card-title">50+ Intermediate</div>
-      <div class="league-card-sub">3.0 – 3.4 rating</div>
-    </a>
-    <a class="league-card" href="league.html?league=adv1949">
-      <div class="league-card-title">19-49 Advanced</div>
-      <div class="league-card-sub">3.5 & up rating</div>
-    </a>
-    <a class="league-card" href="league.html?league=adv50">
-      <div class="league-card-title">50+ Advanced</div>
-      <div class="league-card-sub">3.5 & up rating</div>
-    </a>
-    <a class="league-card" href="league.html?league=singles">
-      <div class="league-card-title">Singles</div>
-      <div class="league-card-sub">Open singles league</div>
-    </a>
+
+  <!-- Sign-in prompt (logged-out only) -->
+  <div class="signin-card" id="signin-card">
+    <h2>Join a League or Tournament</h2>
+    <p>Sign in or create an account to register for leagues and tournaments, and connect your DUPR rating.</p>
+    <div class="actions">
+      <a class="btn btn-navy" href="auth.html">Sign In</a>
+      <a class="btn btn-green" href="auth.html">Create Account</a>
+    </div>
+  </div>
+
+  <div class="section-label">View Leagues</div>
+  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
+
+  <div id="tournaments-section" style="display:none;margin-top:2rem">
+    <div class="section-label">Tournaments</div>
+    <div class="leagues-grid" id="tournaments-grid"></div>
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+const sb = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// League cards are dynamic: catalog from pb_league 'nac_leagues' (fallback to
+// the built-in six), filtered to the active season's enabled leagues.
+const FALLBACK_LEAGUES = [
+  {id:'beginner',  name:'All Ages Beginner',  sub:'Under 3.0 rating'},
+  {id:'int1949',   name:'19-49 Intermediate', sub:'3.0 – 3.4 rating'},
+  {id:'int50',     name:'50+ Intermediate',   sub:'3.0 – 3.4 rating'},
+  {id:'adv1949',   name:'19-49 Advanced',     sub:'3.5 & up rating'},
+  {id:'adv50',     name:'50+ Advanced',       sub:'3.5 & up rating'},
+  {id:'singles',   name:'Singles',            sub:'Open singles league'},
+];
+
+async function renderLeagueCards(){
+  const grid = document.getElementById('leagues-grid');
+  if(!grid) return;
+  let leagues = FALLBACK_LEAGUES;
+  let enabled = null;
+  try{
+    if(!sb) throw new Error('client unavailable');
+    const [lg, se] = await Promise.all([
+      sb.from('pb_league').select('value').eq('key','nac_leagues').maybeSingle(),
+      sb.from('pb_league').select('value').eq('key','nac_seasons').maybeSingle()
+    ]);
+    if(lg.data && lg.data.value && Array.isArray(lg.data.value.leagues) && lg.data.value.leagues.length){
+      leagues = lg.data.value.leagues;
+    }
+    if(se.data && se.data.value && se.data.value.seasons){
+      const active = (se.data.value.seasons || []).find(x => x.id === se.data.value.active);
+      if(active && Array.isArray(active.enabledLeagues)) enabled = active.enabledLeagues;
+    }
+  }catch(e){ console.warn('league cards: using fallback', e); }
+  const show = enabled ? leagues.filter(l => enabled.includes(l.id)) : leagues;
+  grid.innerHTML = show.map(l => `
+    <a class="league-card" href="league.html?league=${l.id}">
+      <div class="league-card-title">${l.name}${l.duprEnabled!==false?' <span class="dupr-chip" title="Matches count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}</div>
+      <div class="league-card-sub">${l.sub||''}</div>
+    </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
+}
+function nacFmtDate(d){
+  if(!d) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+  return m ? `${m[2]}/${m[3]}/${m[1]}` : d;
+}
+function fmtTime(hhmm){
+  if(!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return hhmm || '';
+  let [h,m] = hhmm.split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+renderLeagueCards();
+
+// Tournaments: same card look as leagues. Live divisions link straight to the
+// live pools/bracket view; otherwise the card goes to the tournaments page.
+async function renderTournamentCards(){
+  const sec = document.getElementById('tournaments-section');
+  const grid = document.getElementById('tournaments-grid');
+  if(!sec || !grid) return;
+  let list = [];
+  try{
+    // Read via the same REST path the other pages use (works even if the
+    // supabase-js client failed to load).
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/pb_league?key=eq.nac_tournaments&select=value`,
+      { headers:{ 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY } });
+    if(r.ok){
+      const rows = await r.json();
+      const val = rows && rows[0] && rows[0].value;
+      list = (val && Array.isArray(val.tournaments)) ? val.tournaments : [];
+    } else {
+      console.warn('tournaments load failed:', r.status);
+    }
+  }catch(e){ console.warn('tournaments load error:', e); return; }
+  console.log('index tournaments loaded:', list.length);
+  if(!list.length) return;
+
+  const cards = list.map(t => {
+    const divs = t.divisions || [];
+    const live = divs.some(d => d.phase==='pools' || d.phase==='knockout');
+    const done = divs.length && divs.every(d => d.phase==='complete');
+    const liveDiv = divs.find(d => d.phase==='pools' || d.phase==='knockout') || divs.find(d => d.phase==='complete');
+    const href = (live || done) && liveDiv
+      ? `tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(liveDiv.id)}`
+      : 'tournaments.html';
+    const badge = live ? '<span class="t-badge live">Live Now</span>'
+                : done ? '<span class="t-badge done">Finished</span>'
+                : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
+    const meta = [t.date?nacFmtDate(t.date):'', t.location].filter(Boolean).join(' · ');
+    const clean = v => String(v||'').replace(/[<>&]/g,'');
+    const divBadges = divs.length
+      ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.startTime?` <span style="color:var(--muted);font-weight:600">${fmtTime(d.startTime)}</span>`:''}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`
+      : '';
+    return `<a class="league-card" href="${href}">
+      <div class="t-title-row">
+        <span class="league-card-title">${clean(t.name)}</span>
+        ${badge}
+      </div>
+      ${meta ? `<div class="league-card-sub">${clean(meta)}</div>` : ''}
+      ${divBadges}
+    </a>`;
+  }).join('');
+  if(!cards) return;
+  grid.innerHTML = cards;
+  sec.style.display = '';
+}
+renderTournamentCards();
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // Always reveal the nav first — its visibility must not depend on the session
+  // check (which can fail if the supabase client didn't load).
+  const signinCard = document.getElementById('signin-card');
+  const mainNav = document.getElementById('main-nav');
+  const navActions = document.getElementById('nav-actions');
+  if(mainNav) mainNav.style.display = 'flex';
+
+  if(!sb){
+    // Client unavailable: show the logged-out affordances and stop.
+    if(navActions) navActions.innerHTML = `<a class="nav-link" href="auth.html">Sign In</a>`;
+    if(signinCard) signinCard.style.display = 'block';
+    return;
+  }
+  const { data: { session } } = await sb.auth.getSession();
+
+  if(session){
+    // Logged in — show nav with greeting + actions
+    let firstName = '';
+    try{
+      const { data } = await sb.from('profiles').select('first_name').eq('id', session.user.id).single();
+      if(data && data.first_name) firstName = data.first_name;
+    }catch(e){}
+
+    navActions.innerHTML = `
+      ${firstName ? `<span class="nav-greeting">Hi, ${firstName}</span>` : ''}
+      <a class="nav-link" href="dashboard.html">My Profile</a>
+      <a class="nav-link" href="#" onclick="doLogout();return false;">Sign Out</a>`;
+    mainNav.style.display = 'flex';
+    signinCard.style.display = 'none';
+  } else {
+    // Logged out — show the nav (Leagues / Rules on the right, Sign In button on the left) plus the sign-in prompt
+    navActions.innerHTML = `<a class="nav-link" href="auth.html">Sign In</a>`;
+    mainNav.style.display = 'flex';
+    signinCard.style.display = 'block';
+  }
+});
+
+async function doLogout(){
+  await sb.auth.signOut();
+  window.location.reload();
+}
+</script>
+<script src="admin-nav.js"></script>
 </body>
 </html>

@@ -5,16 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
 <title>NAC Pickleball</title>
-<script>
-// Set league type class before render to prevent nav layout shift
-(function(){
-  var p=new URLSearchParams(window.location.search).get('league');
-  var leagues={singles:'singles',beginner:'doubles',int1949:'doubles',int50:'doubles',adv1949:'doubles',adv50:'doubles'};
-  if(p&&leagues[p]) document.documentElement.setAttribute('data-league',p);
-  if(p==='singles') document.documentElement.setAttribute('data-show-bracket','1');
-  if(leagues[p]==='doubles') document.documentElement.setAttribute('data-show-playoffs','1');
-})();
-</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -32,15 +23,13 @@
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
 nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:auto;text-decoration:none}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
 .nav-logo{height:44px;width:auto}
 .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;border-right:1px solid rgba(255,255,255,.15);text-decoration:none}
 .back-btn:hover{color:var(--green)}
-.nav-tabs{display:flex}
+.nav-tabs{display:flex;margin-left:auto}
 .nav-tab{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
 .nav-tab:hover{color:var(--white)}.nav-tab.active{color:var(--green);border-bottom-color:var(--green)}
-[data-show-bracket='1'] #bracket-tab{display:block!important}
-[data-show-playoffs='1'] #playoffs-tab{display:block!important}
 .league-banner{background:var(--surface2);border-bottom:1px solid var(--border);padding:16px 1.5rem;font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy);text-align:center}
 .page{display:none;padding:2rem 1.5rem;max-width:1000px;margin:0 auto;word-break:break-word}.page.active{display:block}
 .section-header{margin-bottom:1.5rem;display:flex;align-items:flex-end;gap:16px}
@@ -130,9 +119,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .toast.show{transform:translateY(0);opacity:1}
 /* Responsive */
 @media(max-width:768px){
+  [data-account-nav]{width:100%;justify-content:center}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important}
   nav{flex-wrap:wrap}
   .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
-  .nav-logo{height:36px}
+  .nav-logo{height:56px}
   .back-btn{display:none}
   .nav-tabs{width:100%;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
   .nav-tabs::-webkit-scrollbar{display:none}
@@ -174,8 +165,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <button class="nav-tab active" onclick="showPage('standings',this)">Standings</button>
     <button class="nav-tab" onclick="showPage('schedule',this)">Schedule</button>
     <button class="nav-tab" onclick="showPage('scores',this)">Scores</button>
-    <a class="nav-tab" id="bracket-tab" href="bracket.html" style="display:none;text-decoration:none">Bracket</a>
     <a class="nav-tab" id="playoffs-tab" href="#" style="display:none;text-decoration:none">Playoffs</a>
+    <a class="nav-tab" href="rules.html" style="text-decoration:none">Rules</a>
   </div>
 </nav>
 
@@ -189,16 +180,19 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     <div class="section-header-text"><h2>Standings</h2><p id="standings-subtitle">Loading...</p></div>
   </div>
   <div class="stats-grid" id="league-stats"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></div>
-  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
+  <div id="standings-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius-lg);border:1px solid var(--border)">
     <table class="standings-table" style="border:none;border-radius:0">
       <thead><tr>
-        <th style="width:52px;white-space:nowrap">#</th><th>Player</th>
+        <th style="width:52px;white-space:nowrap">#</th>
+        <th class="num" style="width:72px">DUPR</th>
+        <th id="standings-name-th">Player</th>
         <th class="num">W</th><th class="num">L</th>
-        <th class="num">Pct</th><th class="num">Pts +/-</th><th class="num">Streak</th>
+        <th class="num">Pct</th><th class="num">Pts +/-</th>
       </tr></thead>
       <tbody id="standings-body"><tr><td colspan="7"><div class="loading-overlay"><div class="spinner"></div>Loading...</div></td></tr></tbody>
     </table>
   </div>
+  <div id="roster-area" style="display:none"></div>
 
 
 </div>
@@ -274,6 +268,8 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 <script src="shared.js"></script>
 <script>
 window.addEventListener('DOMContentLoaded', async ()=>{
+  // Load the league catalog + seasons first — custom leagues live in the DB
+  await loadSeasons();
   currentLeague = getLeagueFromURL();
   if(!currentLeague){
     window.location.href='index.html';
@@ -281,19 +277,26 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   }
   document.title = currentLeague.name + ' — NAC Pickleball';
   document.getElementById('league-banner').textContent = currentLeague.name;
-  // Set playoffs href dynamically for doubles leagues
-  if(currentLeague.type === 'doubles'){
+  // Playoff format depends on signup type: singles + partner-doubles use a
+  // BRACKET; individual-doubles use the round-robin PLAYOFF page.
+  {
     const pt = document.getElementById('playoffs-tab');
-    if(pt) pt.href = `doubles-playoff.html?league=${currentLeague.id}`;
+    if(pt){
+      const isPartnerLg = currentLeague.type === 'doubles' &&
+        (currentSeason.leagueTypes || {})[currentLeague.id] === 'partner';
+      const useBracket = currentLeague.type === 'singles' || isPartnerLg;
+      pt.href = (useBracket ? 'bracket.html' : 'doubles-playoff.html') + `?league=${currentLeague.id}`;
+      pt.textContent = useBracket ? 'Bracket' : 'Playoffs';
+      pt.style.display = 'block';
+    }
   }
-  // Load seasons first so data key includes season suffix
-  await loadSeasons();
   const urlSeason = getSeasonFromURL();
   if(urlSeason){
     const found = allSeasons.find(s=>s.id===urlSeason);
     if(found) viewingSeason = found;
   }
   await loadData();
+  await loadDuprRatings();
   scheduleWeek = scoresWeek = findCurrentWeek();
   renderSeasonSelector();
   renderStandings();
@@ -303,6 +306,88 @@ window.addEventListener('DOMContentLoaded', async ()=>{
 document.getElementById('score-modal').addEventListener('click', e=>{
   if(e.target===e.currentTarget) closeModal();
 });
+
+// DUPR ratings map: { playerName: { duprId, rating } }
+let duprRatings = {};
+
+const DUPR_RATINGS_EDGE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co/functions/v1/dupr-get-ratings';
+
+async function loadDuprRatings(){
+  if(!currentLeague) return;
+  try{
+    // 1. Get linked players (name → duprId) from Supabase
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_players?league_key=eq.${encodeURIComponent(currentLeague.id)}&select=player_name,dupr_id`,
+      {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+    );
+    if(!r.ok){ console.warn('dupr_players fetch failed:', r.status); return; }
+    const rows = await r.json();
+    console.log('Linked players found:', rows.length, rows);
+    duprRatings = {};
+    const duprIds = [];
+    for(const row of rows){
+      const rec = {duprId: row.dupr_id};
+      const nm = (row.player_name||'').trim();
+      duprRatings[nm] = rec;                          // stored form (now full name)
+      // Also register a "First L." variant so a schedule still storing the old
+      // short name resolves to the same rating.
+      const parts = nm.split(/\s+/);
+      if(parts.length >= 2){
+        const li = `${parts[0]} ${parts[parts.length-1][0]}.`;
+        if(!duprRatings[li]) duprRatings[li] = rec;
+      }
+      // And the displayName() form (handles the reverse: schedule full, this short).
+      try{ const dn = displayName(nm); if(dn && !duprRatings[dn]) duprRatings[dn] = rec; }catch(e){}
+      duprIds.push(row.dupr_id);
+    }
+    console.log('DUPR IDs to fetch ratings for:', duprIds);
+    if(!duprIds.length){ console.log('No linked players — skipping ratings fetch'); return; }
+
+    // 2a. Prefer WEBHOOK-FED ratings (dupr_ratings), kept current by DUPR pushes.
+    let missing = duprIds.slice();
+    try{
+      const idIn = duprIds.map(encodeURIComponent).join(',');
+      const wr = await fetch(
+        `${SUPABASE_URL}/rest/v1/dupr_ratings?dupr_id=in.(${idIn})&select=dupr_id,singles,doubles`,
+        {headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}}
+      );
+      if(wr.ok){
+        const byId = {};
+        for(const x of await wr.json()) byId[x.dupr_id] = x;
+        for(const name in duprRatings){
+          const id = duprRatings[name].duprId;
+          if(byId[id]){ duprRatings[name].singles = byId[id].singles; duprRatings[name].doubles = byId[id].doubles; }
+        }
+        missing = duprIds.filter(id => !byId[id]);
+      }
+    }catch(e){ console.warn('dupr_ratings read failed, will use batch:', e); }
+    if(!missing.length){ console.log('All ratings served from webhooks'); return; }
+
+    // 2b. Batch fallback for any players not yet seeded by a webhook.
+    const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+SUPABASE_KEY,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ duprIds: missing })
+    });
+    console.log('Ratings Edge Function status:', rr.status);
+    if(!rr.ok){ console.warn('Ratings fetch failed:', rr.status, await rr.text()); return; }
+    const data = await rr.json();
+    const ratingsById = data.ratings || {};
+
+    // 3. Merge batch ratings only for the players that lacked a webhook rating.
+    for(const name in duprRatings){
+      const id = duprRatings[name].duprId;
+      if(missing.includes(id) && ratingsById[id]){
+        duprRatings[name].singles = ratingsById[id].singles;
+        duprRatings[name].doubles = ratingsById[id].doubles;
+      }
+    }
+  }catch(e){ console.warn('Could not load DUPR ratings:', e); }
+}
 
 function renderSeasonSelector(){
   const wrap = document.getElementById('season-selector-wrap');
@@ -322,8 +407,8 @@ async function switchSeason(seasonId){
   const found = allSeasons.find(s=>s.id===seasonId);
   if(!found) return;
   viewingSeason = found;
-  schedule = JSON.parse(JSON.stringify(SCHEDULE_DEFAULT));
-  PLAYERS = ['Jordan C.','Cordel B.','Ethan V.','Elias V.','Marcus T.','Devon W.','Chase H.','Riley S.','Jordan M.','Tanner B.','Cam P.'];
+  schedule = [];
+  PLAYERS = [];
   await loadData();
   scheduleWeek = scoresWeek = findCurrentWeek();
   renderSeasonSelector();
@@ -352,10 +437,13 @@ function showPage(id, el){
   }
 }
 
-function checkScoresAuth(){
+async function checkScoresAuth(){
   const pw=document.getElementById('scores-pw').value;
-  if(pw===SCORES_PW||pw===ADMIN_PW){
+  document.getElementById('scores-err').textContent='Checking…';
+  const ok = await nacVerifyScorePw(pw);   // verified server-side
+  if(ok){
     scoreAuthed=true;
+    document.getElementById('scores-err').textContent='';
     document.getElementById('scores-gate').style.display='none';
     document.getElementById('scores-content').style.display='block';
     renderScoreMatches(scoresWeek);
@@ -365,7 +453,88 @@ function checkScoresAuth(){
   }
 }
 
-function renderStandings(){
+async function renderRoster(){
+  const members = await loadLeagueMembers(currentLeague.id, viewingSeason.id);
+  const sub = document.getElementById('standings-subtitle');
+  if(sub) sub.textContent = members.length + ' registered' + (isRegistrationOpen(viewingSeason) ? ' — registration open' : '');
+
+  // Clear the stats cards
+  const statsEl = document.getElementById('league-stats');
+  if(statsEl) statsEl.innerHTML = '';
+
+  const isPartner = (viewingSeason.leagueTypes && viewingSeason.leagueTypes[currentLeague.id]) === 'partner';
+
+  // For partner leagues, collapse mutual registrations into one row per TEAM.
+  // (Each registrant has their own row pointing at their partner, so a mutual
+  // pair would otherwise show twice: "A / B" and "B / A".)
+  let rows;
+  if(isPartner){
+    const consumed = new Set();
+    rows = [];
+    for(const m of members){
+      if(consumed.has(m.user_id)) continue;
+      consumed.add(m.user_id);
+      const isPending = m.partner_status === 'pending';
+      let partnerLabel = m.partner_name || '';
+      if(m.partner_user_id && !isPending){
+        const pRow = members.find(x => x.user_id === m.partner_user_id);
+        if(pRow && (!pRow.partner_user_id || pRow.partner_user_id === m.user_id)){
+          consumed.add(pRow.user_id);
+          partnerLabel = `${pRow.first_name||''} ${pRow.last_name||''}`.trim() || partnerLabel;
+        }
+      }
+      rows.push({ main: `${m.first_name||''} ${m.last_name||''}`.trim(), partner: isPending ? '' : partnerLabel, pending: isPending, pendingName: isPending ? partnerLabel : '' });
+    }
+    if(sub) sub.textContent = rows.length + (rows.length===1?' team':' teams') + (isRegistrationOpen(viewingSeason) ? ' — registration open' : '');
+  } else {
+    rows = members.map(m => ({ main: `${m.first_name||''} ${m.last_name||''}`.trim(), partner: '' }));
+  }
+
+  let html = '';
+  if(!members.length){
+    html = `<div style="text-align:center;padding:3rem 1rem;color:var(--muted)">
+      <p style="font-family:var(--font-display);font-size:18px;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">No players registered yet</p>
+      <p style="font-size:14px">${isRegistrationOpen(viewingSeason)?'Be the first to <a href="signup.html" style="color:var(--navy);font-weight:600">register</a>!':'Registration is closed.'}</p>
+    </div>`;
+  } else {
+    html = `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:0 1px 4px rgba(26,42,108,.06)">
+      <div style="background:var(--navy);padding:12px 16px;font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#fff">${isPartner?'Registered Teams':'Registered Players'}</div>
+      ${rows.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)">
+          <span style="font-family:var(--font-display);font-weight:700;color:var(--muted);width:24px">${i+1}</span>
+          <span style="font-weight:600;color:var(--navy);flex:1">${r.main}${r.partner?` <span style="color:var(--muted);font-weight:400">/ ${r.partner}</span>`:r.pending?` <span style="color:#b8860b;font-weight:400;font-size:12px">— partner invite pending${r.pendingName?` (${r.pendingName})`:''}</span>`:isPartner?` <span style="color:var(--danger);font-weight:400;font-size:12px">— needs partner</span>`:''}</span>
+        </div>`).join('')}
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:1rem">The schedule and standings will appear once the season begins.</p>`;
+  }
+
+  // Toggle: show roster, hide the standings table (without destroying it)
+  const tableWrap = document.getElementById('standings-table-wrap');
+  const rosterArea = document.getElementById('roster-area');
+  if(tableWrap) tableWrap.style.display = 'none';
+  if(rosterArea){ rosterArea.innerHTML = html; rosterArea.style.display = 'block'; }
+}
+
+async function renderStandings(){
+  // Show the roster (registered players) until a schedule actually exists for this league.
+  // Once the admin builds & saves a schedule, standings take over automatically.
+  const hasSchedule = schedule && schedule.length && schedule.some(w => w.matches && w.matches.length);
+  if(!hasSchedule){
+    await renderRoster();
+    return;
+  }
+  // Showing standings — make sure the table is visible and the roster area hidden
+  const _tw = document.getElementById('standings-table-wrap');
+  const _ra = document.getElementById('roster-area');
+  if(_tw) _tw.style.display = '';
+  if(_ra) _ra.style.display = 'none';
+
+  // PARTNER leagues: standings by TEAM — one row per partnership ("A & B").
+  const isPartnerLeague = currentLeague.type === 'doubles' &&
+    (viewingSeason.leagueTypes && viewingSeason.leagueTypes[currentLeague.id]) === 'partner';
+  if(isPartnerLeague){ renderTeamStandings(); return; }
+  const _th = document.getElementById('standings-name-th');
+  if(_th) _th.textContent = 'Player';
   const stats=getStats();
   const active=getActivePlayers();
   const rows=active.map(p=>{
@@ -377,7 +546,7 @@ function renderStandings(){
   document.getElementById('standings-subtitle').textContent=`${played} matches played this season`;
   document.getElementById('league-stats').innerHTML=[
     ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
-    ['Leader',rows[0]?.p||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+    ['Leader',displayName(rows[0]?.p)||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
   ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
   document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
     const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
@@ -386,17 +555,107 @@ function renderStandings(){
     const playoff=i<4,cutline=i===4;
     return`<tr class="${playoff?'playoff-row':''}${cutline?' cutline-row':''}">
       <td><span class="rank ${rc}">${i+1}</span></td>
-      <td><a href="player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${r.p}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
+      <td class="num">${(() => {
+        const dr = duprRatings[r.p] || duprRatings[displayName(r.p)];
+        if(!dr || !dr.duprId){
+          return `<span style="font-size:11px;color:var(--muted)">—</span>`;
+        }
+        const isSingles = currentLeague.type === 'singles';
+        const rating = isSingles ? dr.singles : dr.doubles;
+        if(rating === undefined || rating === null){
+          return `<span style="font-size:11px;color:var(--muted)">—</span>`;
+        }
+        const rn = parseFloat(rating); const ratingNum = isNaN(rn) ? rating : rn.toFixed(2);
+        return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${ratingNum}</a>`;
+      })()}</td>
+      <td><a href="player.html?league=${currentLeague.id}&player=${encodeURIComponent(r.p)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(r.p)}</span></a>${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
       <td class="num">${r.w}</td><td class="num">${r.l}</td>
       <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
       <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
-      <td class="num">${r.streak!=='—'?`<span class="streak-badge ${sc}">${r.streak}</span>`:'—'}</td>
     </tr>`;
   }).join('');
 }
 
-async function renderMatchLog(){
-  const el = document.getElementById('match-log-body');
+// Team standings for fixed-partner leagues: one row per partnership.
+// Teams are identified by the (unordered) pair of names appearing together
+// on a side of a scheduled match — which is exactly how partners are kept
+// together by the schedule generator.
+function renderTeamStandings(){
+  const th = document.getElementById('standings-name-th');
+  if(th) th.textContent = 'Team';
+
+  const teamStats = {};   // key (sorted pair) -> {label, a, b, w, l, pts, opp, streak}
+  const teamOf = (x, y) => {
+    const key = [x, y].filter(Boolean).map(s=>s.toLowerCase()).sort().join('|');
+    if(!key) return null;
+    if(!teamStats[key]) teamStats[key] = { label:[x,y].filter(Boolean).join(' & '), a:x, b:y, w:0,l:0,pts:0,opp:0,streak:[] };
+    return teamStats[key];
+  };
+  // Register every team that appears anywhere in the schedule (so 0-0 teams show)
+  for(const w of schedule)for(const m of w.matches){
+    if(m.p1a===undefined) continue;
+    teamOf(m.p1a, m.p1b); teamOf(m.p2a, m.p2b);
+  }
+  // Tally completed series
+  for(const w of schedule)for(const m of w.matches){
+    if(m.p1a===undefined) continue;
+    const r = seriesResult(m);
+    if(!r.complete) continue;
+    const t1 = teamOf(m.p1a, m.p1b), t2 = teamOf(m.p2a, m.p2b);
+    if(!t1 || !t2) continue;
+    const t1won = r.p1w > r.p2w;
+    const wt = t1won ? t1 : t2, lt = t1won ? t2 : t1;
+    const wpts = t1won ? r.pts1 : r.pts2, lpts = t1won ? r.pts2 : r.pts1;
+    wt.w++; wt.pts += wpts; wt.opp += lpts; wt.streak.push('W');
+    lt.l++; lt.pts += lpts; lt.opp += wpts; lt.streak.push('L');
+  }
+
+  const rows = Object.values(teamStats).map(s=>{
+    const tot = s.w + s.l;
+    return {...s, pct: tot ? s.w/tot : 0, diff: s.pts - s.opp,
+      streakStr: s.streak.slice(-3).join('')||'—', last: s.streak[s.streak.length-1]||null};
+  }).sort((a,b)=> b.pct-a.pct || b.diff-a.diff);
+
+  const played = schedule.reduce((a,w)=>a+w.matches.filter(m=>seriesResult(m).complete).length,0);
+  document.getElementById('standings-subtitle').textContent =
+    `${rows.length} teams · ${played} matches played this season`;
+  document.getElementById('league-stats').innerHTML=[
+    ['Played',played,`of ${schedule.reduce((a,w)=>a+w.matches.length,0)} total`],
+    ['Leader',displayName(rows[0]?.label)||'—',rows[0]?(rows[0].w+'-'+rows[0].l):'—'],
+  ].map(([l,v,s])=>`<div class="stat-card"><div class="stat-label">${l}</div><div class="stat-val" style="${typeof v==='string'?'font-size:18px':''}">${v}</div><div class="stat-sub">${s}</div></div>`).join('');
+
+  const ratingHtml = (name)=>{
+    const dr = duprRatings[name] || duprRatings[displayName(name)];
+    if(!dr || !dr.duprId) return null;
+    const rating = dr.doubles;
+    if(rating === undefined || rating === null) return null;
+    const rnum = parseFloat(rating); const num = isNaN(rnum) ? rating : rnum.toFixed(2);
+    return `<a href="https://dashboard.dupr.com/dashboard/player/${dr.duprId}" target="_blank" rel="noopener" style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--green-dark);text-decoration:none;border-bottom:1px dashed rgba(76,175,40,.4)">${num}</a>`;
+  };
+  const playerLink = (name)=>`<a href="player.html?league=${currentLeague.id}&player=${encodeURIComponent(name)}" style="text-decoration:none"><span class="player-name" style="cursor:pointer;border-bottom:1px dashed rgba(26,42,108,.3)">${displayName(name)}</span></a>`;
+
+  document.getElementById('standings-body').innerHTML=rows.map((r,i)=>{
+    const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'';
+    const dc=r.diff>0?'pos':r.diff<0?'neg':'';
+    const sc=r.last==='W'?'streak-w':'streak-l';
+    const playoff=i<4,cutline=i===4;
+    const r1 = ratingHtml(r.a), r2 = r.b ? ratingHtml(r.b) : null;
+    const ratingCell = (r1||r2)
+      ? `${r1||'<span style="font-size:11px;color:var(--muted)">—</span>'}<span style="color:var(--muted);font-size:11px"> / </span>${r2||'<span style="font-size:11px;color:var(--muted)">—</span>'}`
+      : `<span style="font-size:11px;color:var(--muted)">—</span>`;
+    const nameCell = r.b ? `${playerLink(r.a)} <span style="color:var(--muted)">&amp;</span> ${playerLink(r.b)}` : playerLink(r.a);
+    return`<tr class="${playoff?'playoff-row':''}${cutline?' cutline-row':''}">
+      <td><span class="rank ${rc}">${i+1}</span></td>
+      <td class="num" style="white-space:nowrap">${ratingCell}</td>
+      <td>${nameCell}${playoff?'<span class="playoff-badge">Playoffs</span>':''}</td>
+      <td class="num">${r.w}</td><td class="num">${r.l}</td>
+      <td class="num"><span class="win-pct">${Math.round(r.pct*100)}%</span></td>
+      <td class="num"><span class="pts-diff ${dc}">${r.diff>0?'+':''}${r.diff}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function renderMatchLog(){  const el = document.getElementById('match-log-body');
   if(!el) return;
   el.innerHTML='<div class="loading-overlay"><div class="spinner"></div>Loading...</div>';
 
@@ -470,5 +729,6 @@ function renderScoreMatches(week){
 }
 function setScoresWeek(w){renderScoreMatches(w);}
 </script>
+<script src="admin-nav.js"></script>
 </body>
 </html>

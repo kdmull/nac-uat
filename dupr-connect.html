@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Connect DUPR Account — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.page{padding:2rem 1.5rem;max-width:600px;margin:0 auto}
+.btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.5rem}
+.card h2{font-family:var(--font-display);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:.5rem}
+.card p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:1.2rem}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:1rem}
+.step-num{font-family:var(--font-display);font-size:18px;font-weight:900;color:var(--white);background:var(--navy);width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-text{font-size:14px;color:var(--text)}
+/* DUPR iframe */
+.dupr-iframe-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-top:1rem;display:none}
+.dupr-iframe-wrap iframe{width:100%;height:500px;border:none;display:block}
+/* Success state */
+.success-card{background:rgba(76,175,40,.06);border:1.5px solid var(--green);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;display:none}
+.success-card h3{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--green-dark);margin-bottom:.5rem}
+.success-card p{color:var(--muted);font-size:14px}
+.dupr-id-badge{display:inline-block;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy);background:var(--surface2);padding:6px 16px;border-radius:var(--radius);margin:.75rem 0}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:600px){
+  .page{padding:1rem}
+  .card{padding:1.2rem}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="index.html">
+    <img src="naclogo.png" class="nav-logo" alt="NAC"/>
+  </a>
+</nav>
+
+<div class="page">
+  <div class="card" id="account-card" style="display:none">
+    <h2>Connect Your DUPR Account</h2>
+    <p>Linking your DUPR account is required so your league matches count toward your rating. This is a one-time step.</p>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Click <strong>Connect DUPR</strong> below</div></div>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Log in with your DUPR credentials in the window that appears</div></div>
+    <div class="step"><div class="step-num">3</div><div class="step-text">You're linked — done!</div></div>
+    <div style="margin-top:1.5rem">
+      <div style="background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px">
+        Connecting as <strong id="account-name">your account</strong>
+      </div>
+      <button class="btn btn-primary" id="account-connect-btn" onclick="startConnect()" style="width:100%">Connect DUPR Account</button>
+    </div>
+  </div>
+
+  <div class="dupr-iframe-wrap" id="iframe-wrap">
+    <div style="background:var(--navy);padding:10px 16px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(255,255,255,.7)">Log in with DUPR</span>
+      <button onclick="cancelConnect()" style="background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>
+    <iframe id="dupr-iframe" src="" allow="*"></iframe>
+  </div>
+
+  <div class="success-card" id="success-card">
+    <h3>✓ Account Linked!</h3>
+    <p>Successfully connected <strong id="success-name"></strong> to DUPR</p>
+    <div class="dupr-id-badge" id="success-dupr-id"></div>
+    <p style="margin-top:.5rem">Your match results will now count toward your DUPR rating.</p>
+    <div style="display:flex;gap:8px;justify-content:center;margin-top:1rem">
+      <a class="btn btn-primary" id="back-league-link" href="index.html">Back to Leagues</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared.js"></script>
+<script>
+const DUPR_CLIENT_KEY_B64 = 'dGVzdC1jay03ZWVhZDg2YS01NGU0LTRlN2MtZmEzZi02M2QyN2YzZmI3ODQ=';
+const DUPR_SSO_BASE = 'https://uat.dupr.gg/login-external-app/';
+
+const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let accountUser = null;   // the logged-in auth user
+let returnTo = null;      // where to send them after linking
+
+window.addEventListener('DOMContentLoaded', async () => {
+  returnTo = new URLSearchParams(window.location.search).get('returnTo');
+
+  // Listen for the DUPR SSO postMessage
+  window.addEventListener('message', handleDUPRMessage, false);
+
+  // Account-based connect: requires a logged-in user.
+  const { data: { session } } = await sbAuth.auth.getSession();
+  if(!session){ window.location.href = 'auth.html'; return; }
+
+  accountUser = session.user;
+  const { data: prof } = await sbAuth.from('profiles').select('first_name,last_name,dupr_id').eq('id', accountUser.id).single();
+
+  if(prof && prof.dupr_id){ showAlreadyLinked(prof); return; }  // already linked
+
+  const name = prof ? `${prof.first_name||''} ${prof.last_name||''}`.trim() : accountUser.email;
+  document.getElementById('account-name').textContent = name || 'your account';
+  document.getElementById('account-card').style.display = 'block';
+});
+
+function showAlreadyLinked(prof){
+  document.getElementById('account-card').style.display = 'none';
+  document.getElementById('success-name').textContent = `${prof.first_name||''} ${prof.last_name||''}`.trim();
+  document.getElementById('success-dupr-id').textContent = 'DUPR ID: ' + prof.dupr_id;
+  const back = document.getElementById('back-league-link');
+  back.href = returnTo || 'dashboard.html';
+  back.textContent = returnTo ? 'Continue' : 'Back to Dashboard';
+  document.getElementById('success-card').style.display = 'block';
+}
+
+function startConnect(){
+  const iframeWrap = document.getElementById('iframe-wrap');
+  document.getElementById('dupr-iframe').src = DUPR_SSO_BASE + DUPR_CLIENT_KEY_B64;
+  iframeWrap.style.display = 'block';
+  iframeWrap.scrollIntoView({behavior:'smooth'});
+}
+
+function cancelConnect(){
+  document.getElementById('iframe-wrap').style.display = 'none';
+  document.getElementById('dupr-iframe').src = '';
+}
+
+async function handleDUPRMessage(event){
+  // DUPR fires a message event after successful login
+  if(!event.data || !event.data.duprId) return;
+  const { duprId, userToken, refreshToken } = event.data;
+  console.log('DUPR SSO response:', event.data);
+  cancelConnect();
+  if(!accountUser){ showToast('Please sign in and try again'); return; }
+
+  try{
+    // Save the DUPR id + tokens to the logged-in user's profile.
+    const { error } = await sbAuth.from('profiles')
+      .update({ dupr_id: duprId, dupr_access_token: userToken || null, dupr_refresh_token: refreshToken || null })
+      .eq('id', accountUser.id);
+    if(error) throw error;
+    // (The dupr_players mirror is maintained automatically by a database
+    // trigger on profiles — no client write needed.)
+
+    // Enroll for DUPR rating webhooks (fires a RATING_SEED to our receiver).
+    fetch(`${SUPABASE_URL}/functions/v1/dupr-subscribe-user`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ duprId })
+    }).catch(e => console.warn('DUPR webhook subscribe failed:', e));
+
+    // Success state
+    document.getElementById('account-card').style.display = 'none';
+    document.getElementById('iframe-wrap').style.display = 'none';
+    const successCard = document.getElementById('success-card');
+    const { data: prof } = await sbAuth.from('profiles').select('first_name,last_name').eq('id', accountUser.id).single();
+    document.getElementById('success-name').textContent = prof ? `${prof.first_name||''} ${prof.last_name||''}`.trim() : '';
+    document.getElementById('success-dupr-id').textContent = 'DUPR ID: ' + duprId;
+    const back = document.getElementById('back-league-link');
+    back.href = returnTo || 'dashboard.html';
+    back.textContent = returnTo ? 'Continue' : 'Back to Dashboard';
+    successCard.style.display = 'block';
+    successCard.scrollIntoView({behavior:'smooth'});
+
+    // Auto-redirect after 3 seconds
+    const dest = returnTo || 'dashboard.html';
+    let secs = 3;
+    const note = document.createElement('p');
+    note.style.cssText = 'margin-top:.75rem;font-size:13px;color:var(--muted)';
+    note.textContent = `Redirecting in ${secs}…`;
+    successCard.appendChild(note);
+    const timer = setInterval(() => {
+      secs--;
+      if(secs <= 0){ clearInterval(timer); window.location.href = dest; }
+      else { note.textContent = `Redirecting in ${secs}…`; }
+    }, 1000);
+  }catch(e){
+    console.error('Failed to save DUPR to profile:', e);
+    showToast('Failed to save — please try again');
+  }
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>

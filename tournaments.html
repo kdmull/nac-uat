@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Tournaments — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;--green:#4caf28;--green-dark:#3a8c1e;
+  --white:#fff;--off-white:#f4f7fb;--surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);--danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;white-space:nowrap}
+.nav-link:hover{color:#fff}.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
+.page{padding:2rem 1.5rem;max-width:800px;margin:0 auto}
+h1{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);line-height:1;margin-bottom:.25rem}
+.sub{color:var(--muted);font-size:14px;margin-bottom:1.5rem}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-bottom:1.25rem}
+.card h2{font-family:var(--font-display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
+.card .meta{color:var(--muted);font-size:13px;margin-bottom:.75rem}
+.pill{font-family:var(--font-display);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:2px 10px;border-radius:10px}
+.pill.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
+.pill.closed{color:var(--muted);background:var(--surface)}
+.pill.live{color:#8a6d00;background:rgba(212,167,0,.14)}
+.divrow{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.divrow .dname{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--navy)}
+.dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
+.dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
+.divrow .dmeta{font-size:12px;color:var(--muted)}
+.btn{padding:8px 16px;border-radius:var(--radius);font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid transparent;transition:all .12s}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-dark)}
+.btn-ghost{background:transparent;color:var(--navy);border-color:var(--border)}.btn-ghost:hover{background:var(--surface)}
+.btn-danger{background:transparent;color:var(--danger);border-color:rgba(217,59,59,.4)}.btn-danger:hover{background:rgba(217,59,59,.08)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-radius:var(--radius);font-family:var(--font-body);font-size:14px;color:var(--text);background:var(--white);width:100%}
+.msg{border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-top:.6rem}
+.msg.error{background:rgba(217,59,59,.08);color:var(--danger);border:1px solid rgba(217,59,59,.25)}
+.msg.success{background:rgba(76,175,40,.08);color:var(--green-dark);border:1px solid rgba(76,175,40,.3)}
+.mine{background:rgba(76,175,40,.06);border:1.5px solid var(--green);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-top:.6rem}
+.roster-toggle{display:block;margin-top:8px;font-size:11px;padding:5px 12px}
+.roster{background:var(--surface);border-radius:var(--radius);padding:10px 14px;margin-top:8px}
+.roster-list{margin:0;padding-left:20px;font-size:13px}
+.roster-list li{padding:2px 0}
+.roster-list.solo{list-style:none;padding-left:0;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px}
+.rmr{font-family:var(--font-display);font-size:12px;font-weight:700;color:var(--green-dark);background:rgba(76,175,40,.1);padding:1px 6px;border-radius:4px;margin-left:2px}
+.rmr.none{color:var(--muted);background:var(--surface2);font-weight:600}
+.amp{color:var(--muted);margin:0 2px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@media(max-width:600px){.page{padding:1rem}.card{padding:1rem}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="index.html"><img src="naclogo.png" class="nav-logo" alt="NAC" onerror="this.style.display='none'"/></a>
+  <div class="nav-right" id="nav-links">
+  </div>
+</nav>
+
+<div class="page">
+  <h1>Tournaments</h1>
+  <p class="sub">Register for upcoming NAC tournaments. Pool play into knockout brackets.</p>
+  <div id="list"><p style="color:var(--muted)">Loading…</p></div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="shared.js"></script>
+<script>
+const sbT = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let CAT = { tournaments: [] };
+let me = null, myProfile = null;
+let myRegs = [];             // my league_members rows in tournament namespaces
+let counts = {};             // league_id -> { teams, solo }
+let rosters = {};            // league_id -> { teams:[names], solo:[names] }
+let openRosters = new Set(); // league_ids whose roster list is expanded
+
+const esc = s => String(s??'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const tSeason = t => `t:${t.id}`;
+const dLeague = (t,d) => `t:${t.id}:${d.id}`;
+function fmtTime(hhmm){
+  if(!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return hhmm || '';
+  let [h,m] = hhmm.split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM'; h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.classList.remove('show'),3200); }
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const res = await dbGet('nac_tournaments');
+  if(res && res.data && Array.isArray(res.data.tournaments)) CAT = res.data;
+
+  const { data: { session } } = await sbT.auth.getSession();
+  if(session){
+    me = session.user;
+    const { data: prof } = await sbT.from('profiles').select('id,first_name,last_name,email,phone,dupr_id').eq('id', me.id).single();
+    myProfile = prof || null;
+    const seasonIds = CAT.tournaments.map(tSeason);
+    if(seasonIds.length){
+      const seasonInList = seasonIds.map(v => `"${v}"`).join(',');
+      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
+      myRegs = regs || [];
+    }
+  }
+  await loadCounts();
+  render();
+});
+
+// Registered counts per division, expressed in TEAMS.
+//   doubles → each mutually-accepted pair is one team; anyone without an
+//             accepted partner is counted separately as "needing a partner".
+//   singles → one player is one team.
+async function loadCounts(){
+  counts = {};
+  const ids = [];
+  CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => ids.push(dLeague(t,d))));
+  if(!ids.length) return;
+  try{
+    const client = me ? sbT : null;
+    if(!client) return;   // counts shown to signed-in users; public sees divisions without counts
+    // league_id values contain colons (t:tid:did); PostgREST needs each value in
+    // the in-list double-quoted or it 400s. Build the filter explicitly.
+    const inList = ids.map(v => `"${v}"`).join(',');
+    const { data } = await client.from('league_members')
+      .select('league_id,user_id,partner_user_id,partner_status,first_name,last_name,partner_name')
+      .filter('league_id', 'in', `(${inList})`).eq('status','active');
+    const rows_ = data || [];
+    const byDiv = {};
+    rows_.forEach(r => { (byDiv[r.league_id] = byDiv[r.league_id] || []).push(r); });
+    const nm = r => `${r.first_name||''} ${r.last_name||''}`.trim() || 'Player';
+
+    // DUPR ratings for everyone registered: user_id → dupr_id → rating
+    const uids = [...new Set(rows_.map(r => r.user_id).filter(Boolean))];
+    const duprByUser = {}, ratingByDupr = {};
+    if(uids.length){
+      try{
+        const { data: profs } = await client.from('profiles').select('id,dupr_id').in('id', uids);
+        (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
+        const dids = [...new Set(Object.values(duprByUser))];
+        if(dids.length){
+          const { data: rts } = await client.from('dupr_ratings').select('dupr_id,singles,doubles').in('dupr_id', dids);
+          (rts||[]).forEach(x => ratingByDupr[x.dupr_id] = x);
+        }
+      }catch(e){}
+    }
+    const rateOf = (uid, teamType) => {
+      const row = ratingByDupr[duprByUser[uid]];
+      if(!row) return null;
+      const v = parseFloat(teamType === 'singles' ? row.singles : row.doubles);
+      return isNaN(v) ? null : v;
+    };
+    const player = (r, teamType) => ({ name: nm(r), rating: rateOf(r.user_id, teamType), duprId: duprByUser[r.user_id] || null });
+
+    CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => {
+      const key = dLeague(t,d);
+      const rows = byDiv[key] || [];
+      rosters[key] = { teams: [], solo: [] };
+      if(!rows.length){ counts[key] = { teams: 0, solo: 0 }; return; }
+      if(d.teamType !== 'doubles'){
+        rosters[key].teams = rows.map(r => ({ players:[player(r, d.teamType)] }));
+        rosters[key].teams.sort((a,b) => (b.players[0].rating ?? -1) - (a.players[0].rating ?? -1));
+        counts[key] = { teams: rows.length, solo: 0 };
+        return;
+      }
+      const seen = new Set();
+      rows.forEach(r => {
+        if(r.partner_status === 'accepted' && r.partner_user_id){
+          const pair = [r.user_id, r.partner_user_id].sort().join('|');
+          if(seen.has(pair)) return;
+          seen.add(pair);
+          const mate = rows.find(x => x.user_id === r.partner_user_id);
+          const players = [player(r, d.teamType)];
+          players.push(mate ? player(mate, d.teamType) : { name: r.partner_name || '?', rating: null, duprId: null });
+          rosters[key].teams.push({ players });
+        } else {
+          rosters[key].solo.push({ ...player(r, d.teamType), pending: r.partner_status === 'pending' });
+        }
+      });
+      // Strongest teams first (by average DUPR, unrated last) — mirrors seeding.
+      const avg = tm => { const rs = tm.players.map(p=>p.rating).filter(v=>v!=null); return rs.length ? rs.reduce((a,b)=>a+b,0)/rs.length : -1; };
+      rosters[key].teams.sort((a,b) => avg(b) - avg(a));
+      rosters[key].solo.sort((a,b) => (b.rating ?? -1) - (a.rating ?? -1));
+      counts[key] = { teams: rosters[key].teams.length, solo: rosters[key].solo.length };
+    }));
+  }catch(e){}
+}
+
+function countLabel(c, d){
+  if(!c) return '';
+  const unit = d.teamType === 'doubles' ? 'team' : 'player';
+  const parts = [`${c.teams} ${unit}${c.teams===1?'':'s'} registered`];
+  if(c.solo) parts.push(`${c.solo} needing a partner`);
+  return ' · ' + parts.join(' · ');
+}
+
+function myRegFor(t, d){ return myRegs.find(r => r.league_id === dLeague(t,d)) || null; }
+
+function toggleRoster(key){
+  if(openRosters.has(key)) openRosters.delete(key); else openRosters.add(key);
+  render();
+}
+
+// Who's signed up — visible before the division starts so players can see the field.
+function rosterBlock(t, d){
+  const key = dLeague(t,d);
+  const r = rosters[key], c = counts[key];
+  if(!r || !c || (!c.teams && !c.solo)) return '';
+  const open = openRosters.has(key);
+  const unit = d.teamType==='doubles' ? 'team' : 'player';
+  const label = open ? 'Hide who\'s registered' : `See who's registered (${c.teams} ${unit}${c.teams===1?'':'s'})`;
+  let body = '';
+  if(open){
+    const pl = p => {
+      const rate = p.rating != null
+        ? `<span class="rmr">${p.rating.toFixed(2)}</span>`
+        : `<span class="rmr none" title="No DUPR rating yet">NR</span>`;
+      return `${esc(p.name)} ${rate}`;
+    };
+    const items = r.teams.map(tm => `<li>${tm.players.map(pl).join(' <span class="amp">&amp;</span> ')}</li>`).join('');
+    const solos = r.solo.map(p => `<li style="color:var(--muted)">${pl(p)} <em style="font-size:11px">· ${p.pending?'partner pending':'looking for a partner'}</em></li>`).join('');
+    body = `<div class="roster">
+      ${items ? `<ol class="roster-list">${items}</ol>` : '<p style="color:var(--muted);font-size:13px;margin:0">No complete teams yet.</p>'}
+      ${solos ? `<ul class="roster-list solo">${solos}</ul>` : ''}
+    </div>`;
+  }
+  return `<button class="btn btn-ghost roster-toggle" onclick="toggleRoster('${key}')">${open?'▾':'▸'} ${label}</button>${body}`;
+}
+
+function render(){
+  const el = document.getElementById('list');
+  const ts = CAT.tournaments.filter(t => (t.divisions||[]).length);
+  if(!ts.length){ el.innerHTML = '<div class="card"><p style="color:var(--muted)">No tournaments are posted yet — check back soon!</p></div>'; return; }
+
+  el.innerHTML = ts.map((t,ti) => {
+    const open = !!t.regOpen;
+    const divs = (t.divisions||[]).map((d,di) => {
+      const mine = myRegFor(t,d);
+      const n = counts[dLeague(t,d)];
+      let action = '';
+      if(mine){
+        const partnerBit = d.teamType==='doubles'
+          ? (mine.partner_name
+              ? ` · Partner: <strong>${esc(mine.partner_name)}</strong>${mine.partner_status==='pending'?' <span style="color:#b8860b">(pending)</span>':mine.partner_status==='accepted'?' <span style="color:var(--green-dark)">✓</span>':''}`
+              : ' · <span style="color:#b8860b">No partner selected yet</span>')
+          : '';
+        action = `<div class="mine">✓ You're registered${partnerBit}
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            ${d.teamType==='doubles' ? `<button class="btn btn-ghost" style="font-size:11px;padding:5px 12px" onclick="openRegister(${ti},${di})">${mine.partner_name?'Change Partner':'Choose Partner'}</button>`:''}
+            <button class="btn btn-danger" style="font-size:11px;padding:5px 12px" onclick="withdraw(${ti},${di})">Withdraw</button>
+          </div></div>`;
+      } else if(open){
+        action = me
+          ? `<button class="btn btn-green" style="margin-top:8px" onclick="openRegister(${ti},${di})">Register</button><div id="regform-${ti}-${di}"></div>`
+          : `<a class="btn btn-green" style="margin-top:8px;display:inline-block;text-decoration:none" href="auth.html">Sign in to register</a>`;
+      }
+      const live = ['pools','knockout','complete'].includes(d.phase);
+      const liveBtn = live
+        ? `<a class="btn btn-ghost" style="margin-top:8px;display:inline-block;text-decoration:none;font-size:12px;padding:6px 14px" href="tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(d.id)}">${d.phase==='complete'?'View Results':'View Live — Pools & Bracket'}</a>` : '';
+      return `<div class="divrow">
+        <div class="dname">${esc(d.name)}${d.duprEnabled!==false?' <span class="dupr-chip" title="Matches in this division count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}${live?` <span style="font-size:11px;font-family:var(--font-display);font-weight:700;text-transform:uppercase;color:${d.phase==='complete'?'var(--muted)':'var(--green-dark)'}">· ${d.phase==='complete'?'finished':'LIVE'}</span>`:''}</div>
+        <div class="dmeta">${d.teamType==='doubles'?'Doubles':'Singles'}${d.startTime?` · ⏰ Starts ${fmtTime(d.startTime)}`:''}${d.fee?` · $${d.fee} entry (pay at the event)`:''}${countLabel(n, d)}</div>
+        ${liveBtn}
+        ${rosterBlock(t, d)}
+        ${action}
+        <div id="regmsg-${ti}-${di}"></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:.25rem">
+        <h2>${esc(t.name)}</h2>
+        <span class="pill ${open?'open':'closed'}">${open?'Registration Open':'Registration Closed'}</span>
+      </div>
+      <div class="meta">${t.date?esc(nacFmtDate(t.date)):'Date TBA'}${t.location?' · '+esc(t.location):''}</div>
+      ${divs}
+    </div>`;
+  }).join('');
+}
+
+// ── Register flow ─────────────────────────────────────
+async function openRegister(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const holder = document.getElementById(`regform-${ti}-${di}`);
+  const mine = myRegFor(t,d);
+  // Changing partner on an existing registration reuses the same form.
+  const target = holder || document.querySelector(`#regmsg-${ti}-${di}`).previousElementSibling;
+
+  let partnerSel = '';
+  if(d.teamType === 'doubles'){
+    const profs = await availablePartners(t, d, mine ? [mine.partner_user_id] : []);
+    partnerSel = `<div style="margin-top:8px">
+      <label style="font-size:12px;font-weight:600;color:var(--muted)">Select your partner (or leave blank to find one later)</label>
+      <select class="inp" id="psel-${ti}-${di}">
+        <option value="">— No partner yet —</option>
+        ${(profs||[]).map(p => `<option value="${p.id}" ${mine&&mine.partner_user_id===p.id?'selected':''}>${esc(((p.first_name||'')+' '+(p.last_name||'')).trim())}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+  (holder || target).innerHTML = `${partnerSel}
+    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-green" id="regbtn-${ti}-${di}" onclick="submitRegistration(${ti},${di})">${mine?'Save Partner':'Confirm Registration'}</button>
+      <button class="btn btn-ghost" onclick="render()">Cancel</button>
+    </div>`;
+}
+
+// Partner dropdown: hide players already registered in this division. Anyone who
+// picked ME stays visible (so I can reciprocate), as does my current partner.
+async function availablePartners(t, d, keepIds){
+  const [profRes, regRes] = await Promise.all([
+    sbT.from('profiles').select('id,first_name,last_name').neq('id', me.id).order('first_name'),
+    sbT.from('league_members').select('user_id,partner_user_id')
+      .eq('league_id', dLeague(t,d)).eq('season_id', tSeason(t)).eq('status','active')
+  ]);
+  const taken = new Set();
+  (regRes.data || []).forEach(r => {
+    if(r.user_id === me.id) return;
+    if(r.partner_user_id === me.id) return;    // they invited me
+    taken.add(r.user_id);
+  });
+  (keepIds || []).filter(Boolean).forEach(id => taken.delete(id));
+  return (profRes.data || []).filter(p => !taken.has(p.id));
+}
+
+// Fail-open DUPR gating (same policy as league registration): block only on a
+// definitive missing-BASIC_L1; allow if the check itself is unreachable.
+async function verifyDupr(duprId){
+  if(!duprId) return { eligible:false, message:'A linked DUPR account is required — connect it from your dashboard first.' };
+  try{
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-get-entitlements`, {
+      method:'POST', headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ duprId })
+    });
+    const dta = await r.json().catch(()=>({}));
+    if(!r.ok){ console.warn('DUPR check unavailable — allowing registration'); return { eligible:true }; }
+    if(!dta.basic) return { eligible:false, message:'Your DUPR account is not currently eligible for rated play (missing BASIC_L1).' };
+    return { eligible:true };
+  }catch(e){ return { eligible:true }; }
+}
+
+async function submitRegistration(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const btn = document.getElementById(`regbtn-${ti}-${di}`);
+  const msgEl = document.getElementById(`regmsg-${ti}-${di}`);
+  btn.disabled = true;
+  msgEl.innerHTML = '';
+
+  const psel = document.getElementById(`psel-${ti}-${di}`);
+  const partnerUserId = psel ? (psel.value || null) : null;
+  const partnerName = partnerUserId ? psel.options[psel.selectedIndex].text : null;
+  const p = myProfile;
+  const existing = myRegFor(t,d);
+
+  try{
+    if(existing){
+      // Partner change on an existing registration (mutual-accept if they already chose me)
+      let status = partnerUserId ? 'pending' : null;
+      if(partnerUserId){
+        const inv = await inviteFrom(partnerUserId, t, d);
+        if(inv){ status = 'accepted'; await sbT.from('league_members').update({ partner_status:'accepted', partner_name: `${p.first_name||''} ${p.last_name||''}`.trim() }).eq('id', inv.id); }
+      }
+      const { error } = await sbT.from('league_members')
+        .update({ partner_user_id: partnerUserId, partner_name: partnerName, partner_status: status })
+        .eq('id', existing.id);
+      if(error) throw error;
+      Object.assign(existing, { partner_user_id: partnerUserId, partner_name: partnerName, partner_status: status });
+      if(partnerUserId) notifyPartnerT(partnerUserId, p, t, d, status);
+      toast(status==='accepted' ? 'Partners locked in ✓' : (partnerUserId ? 'Partner invited — pending acceptance' : 'Partner removed'));
+      render(); return;
+    }
+
+    // New registration: DUPR gate first (same rule as leagues)
+    const gate = await verifyDupr(p && p.dupr_id);
+    if(!gate.eligible){ msgEl.innerHTML = `<div class="msg error">${gate.message}</div>`; btn.disabled=false; return; }
+
+    // Mutual accept if the chosen partner already registered and picked me
+    let status = partnerUserId ? 'pending' : null;
+    let inv = null;
+    if(partnerUserId){
+      inv = await inviteFrom(partnerUserId, t, d);
+      if(inv) status = 'accepted';
+    }
+
+    const { error } = await sbT.from('league_members').insert({
+      league_id: dLeague(t,d), season_id: tSeason(t), user_id: me.id,
+      partner_user_id: partnerUserId,
+      first_name: p.first_name, last_name: p.last_name, email: p.email, phone: p.phone,
+      partner_name: partnerName, partner_status: status, status: 'active'
+    });
+    if(error){
+      if(error.code === '23505') msgEl.innerHTML = '<div class="msg error">You are already registered for this division.</div>';
+      else msgEl.innerHTML = `<div class="msg error">${esc(error.message)}</div>`;
+      btn.disabled = false; return;
+    }
+    if(inv) await sbT.from('league_members').update({ partner_status:'accepted' }).eq('id', inv.id);
+    if(partnerUserId) notifyPartnerT(partnerUserId, p, t, d, status);
+
+    const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
+    if(regs && regs.length) myRegs.push(regs[0]);
+    msgEl.innerHTML = `<div class="msg success">You're registered for ${esc(d.name)}!${status==='accepted'?' You and '+esc(partnerName)+' are partners ✓':''}</div>`;
+    await loadCounts(); render();
+    toast('Registered ✓');
+  }catch(e){
+    msgEl.innerHTML = `<div class="msg error">${esc(e.message||'Registration failed')}</div>`;
+    btn.disabled = false;
+  }
+}
+
+// Did `otherUserId` already register this division naming ME as partner?
+async function inviteFrom(otherUserId, t, d){
+  try{
+    const { data } = await sbT.from('league_members').select('id,partner_status')
+      .eq('user_id', otherUserId).eq('season_id', tSeason(t)).eq('league_id', dLeague(t,d))
+      .eq('status','active').eq('partner_user_id', me.id).maybeSingle();
+    return data || null;
+  }catch(e){ return null; }
+}
+
+function notifyPartnerT(partnerUserId, p, t, d, status){
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type:'partner', data:{ partnerUserId,
+        byName: `${p.first_name||''} ${p.last_name||''}`.trim(),
+        league: `${t.name} — ${d.name}`, status: status || 'pending' } })
+    }).catch(()=>{});
+  }catch(e){}
+}
+
+async function withdraw(ti, di){
+  const t = CAT.tournaments[ti], d = t.divisions[di];
+  const mine = myRegFor(t,d);
+  if(!mine) return;
+  if(!confirm(`Withdraw from ${d.name}?`)) return;
+  const { error } = await sbT.from('league_members').delete().eq('id', mine.id);
+  if(error){ toast('Could not withdraw: ' + error.message); return; }
+  myRegs = myRegs.filter(r => r.id !== mine.id);
+  await loadCounts(); render();
+  toast('Withdrawn');
+}
+</script>
+<script src="admin-nav.js"></script>
+</body>
+</html>

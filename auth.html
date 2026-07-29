@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/jpg" href="favicon.jpg"/>
+<title>Sign In — NAC Pickleball</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1a2a6c;--navy-dark:#111d4e;
+  --green:#4caf28;--green-dark:#3a8c1e;
+  --white:#ffffff;--off-white:#f4f7fb;
+  --surface:#f0f4f9;--surface2:#e3eaf4;
+  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
+  --danger:#d93b3b;
+  --font-display:'Barlow Condensed',sans-serif;
+  --font-body:'Barlow',sans-serif;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
+nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;border-bottom:3px solid var(--green)}
+.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
+.nav-logo{height:44px;width:auto}
+.page{padding:2rem 1.5rem;max-width:420px;margin:0 auto}
+.auth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-top:1.5rem}
+.auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border)}
+.auth-tab{flex:1;padding:10px;font-family:var(--font-display);font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-2px;transition:all .12s}
+.auth-tab.active{color:var(--navy);border-bottom-color:var(--green)}
+.auth-header{text-align:center;margin-bottom:1rem}
+.auth-header h1{font-family:var(--font-display);font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:1px;color:var(--navy)}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:1rem}
+.form-group label{font-size:12px;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.form-group input{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px 14px;font-size:16px;font-family:var(--font-body);outline:none;transition:border-color .12s}
+.form-group input:focus{border-color:var(--navy);background:var(--white)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row .form-group{min-width:0}
+.form-row input{width:100%;min-width:0}
+@media(max-width:380px){.form-row{grid-template-columns:1fr}}
+.btn{padding:12px 24px;border-radius:var(--radius);font-family:var(--font-display);font-size:15px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;width:100%}
+.btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.msg{font-size:13px;margin-top:10px;text-align:center;min-height:18px}
+.msg.error{color:var(--danger)}.msg.success{color:var(--green-dark)}
+.form-section{display:none}.form-section.active{display:block}
+.hint{text-align:center;font-size:13px;color:var(--muted);margin-top:1rem}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* --- mobile nav (responsive: logo centered on top, links centered below) --- */
+@media(max-width:768px){
+  nav{flex-wrap:wrap;justify-content:center}
+  .nav-brand{width:100%;display:flex;justify-content:center;margin-right:0;padding:.5rem 0 .25rem}
+  .nav-logo{height:56px}
+  .nav-greeting{display:none}
+  .nav-actions:empty{display:none}
+  .nav-actions,.nav-right,[data-account-nav]{display:flex;width:100%;margin-left:0;justify-content:center;flex-wrap:wrap}
+  .nav-link{flex:0 1 auto;padding:.7rem .6rem;font-size:13px;text-align:center;white-space:nowrap}
+  [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important;text-align:center}
+}
+@media(max-width:400px){
+  .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
+}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-brand" href="index.html"><img src="naclogo.png" class="nav-logo" alt="NAC"/></a>
+</nav>
+
+<div class="page">
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+      <button class="auth-tab" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="form-section active" id="section-login">
+      <div class="auth-header"><h1>Welcome Back</h1></div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" autocomplete="email" placeholder="your@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+      <div style="text-align:center;margin-top:10px">
+        <a href="#" onclick="event.preventDefault();showForgot()" style="font-size:13px;color:var(--muted);text-decoration:underline">Forgot your password?</a>
+      </div>
+      <div class="msg" id="login-msg"></div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="form-section" id="section-signup">
+      <div class="auth-header"><h1>Create Account</h1></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="signup-first" autocomplete="given-name" placeholder="First"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="signup-last" autocomplete="family-name" placeholder="Last"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" autocomplete="email" placeholder="your@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="signup-phone" autocomplete="tel" placeholder="(555) 555-5555" oninput="this.value=fmtPhone(this.value)"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-password" autocomplete="new-password" placeholder="At least 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Confirm Password</label>
+        <input type="password" id="signup-password2" autocomplete="new-password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')doSignup()"/>
+      </div>
+      <button class="btn btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
+      <div class="msg" id="signup-msg"></div>
+    </div>
+
+    <!-- Forgot password: request a reset link -->
+    <div class="form-section" id="section-forgot">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Enter your email and we'll send you a link to reset your password.</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="forgot-email" autocomplete="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')sendResetLink()"/>
+      </div>
+      <button class="btn btn-primary" id="forgot-btn" onclick="sendResetLink()">Send Reset Link</button>
+      <div style="text-align:center;margin-top:10px">
+        <a href="#" onclick="event.preventDefault();switchTab('login')" style="font-size:13px;color:var(--muted);text-decoration:underline">Back to sign in</a>
+      </div>
+      <div class="msg" id="forgot-msg"></div>
+    </div>
+
+    <!-- Arrived from a reset email: choose a new password -->
+    <div class="form-section" id="section-reset">
+      <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">Choose a new password for your account.</p>
+      <div class="form-group">
+        <label>New password</label>
+        <input type="password" id="reset-password" autocomplete="new-password" placeholder="At least 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Confirm new password</label>
+        <input type="password" id="reset-password2" autocomplete="new-password" placeholder="Re-enter password" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+      </div>
+      <button class="btn btn-primary" id="reset-btn" onclick="doResetPassword()">Update Password</button>
+      <div class="msg" id="reset-msg"></div>
+    </div>
+  </div>
+  <p class="hint">Sign in to register for leagues and manage your profile.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// A password-recovery link signs the user in, so check for it BEFORE the
+// "already logged in" redirect — otherwise reset links bounce to the index.
+function isRecoveryLink(){
+  const hash = (window.location.hash || '').replace(/^#/, '');
+  const qs = new URLSearchParams(window.location.search);
+  return /(^|&)type=recovery(&|$)/.test(hash) || qs.get('type') === 'recovery';
+}
+
+supabaseClient.auth.onAuthStateChange((event) => {
+  if(event === 'PASSWORD_RECOVERY') switchTab('reset');
+});
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if(isRecoveryLink()){ switchTab('reset'); return; }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if(session){ window.location.href = 'index.html'; }
+});
+
+function switchTab(tab){
+  ['login','signup','forgot','reset'].forEach(t => {
+    const sec = document.getElementById('section-'+t);
+    if(sec) sec.classList.toggle('active', t===tab);
+  });
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  // The Sign In / Create Account tabs make no sense on the reset screens.
+  const tabs = document.querySelector('.auth-tabs');
+  if(tabs) tabs.style.display = (tab==='forgot' || tab==='reset') ? 'none' : '';
+}
+
+function showForgot(){
+  const em = document.getElementById('login-email').value.trim();
+  if(em) document.getElementById('forgot-email').value = em;   // carry it over
+  switchTab('forgot');
+}
+
+// Send the reset email (Supabase mails a recovery link back to this page).
+async function sendResetLink(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const msg = document.getElementById('forgot-msg');
+  const btn = document.getElementById('forgot-btn');
+  if(!email){ msg.className='msg error'; msg.textContent='Enter your email address.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  const redirectTo = window.location.origin + window.location.pathname;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+  btn.disabled = false; btn.textContent = 'Send Reset Link';
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  // Don't reveal whether the address exists — same message either way.
+  msg.className='msg success';
+  msg.textContent = 'If an account exists for that email, a reset link is on its way. Check your inbox (and spam).';
+}
+
+// Set the new password using the recovery session created by the emailed link.
+async function doResetPassword(){
+  const pw = document.getElementById('reset-password').value;
+  const pw2 = document.getElementById('reset-password2').value;
+  const msg = document.getElementById('reset-msg');
+  const btn = document.getElementById('reset-btn');
+  if(pw.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if(pw !== pw2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+  btn.disabled = true; btn.textContent = 'Updating…';
+  const { error } = await supabaseClient.auth.updateUser({ password: pw });
+  btn.disabled = false; btn.textContent = 'Update Password';
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+  msg.className='msg success';
+  msg.textContent = 'Password updated! Taking you to your dashboard…';
+  setTimeout(()=>{ window.location.href = 'index.html'; }, 1500);
+}
+
+function fmtPhone(v){
+  v = (v||'').replace(/\D/g,'').slice(0,10);
+  if(v.length>=7) return '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
+  if(v.length>=4) return '('+v.slice(0,3)+') '+v.slice(3);
+  if(v.length>=1) return '('+v;
+  return '';
+}
+
+async function doSignup(){
+  const first = document.getElementById('signup-first').value.trim();
+  const last = document.getElementById('signup-last').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const phone = fmtPhone(document.getElementById('signup-phone').value);
+  const password = document.getElementById('signup-password').value;
+  const msg = document.getElementById('signup-msg');
+  msg.className = 'msg';
+  msg.textContent = '';
+
+  if(!first || !last){ msg.className='msg error'; msg.textContent='Enter your first and last name.'; return; }
+  if(!email){ msg.className='msg error'; msg.textContent='Enter your email.'; return; }
+  if(!/^\(\d{3}\) \d{3}-\d{4}$/.test(phone)){ msg.className='msg error'; msg.textContent='Enter your phone as (xxx) xxx-xxxx.'; return; }
+  if(password.length < 6){ msg.className='msg error'; msg.textContent='Password must be at least 6 characters.'; return; }
+  const password2 = document.getElementById('signup-password2').value;
+  if(password !== password2){ msg.className='msg error'; msg.textContent='Passwords do not match.'; return; }
+
+  const btn = document.getElementById('signup-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email, password,
+    options: { data: { first_name: first, last_name: last, phone } }
+  });
+
+  btn.disabled = false; btn.textContent = 'Create Account';
+
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+
+  // Notify the admin that a new account was created (keepalive survives redirect).
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type:'account', data:{ email, name:(first+' '+last).trim() } })
+    }).catch(()=>{});
+  }catch(e){}
+
+  if(data.session){
+    // Logged in immediately (email confirmation off) — require DUPR linking next
+    window.location.href = 'dupr-connect.html';
+  } else {
+    // Email confirmation required
+    msg.className='msg success';
+    msg.textContent = 'Account created! Check your email to confirm, then sign in.';
+    switchTab('login');
+  }
+}
+
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const msg = document.getElementById('login-msg');
+  msg.className = 'msg'; msg.textContent = '';
+
+  if(!email || !password){ msg.className='msg error'; msg.textContent='Enter your email and password.'; return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+  btn.disabled = false; btn.textContent = 'Sign In';
+
+  if(error){ msg.className='msg error'; msg.textContent = error.message; return; }
+
+  // If their profile has no DUPR linked yet, require it before continuing
+  try{
+    const { data: prof } = await supabaseClient.from('profiles').select('dupr_id').eq('id', data.user.id).single();
+    if(!prof || !prof.dupr_id){
+      window.location.href = 'dupr-connect.html';
+      return;
+    }
+  }catch(e){ /* if check fails, fall through to index */ }
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>
