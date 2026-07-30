@@ -91,6 +91,24 @@ select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-ra
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:var(--radius);font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);opacity:0;transition:all .25s;z-index:200;pointer-events:none;max-width:90vw;text-align:center}
 #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 @media(max-width:600px){.page{padding:1rem}.card{padding:1rem}}
+
+/* Partner search — type-to-filter replacement for the old player dropdown. */
+.psrch{position:relative}
+.psrch .psrch-q{width:100%}
+.psrch-list{position:absolute;z-index:50;left:0;right:0;top:100%;margin-top:4px;background:var(--white,#fff);
+  border:1.5px solid var(--border);border-radius:var(--radius,8px);box-shadow:0 8px 24px rgba(26,42,108,.14);
+  max-height:260px;overflow-y:auto}
+.psrch-item{display:block;width:100%;text-align:left;padding:11px 13px;background:none;border:none;
+  border-bottom:1px solid var(--border);font-family:var(--font-body,inherit);font-size:15px;color:var(--navy);
+  cursor:pointer}
+.psrch-item:last-child{border-bottom:none}
+.psrch-item:hover,.psrch-item:focus{background:var(--surface);outline:none}
+.psrch-empty{padding:11px 13px;font-size:13px;color:var(--muted)}
+.psrch-chosen{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius,8px)}
+.psrch-chosen .psrch-name{font-weight:600;color:var(--navy)}
+.psrch-clear{background:none;border:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.psrch-clear:hover{color:var(--danger,#c0392b)}
 </style>
 </head>
 <body>
@@ -392,15 +410,14 @@ async function openRegister(ti, di){
   // Changing partner on an existing registration reuses the same form.
   const target = holder || document.querySelector(`#regmsg-${ti}-${di}`).previousElementSibling;
 
-  let partnerSel = '';
+  let partnerSel = '', partnerPeople = [], partnerSelId = '';
   if(d.teamType === 'doubles'){
     const profs = await availablePartners(t, d, mine ? [mine.partner_user_id] : []);
+    partnerPeople = profs || [];
+    partnerSelId = `psel-${ti}-${di}`;
     partnerSel = `<div style="margin-top:8px">
       <label style="font-size:12px;font-weight:600;color:var(--muted)">Select your partner (or leave blank to find one later)</label>
-      <select class="inp" id="psel-${ti}-${di}">
-        <option value="">— No partner yet —</option>
-        ${(profs||[]).map(p => `<option value="${p.id}" ${mine&&mine.partner_user_id===p.id?'selected':''}>${esc(((p.first_name||'')+' '+(p.last_name||'')).trim())}</option>`).join('')}
-      </select>
+      ${partnerSearchHTML(partnerSelId, partnerPeople, mine ? mine.partner_user_id : null, 'Search players by name…')}
     </div>`;
   }
   (holder || target).innerHTML = `${partnerSel}
@@ -408,6 +425,7 @@ async function openRegister(ti, di){
       <button class="btn btn-green" id="regbtn-${ti}-${di}" onclick="submitRegistration(${ti},${di})">${mine?'Save Partner':'Confirm Registration'}</button>
       <button class="btn btn-ghost" onclick="render()">Cancel</button>
     </div>`;
+  if(partnerSelId) wirePartnerSearch(partnerSelId, partnerPeople);
 }
 
 // Partner dropdown: hide players already registered in this division. Anyone who
@@ -500,6 +518,24 @@ async function submitRegistration(ti, di){
     }
     if(inv) await sbT.from('league_members').update({ partner_status:'accepted' }).eq('id', inv.id);
     if(partnerUserId) notifyPartnerT(partnerUserId, p, t, d, status);
+
+    // Tell the organiser someone registered for this division.
+    try{
+      fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+        method:'POST', keepalive:true,
+        headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+        body: JSON.stringify({ type:'registration', data:{
+          kind: 'tournament',
+          tournament: t.name || '',
+          division: d.name || '',
+          league: `${t.name||''} — ${d.name||''}`,
+          name: `${p.first_name||''} ${p.last_name||''}`.trim(),
+          email: p.email || '',
+          phone: p.phone || '',
+          partner: partnerName || ''
+        } })
+      }).catch(()=>{});
+    }catch(e){}
 
     const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
     if(regs && regs.length) myRegs.push(regs[0]);

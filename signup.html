@@ -95,6 +95,24 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 @media(max-width:400px){
   .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
 }
+
+/* Partner search — type-to-filter replacement for the old player dropdown. */
+.psrch{position:relative}
+.psrch .psrch-q{width:100%}
+.psrch-list{position:absolute;z-index:50;left:0;right:0;top:100%;margin-top:4px;background:var(--white,#fff);
+  border:1.5px solid var(--border);border-radius:var(--radius,8px);box-shadow:0 8px 24px rgba(26,42,108,.14);
+  max-height:260px;overflow-y:auto}
+.psrch-item{display:block;width:100%;text-align:left;padding:11px 13px;background:none;border:none;
+  border-bottom:1px solid var(--border);font-family:var(--font-body,inherit);font-size:15px;color:var(--navy);
+  cursor:pointer}
+.psrch-item:last-child{border-bottom:none}
+.psrch-item:hover,.psrch-item:focus{background:var(--surface);outline:none}
+.psrch-empty{padding:11px 13px;font-size:13px;color:var(--muted)}
+.psrch-chosen{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;
+  background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius,8px)}
+.psrch-chosen .psrch-name{font-weight:600;color:var(--navy)}
+.psrch-clear{background:none;border:none;font-size:20px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.psrch-clear:hover{color:var(--danger,#c0392b)}
 </style>
 </head>
 <body>
@@ -252,15 +270,13 @@ async function startEditPartner(){
     <div class="card">
       <div class="form-group">
         <label>Select Your Partner</label>
-        <select id="partner-sel">
-          <option value="">— Choose your partner —</option>
-          ${partnerOptions.map(pp => `<option value="${pp.id}" ${pp.id===m.partner_user_id?'selected':''}>${pp.first_name||''} ${pp.last_name||''}</option>`).join('')}
-        </select>
+        ${partnerSearchHTML('partner-sel', partnerOptions, m.partner_user_id, 'Search players by name…')}
       </div>
       <button class="btn btn-green" onclick="savePartner()">Save Partner</button>
       <button class="btn" style="background:transparent;border-color:var(--border);color:var(--muted);margin-top:8px" onclick="renderMyRegistration(true)">Cancel</button>
       <div class="msg" id="reg-msg"></div>
     </div>`;
+  wirePartnerSearch('partner-sel', partnerOptions);
 }
 
 async function savePartner(){
@@ -391,11 +407,8 @@ async function selectLeague(league){
     partnerSection = `
       <div class="form-group">
         <label>Select Your Partner</label>
-        <select id="partner-sel">
-          <option value="">— Choose your partner —</option>
-          ${partnerOptions.map(pp => `<option value="${pp.id}">${pp.first_name||''} ${pp.last_name||''}</option>`).join('')}
-        </select>
-        <p style="font-size:12px;color:var(--muted);margin-top:4px">Your partner must have an account. Ask them to sign up first if they're not listed.</p>
+        ${partnerSearchHTML('partner-sel', partnerOptions, null, 'Search players by name…')}
+        <p style="font-size:12px;color:var(--muted);margin-top:4px">Your partner must have an account. Ask them to sign up first if you can't find them.</p>
       </div>`;
   }
 
@@ -418,6 +431,8 @@ async function selectLeague(league){
       <button class="btn btn-green" id="confirm-btn" onclick="confirmRegistration()" style="margin-top:1rem" ${!p.phone?'disabled':''}>Register for ${league.name}</button>
       <div class="msg" id="reg-msg"></div>
     </div>`;
+  // Only present for doubles/partner registrations.
+  if(document.getElementById('partner-sel')) wirePartnerSearch('partner-sel', partnerOptions);
 }
 
 // Fire-and-forget: alert a selected partner by email (server looks up their address).
@@ -546,6 +561,23 @@ async function confirmRegistration(){
 
   // Alert the selected partner that they've been invited.
   notifyPartner(partnerUserId, `${p.first_name||''} ${p.last_name||''}`.trim(), selectedLeague.name, 'pending');
+
+  // Tell the organiser someone registered.
+  try{
+    fetch(`${SUPABASE_URL}/functions/v1/notify-email`, {
+      method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', 'apikey':SUPABASE_KEY, 'Authorization':'Bearer '+SUPABASE_KEY },
+      body: JSON.stringify({ type:'registration', data:{
+        kind: 'league',
+        league: selectedLeague.name,
+        season: activeSeasonId || '',
+        name: `${p.first_name||''} ${p.last_name||''}`.trim(),
+        email: p.email || '',
+        phone: p.phone || '',
+        partner: partnerName || ''
+      } })
+    }).catch(()=>{});
+  }catch(e){}
 
   // Keep dupr_players in sync with the player's profile. DUPR is linked at connect time
   // (which writes profiles.dupr_id), but the league features — player page rating,

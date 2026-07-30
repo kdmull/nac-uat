@@ -288,6 +288,80 @@ async function submitToDUPR(week, matchIdx, m, games){
 }
 
 
+// ── Partner search ──────────────────────────────────────────────────────────
+// Replaces the old "every player" dropdown, which stops being usable once the
+// club has more than a screenful of members. Renders a type-to-filter box over
+// a HIDDEN INPUT that keeps the original element id, so any code already
+// reading `document.getElementById(id).value` keeps working unchanged.
+//
+//   html:  partnerSearchHTML(id, people, selectedId, placeholder)
+//   then:  wirePartnerSearch(id, people)      // after the html is in the DOM
+// `people` is [{ id, first_name, last_name }]
+function nacFullName(p){ return `${p.first_name||''} ${p.last_name||''}`.trim(); }
+
+function partnerSearchHTML(id, people, selectedId, placeholder){
+  const sel = (people || []).find(p => p.id === selectedId) || null;
+  const ph = placeholder || 'Search players by name…';
+  return `<div class="psrch" data-psrch="${id}">
+    <input type="hidden" id="${id}" value="${sel ? sel.id : ''}"/>
+    <div class="psrch-chosen" id="${id}-chosen" ${sel ? '' : 'hidden'}>
+      <span class="psrch-name">${sel ? nacEsc(nacFullName(sel)) : ''}</span>
+      <button type="button" class="psrch-clear" aria-label="Remove partner">×</button>
+    </div>
+    <input type="text" class="inp psrch-q" id="${id}-q" placeholder="${nacEsc(ph)}"
+           autocomplete="off" ${sel ? 'hidden' : ''}/>
+    <div class="psrch-list" id="${id}-list" hidden></div>
+  </div>`;
+}
+
+function nacEsc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c => (
+    {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function wirePartnerSearch(id, people){
+  const hidden = document.getElementById(id);
+  const q      = document.getElementById(id + '-q');
+  const list   = document.getElementById(id + '-list');
+  const chosen = document.getElementById(id + '-chosen');
+  if(!hidden || !q || !list || !chosen) return;
+  const all = people || [];
+
+  function choose(p){
+    hidden.value = p ? p.id : '';
+    chosen.querySelector('.psrch-name').textContent = p ? nacFullName(p) : '';
+    chosen.hidden = !p;
+    q.hidden = !!p;
+    q.value = '';
+    list.hidden = true; list.innerHTML = '';
+    hidden.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function show(matches){
+    if(!matches.length){
+      list.innerHTML = `<div class="psrch-empty">No players match — they may need to create an account first.</div>`;
+      list.hidden = false; return;
+    }
+    list.innerHTML = matches.slice(0, 8).map((p, i) =>
+      `<button type="button" class="psrch-item" data-i="${i}">${nacEsc(nacFullName(p))}</button>`).join('');
+    list.hidden = false;
+    [...list.querySelectorAll('.psrch-item')].forEach((btn, i) => {
+      btn.addEventListener('click', () => choose(matches[i]));
+    });
+  }
+
+  q.addEventListener('input', () => {
+    const term = q.value.trim().toLowerCase();
+    if(!term){ list.hidden = true; list.innerHTML = ''; return; }
+    show(all.filter(p => nacFullName(p).toLowerCase().includes(term)));
+  });
+  q.addEventListener('focus', () => { if(q.value.trim()) q.dispatchEvent(new Event('input')); });
+  chosen.querySelector('.psrch-clear').addEventListener('click', () => { choose(null); q.focus(); });
+  document.addEventListener('click', (e) => {
+    if(!list.hidden && !list.contains(e.target) && e.target !== q){ list.hidden = true; }
+  });
+}
+
 // Fire-and-forget admin email notification via the notify-email edge function.
 function notifyEmail(type, data){
   try{
