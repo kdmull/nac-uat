@@ -96,8 +96,12 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared.js"></script>
 <script>
-const DUPR_CLIENT_KEY_B64 = 'dGVzdC1jay03ZWVhZDg2YS01NGU0LTRlN2MtZmEzZi02M2QyN2YzZmI3ODQ=';
-const DUPR_SSO_BASE = 'https://uat.dupr.gg/login-external-app/';
+// PRODUCTION SSO. The client KEY is public by design — it identifies the
+// partner in the login URL. The client SECRET is never exposed here; it lives
+// only in Edge Function secrets.
+// Base64 of the production client key (ck-69ae2f5f-1060-40fa-ff26-71e3118c7c80):
+const DUPR_CLIENT_KEY_B64 = 'Y2stNjlhZTJmNWYtMTA2MC00MGZhLWZmMjYtNzFlMzExOGM3Yzgw';
+const DUPR_SSO_BASE = 'https://dupr.gg/login-external-app/';
 
 const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
