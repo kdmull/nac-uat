@@ -476,9 +476,12 @@ window.addEventListener('DOMContentLoaded', async ()=>{
     LEAGUES.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
   const urlLeague = getLeagueFromURL();
   const startId = (urlLeague && urlLeague.id) || (LEAGUES[0] && LEAGUES[0].id);
-  document.getElementById('admin-league-sel').value = startId;
-  currentLeague = LEAGUES.find(l => l.id === startId);
-  await initAdminLeague(currentLeague);
+  if(startId) document.getElementById('admin-league-sel').value = startId;
+  currentLeague = LEAGUES.find(l => l.id === startId) || null;
+  // The catalog can legitimately be empty (fresh install / everything deleted).
+  // Skip per-league setup in that case instead of throwing on league.name.
+  if(currentLeague) await initAdminLeague(currentLeague);
+  else showNoLeaguesState();
   unlockAdmin();
 });
 
@@ -495,6 +498,7 @@ async function onAdminLeagueChange(id){
 }
 
 async function initAdminLeague(league){
+  if(!league){ currentLeague=null; showNoLeaguesState(); return; }
   currentLeague=league;
   document.title='Admin — NAC Pickleball';
   document.getElementById('admin-league-label').textContent='Managing: '+league.name;
@@ -1118,6 +1122,16 @@ function renderNewSeasonLeagueRows(){
   el.innerHTML = leagueSettingsTable(rows,'Include');
 }
 
+// ---- Empty-catalog state ---------------------------------------------------
+// With zero leagues there is nothing to manage; show a clear prompt instead of
+// leaving stale panels (or throwing) and point the admin at the catalog.
+function showNoLeaguesState(){
+  const lbl = document.getElementById('admin-league-label');
+  if(lbl) lbl.textContent = 'No leagues yet — add one in the League Catalog below';
+  const sel = document.getElementById('admin-league-sel');
+  if(sel) sel.innerHTML = '<option value="">No leagues</option>';
+}
+
 // ---- League catalog management --------------------------------------------
 function renderLeagueCatalog(){
   const el = document.getElementById('league-catalog-list');
@@ -1170,16 +1184,20 @@ async function addLeague(){
 async function deleteLeague(idx){
   const l = LEAGUES[idx];
   if(!l) return;
-  if(LEAGUES.length <= 1){ showToast('At least one league must remain'); return; }
   if(!confirm(`Delete "${l.name}" from the league catalog?\n\nIt disappears from ALL seasons, the home page, and registration. Player registrations and saved schedules for it stay in the database but won't be reachable.\n\nIf you just want it out of THIS season, cancel and uncheck it in the season settings instead.`)) return;
   const removed = LEAGUES.splice(idx, 1)[0];
   const ok = await saveLeagues();
   if(!ok){ LEAGUES.splice(idx, 0, removed); showToast('Could not save — try again'); return; }
   if(currentLeague && currentLeague.id === removed.id){
-    currentLeague = LEAGUES[0];
-    document.getElementById('admin-league-sel').value = currentLeague.id;
-    await initAdminLeague(currentLeague);
-    renderAdminPanel(); renderAdminRoster();
+    currentLeague = LEAGUES[0] || null;
+    if(currentLeague){
+      document.getElementById('admin-league-sel').value = currentLeague.id;
+      await initAdminLeague(currentLeague);
+      renderAdminPanel(); renderAdminRoster();
+    } else {
+      schedule = []; PLAYERS = [];
+      showNoLeaguesState();
+    }
   }
   renderLeagueCatalog();
   populateAdminLeagueSel();

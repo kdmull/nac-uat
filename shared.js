@@ -64,7 +64,10 @@ let leaguesLoaded = false;
 async function loadLeagues(){
   try{
     const r = await dbGet('nac_leagues');
-    if(r && r.data && Array.isArray(r.data.leagues) && r.data.leagues.length){
+    // If a catalog has been SAVED, it is authoritative — even when empty. That
+    // lets the site legitimately have zero leagues. The hardcoded
+    // DEFAULT_LEAGUES are only a first-run convenience when nothing is saved.
+    if(r && r.data && Array.isArray(r.data.leagues)){
       LEAGUES = r.data.leagues.map(l => ({...l, key: l.key || ('league_' + l.id)}));
     }
     leaguesLoaded = true;

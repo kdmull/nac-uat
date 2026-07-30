@@ -153,7 +153,10 @@ async function renderLeagueCards(){
       sb.from('pb_league').select('value').eq('key','nac_leagues').maybeSingle(),
       sb.from('pb_league').select('value').eq('key','nac_seasons').maybeSingle()
     ]);
-    if(lg.data && lg.data.value && Array.isArray(lg.data.value.leagues) && lg.data.value.leagues.length){
+    // A SAVED catalog is authoritative even when empty — that's how the site
+    // legitimately shows no leagues. FALLBACK_LEAGUES is only for first run
+    // (nothing saved yet).
+    if(lg.data && lg.data.value && Array.isArray(lg.data.value.leagues)){
       leagues = lg.data.value.leagues;
     }
     if(se.data && se.data.value && se.data.value.seasons){
@@ -166,7 +169,7 @@ async function renderLeagueCards(){
     <a class="league-card" href="league.html?league=${l.id}">
       <div class="league-card-title">${l.name}${l.duprEnabled!==false?' <span class="dupr-chip" title="Matches count toward your DUPR rating"><span class="dot"></span>DUPR</span>':''}</div>
       <div class="league-card-sub">${l.sub||''}</div>
-    </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues this season.</div>';
+    </a>`).join('') || '<div style="color:var(--muted);font-size:14px;padding:1rem">No leagues are open right now — check back soon.</div>';
 }
 function nacFmtDate(d){
   if(!d) return '';
