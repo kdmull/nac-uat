@@ -20,9 +20,15 @@
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
 .nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
 .nav-logo{height:44px;width:auto}
+/* Match the rest of the site on mobile: logo left, 64px. (This page doesn't
+   load admin-nav.js, so it needs its own rule.) */
+@media(max-width:768px){
+  nav .nav-brand{width:auto;justify-content:flex-start;margin:0 auto 0 0;padding:.5rem 0}
+  nav .nav-logo{height:64px}
+}
 .page{padding:2rem 1.5rem;max-width:600px;margin:0 auto}
 .btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent;-webkit-tap-highlight-color:transparent}
 .btn-primary{background:var(--navy);color:var(--white);border-color:var(--navy)}.btn-primary:hover{background:var(--navy-dark)}

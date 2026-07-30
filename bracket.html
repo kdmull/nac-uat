@@ -20,7 +20,7 @@
   --radius:8px;--radius-lg:12px;
 }
 body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
+nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
 .nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
 .nav-logo{height:44px;width:auto}
 .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none;border-right:1px solid rgba(255,255,255,.15)}
@@ -117,7 +117,7 @@ nav{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;posi
   [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important}
   nav{flex-wrap:wrap}
   .nav-brand{width:100%;justify-content:center;margin-right:0;padding:.5rem 0}
-  .nav-logo{height:56px}
+  .nav-logo{height:64px}
   .back-btn{display:none}
   .nav-tabs{width:100%;border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;scrollbar-width:none}
   .nav-tabs::-webkit-scrollbar{display:none}
