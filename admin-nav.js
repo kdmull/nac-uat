@@ -12,8 +12,8 @@
   // Base links every visitor sees, in a fixed order. Injected consistently on
   // every page so no page needs to hand-write them (which caused drift).
   var BASE_LINKS = [
-    { href:'index.html',       label:'Leagues' },
     { href:'tournaments.html', label:'Tournaments' },
+    { href:'index.html',       label:'Leagues' },
     { href:'rules.html',       label:'Rules' }
   ];
 

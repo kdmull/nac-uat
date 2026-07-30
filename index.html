@@ -131,13 +131,15 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
     </div>
   </div>
 
-  <div class="section-label">View Leagues</div>
-  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
-
-  <div id="tournaments-section" style="display:none;margin-top:2rem">
+  <!-- Tournaments sit above leagues. The section is hidden when there are none,
+       so leagues naturally moves to the top without any extra logic. -->
+  <div id="tournaments-section" style="display:none;margin-bottom:2rem">
     <div class="section-label">Tournaments</div>
     <div class="leagues-grid" id="tournaments-grid"></div>
   </div>
+
+  <div class="section-label">View Leagues</div>
+  <div class="leagues-grid" id="leagues-grid"><div style="color:var(--muted);font-size:14px;padding:1rem">Loading leagues…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
