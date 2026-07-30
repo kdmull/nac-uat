@@ -469,9 +469,23 @@ async function submitRegistration(ti, di){
   btn.disabled = true;
   msgEl.innerHTML = '';
 
+  // The partner picker is a search box over a hidden input, so resolve the name
+  // from the people list rather than from <select> options.
   const psel = document.getElementById(`psel-${ti}-${di}`);
   const partnerUserId = psel ? (psel.value || null) : null;
-  const partnerName = partnerUserId ? psel.options[psel.selectedIndex].text : null;
+  let partnerName = null;
+  if(partnerUserId){
+    const chosen = document.getElementById(`psel-${ti}-${di}-chosen`);
+    const shown = chosen ? (chosen.querySelector('.psrch-name')||{}).textContent : '';
+    partnerName = (shown || '').trim() || null;
+    if(!partnerName){
+      try{
+        const { data } = await sbT.from('public_players')
+          .select('first_name,last_name').eq('id', partnerUserId).maybeSingle();
+        if(data) partnerName = `${data.first_name||''} ${data.last_name||''}`.trim() || null;
+      }catch(e){}
+    }
+  }
   const p = myProfile;
   const existing = myRegFor(t,d);
 
