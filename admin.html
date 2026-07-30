@@ -1228,6 +1228,9 @@ async function saveAdmin(){
   btn.textContent='Saving...';btn.disabled=true;
   const ok=await saveData();
   btn.textContent='Save All Changes';btn.disabled=false;
+  // If saveData already explained why it refused, don't overwrite that message
+  // with a misleading "check DB connection".
+  if(typeof nacSaveBlocked !== 'undefined' && nacSaveBlocked) return;
   showToast(ok?'Saved & synced!':'Save error — check DB connection');
 }
 async function resetToDefault(){

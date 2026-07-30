@@ -513,9 +513,14 @@ async function loadData(){
   await buildFullNameMap(seasonId);   // "First L." -> full name (display only)
   lastSynced=new Date();
 }
+var nacSaveBlocked = false;   // set when saveData refuses (so callers don't
+                              // overwrite the specific reason with a generic one)
 async function saveData(){
+  nacSaveBlocked = false;
   if(!schedule||!schedule.length||!schedule[0].matches||!schedule[0].matches.length){
-    showToast('Save blocked — schedule looks empty!');return false;
+    nacSaveBlocked = true;
+    showToast('Nothing to save — this league has no schedule yet. Build a schedule first.');
+    return false;
   }
   // Always use season key — default to spring2026 if seasons not loaded yet
   const seasonId = viewingSeason?.id || currentSeason?.id || 'spring2026';
