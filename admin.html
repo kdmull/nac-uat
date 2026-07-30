@@ -1928,6 +1928,11 @@ async function renderCourts(){
       <input class="inp" id="court-count" type="number" min="1" max="40" value="${COURTS.count}" style="width:70px;margin-left:6px" onchange="setCourtCount(this.value)"/>
     </label>
     <button class="btn btn-green" onclick="autoAssignCourts()">⚡ Auto-Assign Open Courts</button>
+    <label style="display:inline-flex;align-items:center;gap:7px;margin-left:12px;font-size:13px;color:var(--navy);cursor:pointer">
+      <input type="checkbox" id="auto-assign-toggle" ${COURTS && COURTS.autoAssign ? 'checked' : ''}
+             onchange="setAutoAssign(this.checked)" style="width:16px;height:16px;cursor:pointer"/>
+      Auto-assign as scores come in
+    </label>
     <button class="btn btn-ghost" onclick="renderCourts()">↻ Refresh</button>
     <span style="font-size:12px;color:var(--muted)">${queue.length} waiting</span>
   </div>`;
@@ -1980,12 +1985,46 @@ async function setCourtCount(v){
   await saveCourts(); renderCourts();
 }
 
+// Called after a tournament score is saved. When the toggle is on, any court
+// whose match is no longer open (i.e. it just finished) is freed, then waiting
+// matches are pushed onto the open courts — so the board keeps itself current
+// without the organiser clicking Auto-Assign after every result.
+async function maybeAutoAssign(){
+  try{
+    if(!COURTS || !COURTS.autoAssign || !window.curT) return;
+    const divStates = await loadAllDivStates();
+    const { refs } = collectPlayable(divStates);
+    const open = new Set(refs);
+    let freed = 0;
+    (COURTS.courts || []).forEach(c => {
+      if(c.matchRef && !open.has(c.matchRef)){ c.matchRef = null; freed++; }
+    });
+    const { assigned } = teAutoAssign(COURTS.courts, refs);
+    if(freed || (assigned && assigned.length)){
+      await saveCourts();
+      renderCourts();
+      const bits = [];
+      if(freed) bits.push(`${freed} court${freed!==1?'s':''} freed`);
+      if(assigned && assigned.length) bits.push(`${assigned.length} match${assigned.length!==1?'es':''} assigned`);
+      showToast(bits.join(' · '));
+    }
+  }catch(e){ console.warn('auto-assign skipped:', e); }
+}
+
 async function autoAssignCourts(){
   const divStates = await loadAllDivStates();
   const { refs } = collectPlayable(divStates);
   const { assigned } = teAutoAssign(COURTS.courts, refs);
   await saveCourts(); renderCourts();
   showToast(assigned.length ? `Assigned ${assigned.length} match${assigned.length!==1?'es':''} to open courts` : 'No open courts or no waiting matches');
+}
+
+async function setAutoAssign(on){
+  if(!COURTS) return;
+  COURTS.autoAssign = !!on;
+  await saveCourts();
+  showToast(on ? 'Courts will fill automatically as scores are entered' : 'Auto-assign off — use the button');
+  if(on) maybeAutoAssign();
 }
 
 async function assignNextTo(courtId){
@@ -2044,6 +2083,7 @@ async function setPoolScore(mi, gi, side, val){
   DIV.poolMatches[mi].games[gi][side] = val==='' ? null : Math.max(0, parseInt(val,10)||0);
   await saveDiv();
   renderDivisionDetail();
+  maybeAutoAssign();   // only acts once the match is actually finished
 }
 
 async function buildKnockout(){
@@ -2104,6 +2144,7 @@ async function saveAdminBracketModal(){
   closeAdminBracketModal();
   await saveDiv();
   renderDivisionDetail();
+  maybeAutoAssign();
 }
 
 async function backToSetup(){ if(!confirm('Reopen team entry? Pool scores will be kept until pools are regenerated.')) return; DIV.phase='setup'; await syncPhase(); renderDivisionDetail(); }

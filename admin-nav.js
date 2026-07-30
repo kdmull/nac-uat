@@ -13,8 +13,9 @@
   // every page so no page needs to hand-write them (which caused drift).
   var BASE_LINKS = [
     { href:'tournaments.html', label:'Tournaments' },
-    { href:'index.html',       label:'Leagues' },
-    { href:'rules.html',       label:'Rules' }
+    { href:'index.html',       label:'Leagues' }
+    // Rules is hidden for now — restore by re-adding:
+    // , { href:'rules.html', label:'Rules' }
   ];
 
   // All admin destinations. The link to the current page is skipped.
