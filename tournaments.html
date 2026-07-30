@@ -103,6 +103,9 @@ select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-ra
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared.js"></script>
 <script>
+// All NAC tournaments are at the complex — the venue is fixed, not per-event.
+const NAC_VENUE = 'Nitro Athletic Complex';
+
 const sbT = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let CAT = { tournaments: [] };
 let me = null, myProfile = null;
@@ -351,7 +354,7 @@ function render(){
         <div class="thead-main">
           <h2>${esc(t.name)}</h2>
           <div class="tsub">
-            ${t.location ? `<span>${esc(t.location)}</span><span class="dot-sep">·</span>` : ''}
+            <span>${esc(NAC_VENUE)}</span><span class="dot-sep">·</span>
             <span>${nd} division${nd!==1?'s':''}</span>
             <span class="pill ${open?'open':'closed'}">${open?'Registration open':'Registration closed'}</span>
           </div>
