@@ -186,8 +186,9 @@ async function loadCounts(){
   CAT.tournaments.forEach(t => (t.divisions||[]).forEach(d => ids.push(dLeague(t,d))));
   if(!ids.length) return;
   try{
-    const client = me ? sbT : null;
-    if(!client) return;   // counts shown to signed-in users; public sees divisions without counts
+    // league_members is public-read, so counts and rosters render for signed-out
+    // visitors too — the draw sheet is public information.
+    const client = sbT;
     // league_id values contain colons (t:tid:did); PostgREST needs each value in
     // the in-list double-quoted or it 400s. Build the filter explicitly.
     const inList = ids.map(v => `"${v}"`).join(',');
@@ -204,7 +205,11 @@ async function loadCounts(){
     const duprByUser = {}, ratingByDupr = {};
     if(uids.length){
       try{
-        const { data: profs } = await client.from('profiles').select('id,dupr_id').in('id', uids);
+        // public_players exposes id/name/dupr_id only; profiles stays locked to
+        // its owner. Signed-out visitors can't read it, so they see names only.
+        const { data: profs } = me
+          ? await client.from('public_players').select('id,dupr_id').in('id', uids)
+          : { data: [] };
         (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
         const dids = [...new Set(Object.values(duprByUser))];
         if(dids.length){
