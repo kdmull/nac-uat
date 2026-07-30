@@ -62,6 +62,20 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark,#3a8c1e);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
 .dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
 .t-badge.division .dupr-mini{color:var(--green-dark);font-weight:800;margin-left:5px}
+/* Tournament card — matches the tournaments page: accent per tournament,
+   scoreboard date block, and a pickleball whose hole pattern is derived from
+   the tournament id (so each event looks slightly different). */
+.tcard{position:relative;background:var(--white);border:1.5px solid var(--border);border-left:5px solid var(--ac,var(--navy));border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;text-decoration:none;transition:all .15s;box-shadow:0 1px 3px rgba(26,42,108,.05)}
+.tcard:hover{border-color:var(--ac,var(--navy));box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
+.tcard-head{position:relative;display:flex;align-items:center;gap:13px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.tcard-head::before{content:'';position:absolute;inset:0;background:var(--ac,var(--navy));opacity:.06;pointer-events:none}
+.tball{position:absolute;right:-14px;top:50%;transform:translateY(-50%);width:86px;height:86px;color:var(--ac,var(--navy));opacity:.15;pointer-events:none}
+.tdate{position:relative;z-index:1;flex:0 0 auto;display:flex;flex-direction:column;align-items:center;min-width:48px;padding-right:13px;border-right:1px solid var(--border)}
+.tdate-mo{font-family:var(--font-display);font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--ac,var(--navy))}
+.tdate-day{font-family:var(--font-display);font-size:29px;font-weight:900;line-height:.95;color:var(--navy)}
+.tdate-tba{font-family:var(--font-display);font-size:17px;font-weight:900;line-height:1;color:var(--muted)}
+.tcard-main{position:relative;z-index:1;min-width:0;flex:1 1 auto}
+.tcard-body{padding:12px 16px 14px;display:flex;flex-direction:column;gap:6px}
 .t-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .t-title-row .league-card-title{line-height:1.15}
 .t-title-row .t-badge{align-self:center;margin-top:0}
@@ -142,6 +156,38 @@ const FALLBACK_LEAGUES = [
   {id:'singles',   name:'Singles',            sub:'Open singles league'},
 ];
 
+// Accent + date + ball helpers, shared with the tournaments page so the two
+// views render the same identity for a given tournament.
+const T_ACCENTS = ['#1a2a6c','#3a8c1e','#b8860b','#0f6b6b','#8c2f39','#4a3b8c'];
+function tAccent(t){
+  const str = String(t.id || t.name || '');
+  let h = 0; for(let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i)) >>> 0;
+  return T_ACCENTS[h % T_ACCENTS.length];
+}
+const T_MO = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function tDateParts(d){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||''));
+  return m ? { mo: T_MO[parseInt(m[2],10)-1], day: String(parseInt(m[3],10)) } : null;
+}
+// Hole count, ring spacing, hole size and rotation all come from the id. Real
+// pickleballs differ (indoor ~26 large holes, outdoor ~40 small), so this
+// variation reflects the object rather than being random decoration.
+function nacBallSVG(seedStr){
+  let h = 0; const str = String(seedStr||'');
+  for(let i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i)) >>> 0;
+  const rnd = (n) => { h = (h*1103515245 + 12345) >>> 0; return h % n; };
+  const innerN = 5 + rnd(3), outerN = 9 + rnd(4);
+  const hole = 3.6 + rnd(9) * 0.18;
+  const rot = rnd(360) * Math.PI/180;
+  const core = rnd(2) === 0, gap = 16 + rnd(5);
+  const pts = [];
+  if(core) pts.push([50,50]);
+  for(let i=0;i<innerN;i++){ const a = rot + i*2*Math.PI/innerN; pts.push([50+Math.cos(a)*gap, 50+Math.sin(a)*gap]); }
+  for(let i=0;i<outerN;i++){ const a = rot*0.6 + (i+0.5)*2*Math.PI/outerN; pts.push([50+Math.cos(a)*33, 50+Math.sin(a)*33]); }
+  const dots = pts.map(([x,y]) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${hole.toFixed(1)}"/>`).join('');
+  return `<svg class="tball" viewBox="0 0 100 100" fill="none" aria-hidden="true"><circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="3"/><g fill="currentColor">${dots}</g></svg>`;
+}
+
 async function renderLeagueCards(){
   const grid = document.getElementById('leagues-grid');
   if(!grid) return;
@@ -205,6 +251,10 @@ async function renderTournamentCards(){
     }
   }catch(e){ console.warn('tournaments load error:', e); return; }
   console.log('index tournaments loaded:', list.length);
+  // Only advertise tournaments that actually have divisions — the tournaments
+  // page hides division-less ones, so showing them here sends players to an
+  // apparently-empty page.
+  list = list.filter(t => (t.divisions || []).length);
   if(!list.length) return;
 
   const cards = list.map(t => {
@@ -218,18 +268,28 @@ async function renderTournamentCards(){
     const badge = live ? '<span class="t-badge live">Live Now</span>'
                 : done ? '<span class="t-badge done">Finished</span>'
                 : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
-    const meta = [t.date?nacFmtDate(t.date):'', t.location].filter(Boolean).join(' · ');
     const clean = v => String(v||'').replace(/[<>&]/g,'');
     const divBadges = divs.length
       ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.startTime?` <span style="color:var(--muted);font-weight:600">${fmtTime(d.startTime)}</span>`:''}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`
       : '';
-    return `<a class="league-card" href="${href}">
-      <div class="t-title-row">
-        <span class="league-card-title">${clean(t.name)}</span>
-        ${badge}
+    const ac = tAccent(t);
+    const dp = tDateParts(t.date);
+    return `<a class="tcard" style="--ac:${ac}" href="${href}">
+      <div class="tcard-head">
+        ${nacBallSVG(t.id || t.name || '')}
+        <div class="tdate">
+          ${dp ? `<span class="tdate-mo">${dp.mo}</span><span class="tdate-day">${dp.day}</span>`
+               : `<span class="tdate-mo">Date</span><span class="tdate-tba">TBA</span>`}
+        </div>
+        <div class="tcard-main">
+          <div class="t-title-row">
+            <span class="league-card-title">${clean(t.name)}</span>
+            ${badge}
+          </div>
+          ${t.location ? `<div class="league-card-sub">${clean(t.location)}</div>` : ''}
+        </div>
       </div>
-      ${meta ? `<div class="league-card-sub">${clean(meta)}</div>` : ''}
-      ${divBadges}
+      <div class="tcard-body">${divBadges || '<span class="league-card-sub">Divisions to be announced</span>'}</div>
     </a>`;
   }).join('');
   if(!cards) return;
