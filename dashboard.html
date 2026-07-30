@@ -554,6 +554,26 @@ async function loadMyDuprRatings(){
   const id = currentProfile && currentProfile.dupr_id;
   if(!id) return;
   ratingsLoading = true;
+
+  // 1) Prefer the webhook-fed table: DUPR pushes RATING / RATING_SEED events
+  //    into dupr_ratings, so this is current, instant, and costs no API call.
+  try{
+    const tr = await fetch(
+      `${SUPABASE_URL}/rest/v1/dupr_ratings?dupr_id=eq.${encodeURIComponent(id)}&select=singles,doubles`,
+      { headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY } }
+    );
+    if(tr.ok){
+      const rows = await tr.json();
+      if(rows && rows.length && (rows[0].singles != null || rows[0].doubles != null)){
+        myRatings = { singles: rows[0].singles, doubles: rows[0].doubles };
+        ratingsLoading = false;
+        render();
+        return;
+      }
+    }
+  }catch(e){ console.warn('dupr_ratings read failed, falling back to batch:', e); }
+
+  // 2) Fall back to the live batch lookup (e.g. before the first webhook lands).
   try{
     const rr = await fetch(DUPR_RATINGS_EDGE_URL, {
       method: 'POST',
@@ -613,7 +633,13 @@ function duprRatingsHTML(){
   if(ratingsLoading){
     return `<div class="ratings-grid"><div class="rating-loading"><span class="spinner"></span>Fetching live rating…</div></div>`;
   }
-  if(!myRatings) return '';   // fetch failed or not attempted
+  // Fetch failed (or wasn't attempted): say so rather than silently showing
+  // nothing, so a connected player isn't left wondering where their rating went.
+  if(!myRatings){
+    return currentProfile && currentProfile.dupr_id
+      ? `<div class="ratings-grid"><div class="rating-loading" style="text-transform:none;letter-spacing:0">Rating unavailable right now — it will appear once DUPR sends an update.</div></div>`
+      : '';
+  }
   const d = fmtRating(myRatings.doubles);
   const s = fmtRating(myRatings.singles);
   const cell = (label, val) => `<div class="rating-box">
