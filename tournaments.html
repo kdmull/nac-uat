@@ -49,6 +49,8 @@ h1{font-family:var(--font-display);font-size:32px;font-weight:900;text-transform
 .tsub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:3px}
 .tsub .dot-sep{opacity:.5}
 .tcard-body{padding:14px 18px 16px}
+.pill.ext{color:var(--navy);background:rgba(26,42,108,.10)}
+.ext-note p{font-size:13px;color:var(--muted);margin:0 0 10px}
 .tcard-body .divrow:last-child{margin-bottom:0}
 @media(max-width:600px){
   .tcard-head{gap:12px;padding:13px 14px}
@@ -105,6 +107,11 @@ select.inp,input.inp{padding:8px 10px;border:1.5px solid var(--border);border-ra
 <script>
 // All NAC tournaments are at the complex — the venue is fixed, not per-event.
 const NAC_VENUE = 'Nitro Athletic Complex';
+
+// Show a readable site name on the outbound button ("pickleballtournaments.com").
+function extHost(u){
+  try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return 'their site'; }
+}
 
 const sbT = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let CAT = { tournaments: [] };
@@ -302,7 +309,7 @@ function render(){
     return m ? { mo: MO[parseInt(m[2],10)-1], day: String(parseInt(m[3],10)) } : null;
   };
 
-  const ts = CAT.tournaments.filter(t => (t.divisions||[]).length);
+  const ts = CAT.tournaments.filter(t => t.external ? !!t.url : (t.divisions||[]).length);
   if(!ts.length){ el.innerHTML = '<div class="card"><p style="color:var(--muted)">No tournaments are posted yet — check back soon!</p></div>'; return; }
 
   el.innerHTML = ts.map((t,ti) => {
@@ -354,13 +361,19 @@ function render(){
         <div class="thead-main">
           <h2>${esc(t.name)}</h2>
           <div class="tsub">
-            <span>${esc(NAC_VENUE)}</span><span class="dot-sep">·</span>
-            <span>${nd} division${nd!==1?'s':''}</span>
-            <span class="pill ${open?'open':'closed'}">${open?'Registration open':'Registration closed'}</span>
+            <span>${esc(t.location || NAC_VENUE)}</span><span class="dot-sep">·</span>
+            ${t.external
+              ? `<span class="pill ext">Off-site event</span>`
+              : `<span>${nd} division${nd!==1?'s':''}</span>
+                 <span class="pill ${open?'open':'closed'}">${open?'Registration open':'Registration closed'}</span>`}
           </div>
         </div>
       </div>
-      <div class="tcard-body">${divs}</div>
+      <div class="tcard-body">${t.external ? `
+        <div class="ext-note">
+          <p>Another organiser is running this one, so sign-ups happen on their site.</p>
+          <a class="btn btn-green" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer">Sign up on ${esc(extHost(t.url))} →</a>
+        </div>` : divs}</div>
     </div>`;
   }).join('');
 }

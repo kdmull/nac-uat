@@ -58,6 +58,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .t-badge.open{color:var(--green-dark);background:rgba(76,175,40,.12)}
 .t-badge.live{color:#8a6d00;background:rgba(212,167,0,.16)}
 .t-badge.done{color:var(--muted);background:var(--surface2)}
+.t-badge.ext{color:var(--navy);background:rgba(26,42,108,.10)}
 .t-badge.division{color:var(--navy);background:rgba(26,42,108,.09);text-transform:none;letter-spacing:.2px;font-weight:600;align-self:auto}
 .dupr-chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--font-display);font-size:10px;font-weight:800;letter-spacing:.6px;color:#fff;background:var(--green-dark,#3a8c1e);padding:2px 7px;border-radius:4px;vertical-align:middle;margin-left:6px;text-transform:uppercase}
 .dupr-chip .dot{width:5px;height:5px;border-radius:50%;background:#fff;display:inline-block}
@@ -143,6 +144,11 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 <script>
 // All NAC tournaments are at the complex — the venue is fixed, not per-event.
 const NAC_VENUE = 'Nitro Athletic Complex';
+
+// Readable site name for outbound tournament links.
+function extHost(u){
+  try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return 'their site'; }
+}
 
 const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
@@ -257,7 +263,7 @@ async function renderTournamentCards(){
   // Only advertise tournaments that actually have divisions — the tournaments
   // page hides division-less ones, so showing them here sends players to an
   // apparently-empty page.
-  list = list.filter(t => (t.divisions || []).length);
+  list = list.filter(t => t.external ? !!t.url : (t.divisions || []).length);
   if(!list.length) return;
 
   const cards = list.map(t => {
@@ -265,10 +271,13 @@ async function renderTournamentCards(){
     const live = divs.some(d => d.phase==='pools' || d.phase==='knockout');
     const done = divs.length && divs.every(d => d.phase==='complete');
     const liveDiv = divs.find(d => d.phase==='pools' || d.phase==='knockout') || divs.find(d => d.phase==='complete');
-    const href = (live || done) && liveDiv
-      ? `tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(liveDiv.id)}`
-      : 'tournaments.html';
-    const badge = live ? '<span class="t-badge live">Live Now</span>'
+    const href = t.external && t.url ? t.url
+      : (live || done) && liveDiv
+        ? `tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(liveDiv.id)}`
+        : 'tournaments.html';
+    const extAttrs = t.external ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const badge = t.external ? '<span class="t-badge ext">Off-site</span>'
+                : live ? '<span class="t-badge live">Live Now</span>'
                 : done ? '<span class="t-badge done">Finished</span>'
                 : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
     const clean = v => String(v||'').replace(/[<>&]/g,'');
@@ -277,7 +286,7 @@ async function renderTournamentCards(){
       : '';
     const ac = tAccent(t);
     const dp = tDateParts(t.date);
-    return `<a class="tcard" style="--ac:${ac}" href="${href}">
+    return `<a class="tcard" style="--ac:${ac}" href="${href}"${extAttrs}>
       <div class="tcard-head">
         ${nacBallSVG(t.id || t.name || '')}
         <div class="tdate">
@@ -289,10 +298,12 @@ async function renderTournamentCards(){
             <span class="league-card-title">${clean(t.name)}</span>
             ${badge}
           </div>
-          <div class="league-card-sub">${clean(NAC_VENUE)}</div>
+          <div class="league-card-sub">${clean(t.location || NAC_VENUE)}</div>
         </div>
       </div>
-      <div class="tcard-body">${divBadges || '<span class="league-card-sub">Divisions to be announced</span>'}</div>
+      <div class="tcard-body">${t.external
+        ? `<span class="league-card-sub">Sign up on ${clean(extHost(t.url))} →</span>`
+        : (divBadges || '<span class="league-card-sub">Divisions to be announced</span>')}</div>
     </a>`;
   }).join('');
   if(!cards) return;

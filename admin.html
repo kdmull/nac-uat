@@ -324,6 +324,11 @@ table.g td{padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
         <input class="inp" id="new-t-date" type="date" style="flex:1;min-width:140px"/>
         <button class="btn btn-green" onclick="createTournament()">+ Create</button>
       </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:.5rem;align-items:center">
+        <input class="inp" id="new-t-url" placeholder="Sign-up link (only for events run elsewhere, e.g. PickleballTournaments.com)" style="flex:2;min-width:240px"/>
+        <input class="inp" id="new-t-loc" placeholder="Venue (leave blank for ${NAC_VENUE})" style="flex:1;min-width:180px"/>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-top:.4rem">Add a sign-up link when another organiser is running the event — players go straight to that site instead of registering here.</p>
     </div>
 
     <div class="admin-section" id="divisions-section" data-admin-tab="tournaments" style="display:none">
@@ -1387,6 +1392,8 @@ function renderTournaments(){
       return `<div class="trow active" onclick="event.stopPropagation()">
         <input class="inp" id="edit-t-name" value="${esc(t.name)}" style="flex:2;min-width:160px"/>
         <input class="inp" id="edit-t-date" type="date" value="${esc(t.date||'')}" style="min-width:140px"/>
+        <input class="inp" id="edit-t-url" value="${esc(t.url||'')}" placeholder="Sign-up link (external events)" style="flex:2;min-width:200px"/>
+        <input class="inp" id="edit-t-loc" value="${esc(t.location||'')}" placeholder="${esc(NAC_VENUE)}" style="flex:1;min-width:150px"/>
         <button class="btn btn-green" style="font-size:11px;padding:4px 12px" onclick="saveTournamentEdit(${i})">Save</button>
         <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editingTournament=null;renderTournaments()">Cancel</button>
       </div>`;
@@ -1394,7 +1401,9 @@ function renderTournaments(){
     return `
     <div class="trow ${curT&&curT.id===t.id?'active':''}" onclick="selectTournament(${i})">
       <span class="tname">${esc(t.name)}</span>
-      <span class="tmeta">${esc(nacFmtDate(t.date||''))} · ${esc(NAC_VENUE)} · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}${(t.divisions||[]).length ? '' : ' <strong style="color:#b8860b">— add a division to make it visible to players</strong>'}</span>
+      <span class="tmeta">${esc(nacFmtDate(t.date||''))} · ${esc(t.location||NAC_VENUE)}${t.external
+        ? ' · <strong style="color:var(--navy)">Runs on another site</strong>'
+        : ` · ${(t.divisions||[]).length} division${(t.divisions||[]).length!==1?'s':''}${(t.divisions||[]).length ? '' : ' <strong style="color:#b8860b">— add a division to make it visible to players</strong>'}`}</span>
       <span class="pill ${t.regOpen?'knockout':'draft'}">${t.regOpen?'Reg Open':'Reg Closed'}</span>
       <span style="margin-left:auto"></span>
       <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="event.stopPropagation();editingTournament=${i};renderTournaments()">Edit</button>
@@ -1412,7 +1421,10 @@ async function saveTournamentEdit(i){
   if(!name){ showToast('Name cannot be empty'); return; }
   t.name = name;
   t.date = document.getElementById('edit-t-date').value || '';
-  t.location = NAC_VENUE;
+  let eu = (document.getElementById('edit-t-url').value || '').trim();
+  if(eu && !/^https?:\/\//i.test(eu)) eu = 'https://' + eu;
+  t.url = eu; t.external = !!eu;
+  t.location = (document.getElementById('edit-t-loc').value || '').trim() || NAC_VENUE;
   editingTournament = null;
   if(await saveCatalog()){
     renderTournaments();
@@ -1430,11 +1442,20 @@ async function toggleReg(i){
 async function createTournament(){
   const name = document.getElementById('new-t-name').value.trim();
   if(!name){ showToast('Enter a tournament name'); return; }
+  let url = (document.getElementById('new-t-url').value || '').trim();
+  if(url && !/^https?:\/\//i.test(url)) url = 'https://' + url;   // tolerate a pasted bare domain
+  const loc = (document.getElementById('new-t-loc').value || '').trim();
   const t = { id: slug(name)+'-'+String(Date.now()).slice(-4), name,
               date: document.getElementById('new-t-date').value || '',
-              location: NAC_VENUE, divisions: [] };
+              location: loc || NAC_VENUE,
+              url: url || '', external: !!url,
+              divisions: [] };
   CAT.tournaments.push(t);
-  if(await saveCatalog()){ document.getElementById('new-t-name').value=''; renderTournaments(); showToast('Tournament created'); }
+  if(await saveCatalog()){
+    ['new-t-name','new-t-url','new-t-loc'].forEach(id => { const e = document.getElementById(id); if(e) e.value = ''; });
+    renderTournaments();
+    showToast(url ? 'External tournament added' : 'Tournament created');
+  }
 }
 
 async function deleteTournament(i){
