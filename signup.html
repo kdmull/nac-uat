@@ -246,20 +246,16 @@ function startSwitchLeague(){
 // same league/division — they're spoken for. Two exceptions stay visible:
 //   • whoever is currently selected as my partner (so Edit Partner still shows them)
 //   • anyone who picked ME as their partner (so I can reciprocate and pair up)
+// Anyone with an account can be picked as a partner — they don't need to be
+// registered first, and being registered elsewhere doesn't hide them. Reads the
+// public_players view (names only); profiles stays locked down.
 async function availablePartners(leagueId, seasonId, keepIds){
-  const [profRes, regRes] = await Promise.all([
-    sb.from('profiles').select('id,first_name,last_name').neq('id', currentUser.id),
-    sb.from('league_members').select('user_id,partner_user_id')
-      .eq('league_id', leagueId).eq('season_id', seasonId).eq('status','active')
-  ]);
-  const taken = new Set();
-  (regRes.data || []).forEach(r => {
-    if(r.user_id === currentUser.id) return;
-    if(r.partner_user_id === currentUser.id) return;   // they invited me
-    taken.add(r.user_id);
-  });
-  (keepIds || []).filter(Boolean).forEach(id => taken.delete(id));
-  return (profRes.data || []).filter(p => !taken.has(p.id));
+  const res = await sb.from('public_players')
+    .select('id,first_name,last_name')
+    .neq('id', currentUser.id)
+    .order('first_name');
+  if(res.error) console.warn('partner lookup failed:', res.error.message);
+  return res.data || [];
 }
 
 async function startEditPartner(){

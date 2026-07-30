@@ -430,20 +430,15 @@ async function openRegister(ti, di){
 
 // Partner dropdown: hide players already registered in this division. Anyone who
 // picked ME stays visible (so I can reciprocate), as does my current partner.
+// Anyone with an account can be picked as a partner — no prior registration
+// required. Reads the public_players view (names only); profiles stays locked.
 async function availablePartners(t, d, keepIds){
-  const [profRes, regRes] = await Promise.all([
-    sbT.from('profiles').select('id,first_name,last_name').neq('id', me.id).order('first_name'),
-    sbT.from('league_members').select('user_id,partner_user_id')
-      .eq('league_id', dLeague(t,d)).eq('season_id', tSeason(t)).eq('status','active')
-  ]);
-  const taken = new Set();
-  (regRes.data || []).forEach(r => {
-    if(r.user_id === me.id) return;
-    if(r.partner_user_id === me.id) return;    // they invited me
-    taken.add(r.user_id);
-  });
-  (keepIds || []).filter(Boolean).forEach(id => taken.delete(id));
-  return (profRes.data || []).filter(p => !taken.has(p.id));
+  const res = await sbT.from('public_players')
+    .select('id,first_name,last_name')
+    .neq('id', me.id)
+    .order('first_name');
+  if(res.error) console.warn('partner lookup failed:', res.error.message);
+  return res.data || [];
 }
 
 // Fail-open DUPR gating (same policy as league registration): block only on a
