@@ -408,24 +408,20 @@ function render(){
     </div>
 
     <div class="nav-links">
-      <a class="nav-link-btn" href="signup.html">${myMembership ? 'Manage My League' : 'Register for a League'}</a>
-      <a class="nav-link-btn" href="index.html">View Leagues</a>
+      <a class="nav-link-btn" href="signup.html">Register for a League</a>
+      <a class="nav-link-btn" href="tournaments.html">Register for a Tournament</a>
     </div>
 
+    ${myMembership ? `
     <div class="card">
       <h2>My League${currentSeason?.name?' — '+currentSeason.name:''}</h2>
-      ${myMembership ? `
-        <div class="dupr-status" style="flex-wrap:wrap">
-          <span class="val">${LEAGUE_NAMES[myMembership.league_id]||myMembership.league_id}</span>
-          ${myMembership.partner_name ? `<span class="label">Partner: ${myMembership.partner_name}${myMembership.partner_status==='pending'?' (pending acceptance)':''}</span>` : ''}
-          <span class="badge-linked">Registered</span>
-        </div>
-        <a class="btn btn-ghost" href="signup.html" style="display:inline-block;text-decoration:none;margin-top:1rem">Switch / Edit</a>
-      ` : `
-        <p style="color:var(--muted);font-size:14px;margin-bottom:1rem">You're not registered for a league this season yet.</p>
-        <a class="btn btn-green" href="signup.html" style="display:inline-block;text-decoration:none">Register Now</a>
-      `}
-    </div>
+      <div class="dupr-status" style="flex-wrap:wrap">
+        <span class="val">${LEAGUE_NAMES[myMembership.league_id]||myMembership.league_id}</span>
+        ${myMembership.partner_name ? `<span class="label">Partner: ${myMembership.partner_name}${myMembership.partner_status==='pending'?' (pending acceptance)':''}</span>` : ''}
+        <span class="badge-linked">Registered</span>
+      </div>
+      <a class="btn btn-ghost" href="signup.html" style="display:inline-block;text-decoration:none;margin-top:1rem">Switch / Edit</a>
+    </div>` : ''}
 
     ${myScheduleCardHTML()}
 
