@@ -21,10 +21,11 @@ const NAC_CONFIG = {
     SUPABASE_ANON_KEY: 'sb_publishable_iYuBBWxRTIXA8h0V-wbRrw_IRgGpbyK',
   },
   uat: {
-    // Filled in once the UAT Supabase project exists.
-    SUPABASE_URL:      'REPLACE_WITH_UAT_URL',
-    SUPABASE_KEY:      'REPLACE_WITH_UAT_LEGACY_ANON_KEY',
-    SUPABASE_ANON_KEY: 'REPLACE_WITH_UAT_PUBLISHABLE_KEY',
+    // This project issues only the newer publishable key, which is valid for
+    // both uses: it authenticates REST (apikey + Bearer) and the auth endpoint.
+    SUPABASE_URL:      'https://ymuqnrdwxiaskyfxsmui.supabase.co',
+    SUPABASE_KEY:      'sb_publishable_CLdJDcB4F8nygbvPmfz4yQ_WhnEdbXm',
+    SUPABASE_ANON_KEY: 'sb_publishable_CLdJDcB4F8nygbvPmfz4yQ_WhnEdbXm',
   },
 }[NAC_ENV];
 
