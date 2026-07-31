@@ -13,7 +13,6 @@ async function nacVerifyScorePw(pw){
     return false;
   }catch(e){ return false; }
 }
-const SUPABASE_URL='https://owsvfvhlbagxxmncwmtn.supabase.co';
 
 // ── Score formats for playoffs / finals (leagues + tournaments) ──
 // A format defines how many games and the point target. Single-game formats
@@ -46,7 +45,6 @@ function nacFormatOptions(sel, ids){
   ids = ids || ['to11','to15','bo3to11'];
   return ids.map(id => `<option value="${id}"${id===sel?' selected':''}>${nacFormat(id).label}</option>`).join('');
 }
-const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 
 // Default league catalog — used until/unless a custom catalog is saved in the
 // database (pb_league key 'nac_leagues'). Admins can add/remove leagues there.

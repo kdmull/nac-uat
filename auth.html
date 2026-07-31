@@ -52,6 +52,7 @@ nav{position:static;top:auto;z-index:auto;flex-wrap:nowrap}
   .nav-link,[data-account-nav] a{font-size:11px!important;padding:.6rem .4rem!important}
 }
 </style>
+<script src="config.js"></script>
 </head>
 <body>
 <nav>
@@ -152,8 +153,6 @@ nav{position:static;top:auto;z-index:auto;flex-wrap:nowrap}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL = 'https://owsvfvhlbagxxmncwmtn.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im93c3ZmdmhsYmFneHhtbmN3bXRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NDQyMzksImV4cCI6MjA5NjIyMDIzOX0.AFemWKpLUuP8z1dAG5-j1X__EPyTdaqDFxece09-0EQ';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // A password-recovery link signs the user in, so check for it BEFORE the
