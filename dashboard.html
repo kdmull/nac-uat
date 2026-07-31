@@ -6,34 +6,8 @@
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
 <title>My Profile — NAC Pickleball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#1a2a6c;--navy-dark:#111d4e;
-  --green:#4caf28;--green-dark:#3a8c1e;
-  --white:#ffffff;--off-white:#f4f7fb;
-  --surface:#f0f4f9;--surface2:#e3eaf4;
-  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
-  --danger:#d93b3b;
-  --font-display:'Barlow Condensed',sans-serif;
-  --font-body:'Barlow',sans-serif;
-  --radius:8px;--radius-lg:12px;
-}
-body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
-.nav-logo{height:44px;width:auto}
-.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
-.nav-link:hover{color:#fff}
-.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
-.nav-actions{display:flex;align-items:center;flex-wrap:wrap}
-.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
-.nav-btn{font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:7px 14px;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:all .12s;border:1.5px solid transparent;white-space:nowrap}
-.nav-btn-ghost{color:#fff;border-color:rgba(255,255,255,.4)}
-.nav-btn-ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
-.nav-btn-ghost.current{border-color:var(--green);color:#fff}
-.nav-btn-solid{background:var(--green);color:#fff;border-color:var(--green)}
-.nav-btn-solid:hover{background:var(--green-dark);border-color:var(--green-dark)}
 .page{padding:2rem 1.5rem;max-width:640px;margin:0 auto}
 .profile-header{background:var(--navy);border-radius:var(--radius-lg);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem}
 .profile-avatar{width:60px;height:60px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:26px;font-weight:900;color:var(--white);flex-shrink:0}
@@ -65,9 +39,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .msg.error{color:var(--danger)}.msg.success{color:var(--green-dark)}
 .loading{text-align:center;padding:3rem;color:var(--muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:1px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block;margin-right:10px;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
-.toast.show{transform:translateY(0);opacity:1}
+
 .nav-links{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
 .nav-link-btn{flex:1;text-align:center;padding:12px;background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);text-decoration:none;transition:all .12s;min-width:120px}
 .nav-link-btn:hover{border-color:var(--navy);background:var(--surface)}

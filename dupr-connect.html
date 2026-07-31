@@ -6,23 +6,12 @@
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
 <title>Connect DUPR Account — NAC Pickleball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#1a2a6c;--navy-dark:#111d4e;
-  --green:#4caf28;--green-dark:#3a8c1e;
-  --white:#ffffff;--off-white:#f4f7fb;
-  --surface:#f0f4f9;--surface2:#e3eaf4;
-  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
-  --danger:#d93b3b;
-  --font-display:'Barlow Condensed',sans-serif;
-  --font-body:'Barlow',sans-serif;
-  --radius:8px;--radius-lg:12px;
-}
-body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
-.nav-logo{height:44px;width:auto}
+/* Page-specific overrides of styles.css */
+nav{flex-wrap:nowrap}
+.nav-brand{margin-right:0}
+
 /* Match the rest of the site on mobile: logo left, 64px. (This page doesn't
    load admin-nav.js, so it needs its own rule.) */
 @media(max-width:768px){
@@ -47,9 +36,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .success-card p{color:var(--muted);font-size:14px}
 .dupr-id-badge{display:inline-block;font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--navy);background:var(--surface2);padding:6px 16px;border-radius:var(--radius);margin:.75rem 0}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
-.toast.show{transform:translateY(0);opacity:1}
+
 @media(max-width:600px){
   .page{padding:1rem}
   .card{padding:1.2rem}

@@ -6,23 +6,11 @@
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
 <title>Player Profile — NAC Pickleball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#1a2a6c;--navy-dark:#111d4e;
-  --green:#4caf28;--green-dark:#3a8c1e;
-  --white:#ffffff;--off-white:#f4f7fb;
-  --surface:#f0f4f9;--surface2:#e3eaf4;
-  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
-  --danger:#d93b3b;
-  --font-display:'Barlow Condensed',sans-serif;
-  --font-body:'Barlow',sans-serif;
-  --radius:8px;--radius-lg:12px;
-}
-body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;position:sticky;top:0;z-index:100;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;margin-right:1.2rem;text-decoration:none}
-.nav-logo{height:44px;width:auto}
+/* Page-specific overrides of styles.css */
+nav{flex-wrap:nowrap}
+
 .back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;color:var(--white);font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;padding:.7rem 1.2rem;transition:color .12s;text-decoration:none;border-right:1px solid rgba(255,255,255,.15)}
 .back-btn:hover{color:var(--green)}
 .nav-tabs{display:flex;margin-left:auto}
@@ -34,7 +22,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .btn{padding:8px 20px;border-radius:var(--radius);font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .12s;border:1.5px solid transparent}
 .loading-overlay{display:flex;align-items:center;justify-content:center;padding:4rem;color:var(--muted);font-family:var(--font-display);font-size:16px;text-transform:uppercase;letter-spacing:1px;gap:12px}
 .spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+
 /* Profile header */
 .profile-header{background:var(--navy);border-radius:var(--radius-lg);padding:2rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
 .profile-avatar{width:72px;height:72px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:32px;font-weight:900;color:var(--white);flex-shrink:0;border:3px solid rgba(255,255,255,.2)}
@@ -76,8 +64,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .h2h-record{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--navy)}
 .h2h-bar{flex:2;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
 .h2h-bar-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s}
-.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:var(--white);padding:10px 20px;border-radius:var(--radius);font-family:var(--font-display);font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.5px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;pointer-events:none;border-left:4px solid var(--green)}
-.toast.show{transform:translateY(0);opacity:1}
+
 @media(max-width:768px){
   [data-account-nav]{width:100%;justify-content:center}
   [data-account-nav] a{padding:.7rem .6rem!important;font-size:13px!important}

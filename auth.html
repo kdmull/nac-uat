@@ -6,28 +6,14 @@
 <link rel="icon" type="image/jpg" href="favicon.jpg"/>
 <title>Sign In — NAC Pickleball</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#1a2a6c;--navy-dark:#111d4e;
-  --green:#4caf28;--green-dark:#3a8c1e;
-  --white:#ffffff;--off-white:#f4f7fb;
-  --surface:#f0f4f9;--surface2:#e3eaf4;
-  --text:#1a2a6c;--muted:#5a6a9a;--border:rgba(26,42,108,0.12);
-  --danger:#d93b3b;
-  --font-display:'Barlow Condensed',sans-serif;
-  --font-body:'Barlow',sans-serif;
-  --radius:8px;--radius-lg:12px;
-}
-body{background:var(--off-white);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh;-webkit-text-size-adjust:100%}
-nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 max(1.5rem,env(safe-area-inset-left));display:flex;align-items:center;border-bottom:3px solid var(--green)}
-.nav-brand{display:flex;align-items:center;gap:12px;padding:.65rem 0;text-decoration:none}
-.nav-logo{height:44px;width:auto}
+/* Page-specific overrides of styles.css */
+nav{position:static;top:auto;z-index:auto;flex-wrap:nowrap}
+.nav-brand{margin-right:0}
+
 /* Nav links (injected by admin-nav.js) — same styling as the rest of the site. */
-.nav-right{display:flex;align-items:center;flex-wrap:wrap;margin-left:auto}
-.nav-link{padding:1rem .95rem;font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.6);text-decoration:none;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;cursor:pointer}
-.nav-link:hover{color:#fff}
-.nav-link.current{color:var(--green);border-bottom-color:var(--green)}
+
 .page{padding:2rem 1.5rem;max-width:420px;margin:0 auto}
 .auth-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2rem;box-shadow:0 1px 4px rgba(26,42,108,.06);margin-top:1.5rem}
 .auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:2px solid var(--border)}
@@ -50,7 +36,7 @@ nav{background:var(--navy);padding:0 max(1.5rem,env(safe-area-inset-right)) 0 ma
 .form-section{display:none}.form-section.active{display:block}
 .hint{text-align:center;font-size:13px;color:var(--muted);margin-top:1rem}
 .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block;vertical-align:middle}
-@keyframes spin{to{transform:rotate(360deg)}}
+
 /* --- mobile nav (responsive: logo centered on top, links centered below) --- */
 @media(max-width:768px){
   nav{flex-wrap:wrap;justify-content:center}
