@@ -1,7 +1,0 @@
-# Each environment keeps its own Pages domain file. Promotion between
-# repos is a merge, and this driver makes the merge keep the CNAME of the
-# branch being merged INTO, so pushing UAT to production can never
-# repoint nacpickleball.com at the UAT domain.
-#
-# Requires (once per clone):  git config merge.keepours.driver true
-CNAME merge=keepours
