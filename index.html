@@ -22,6 +22,9 @@
 .btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:var(--green-dark)}
 .section-label{font-family:var(--font-display);font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:12px;text-align:center}
 .leagues-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+/* Tournaments always stack one per row; the cards carry a date block and
+   badges that get cramped at half width. Leagues still sit two-up. */
+#tournaments-grid{grid-template-columns:1fr}
 .league-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;cursor:pointer;transition:all .15s;box-shadow:0 1px 3px rgba(26,42,108,.05);display:flex;flex-direction:column;gap:6px;text-decoration:none}
 .league-card:hover{border-color:var(--navy);box-shadow:0 4px 16px rgba(26,42,108,.12);transform:translateY(-2px)}
 .league-card-title{font-family:var(--font-display);font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--navy)}
@@ -249,10 +252,14 @@ async function renderTournamentCards(){
         ? `tournament.html?t=${encodeURIComponent(t.id)}&d=${encodeURIComponent(liveDiv.id)}`
         : 'tournaments.html';
     const extAttrs = t.external ? ' target="_blank" rel="noopener noreferrer"' : '';
-    const badge = t.external ? '<span class="t-badge ext">Off-site</span>'
-                : live ? '<span class="t-badge live">Live Now</span>'
+    // Off-site events show the same registration badge as our own. They are
+    // only listed when they have a sign-up URL, so treat registration as open
+    // unless an admin has explicitly closed it (regOpen is often never set on
+    // these). The card body already says where sign-ups happen.
+    const regOpen = t.external ? t.regOpen !== false : !!t.regOpen;
+    const badge = live ? '<span class="t-badge live">Live Now</span>'
                 : done ? '<span class="t-badge done">Finished</span>'
-                : t.regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
+                : regOpen ? '<span class="t-badge open">Registration Open</span>' : '';
     const clean = v => String(v||'').replace(/[<>&]/g,'');
     const divBadges = divs.length
       ? `<div class="t-divs">${divs.map(d => `<span class="t-badge division">${clean(d.name)}${d.startTime?` <span style="color:var(--muted);font-weight:600">${fmtTime(d.startTime)}</span>`:''}${d.duprEnabled!==false?'<span class="dupr-mini">• DUPR</span>':''}</span>`).join('')}</div>`

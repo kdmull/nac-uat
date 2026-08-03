@@ -3,3 +3,9 @@
 
 # Local Claude Code settings
 .claude/settings.local.json
+
+# Supabase CLI scratch
+supabase/.temp/
+
+# Local archives - never publish these, they contain old credentials
+*.zip

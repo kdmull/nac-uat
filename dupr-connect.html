@@ -90,12 +90,28 @@ nav{flex-wrap:nowrap}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="shared.js"></script>
 <script>
-// PRODUCTION SSO. The client KEY is public by design — it identifies the
-// partner in the login URL. The client SECRET is never exposed here; it lives
-// only in Edge Function secrets.
-// Base64 of the production client key (ck-69ae2f5f-1060-40fa-ff26-71e3118c7c80):
-const DUPR_CLIENT_KEY_B64 = 'Y2stNjlhZTJmNWYtMTA2MC00MGZhLWZmMjYtNzFlMzExOGM3Yzgw';
-const DUPR_SSO_BASE = 'https://dupr.gg/login-external-app/';
+// SSO parameters come from the dupr-sso-config Edge Function on whichever
+// Supabase project this environment points at, so production serves live DUPR
+// keys and UAT serves test ones with no copy of either in this repo. Hardcoding
+// them here is what previously put a test client key in the production site.
+// The client KEY is public by design (it rides in the login URL); the client
+// SECRET is never sent to the browser.
+let duprSso = null;   // { clientKeyB64, ssoBase, keyKind }
+
+async function loadDuprSso(){
+  if(duprSso) return duprSso;
+  const { data:{ session } } = await sbAuth.auth.getSession();
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/dupr-sso-config`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + (session?.access_token || SUPABASE_KEY),
+    },
+  });
+  if(!r.ok) throw new Error('Could not load DUPR SSO config: ' + r.status);
+  duprSso = await r.json();
+  if(duprSso.error) throw new Error(duprSso.error);
+  return duprSso;
+}
 
 const sbAuth = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -132,11 +148,22 @@ function showAlreadyLinked(prof){
   document.getElementById('success-card').style.display = 'block';
 }
 
-function startConnect(){
-  const iframeWrap = document.getElementById('iframe-wrap');
-  document.getElementById('dupr-iframe').src = DUPR_SSO_BASE + DUPR_CLIENT_KEY_B64;
-  iframeWrap.style.display = 'block';
-  iframeWrap.scrollIntoView({behavior:'smooth'});
+async function startConnect(){
+  const btn = document.getElementById('account-connect-btn');
+  const original = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Loading...'; }
+  try {
+    const sso = await loadDuprSso();
+    const iframeWrap = document.getElementById('iframe-wrap');
+    document.getElementById('dupr-iframe').src = sso.ssoBase + sso.clientKeyB64;
+    iframeWrap.style.display = 'block';
+    iframeWrap.scrollIntoView({behavior:'smooth'});
+    if(btn){ btn.disabled = false; btn.textContent = original; }
+  } catch(e) {
+    console.error(e);
+    if(btn){ btn.disabled = false; btn.textContent = 'Connect DUPR Account'; }
+    alert('Could not start DUPR sign-in. Please try again in a moment.');
+  }
 }
 
 function cancelConnect(){
