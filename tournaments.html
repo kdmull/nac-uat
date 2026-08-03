@@ -330,7 +330,10 @@ function render(){
   if(!ts.length){ el.innerHTML = '<div class="card"><p style="color:var(--muted)">No tournaments are posted yet — check back soon!</p></div>'; return; }
 
   el.innerHTML = ts.map((t,ti) => {
-    const open = !!t.regOpen;
+    // Off-site events are only listed when they have a sign-up URL, so treat
+    // registration as open unless explicitly closed; regOpen is often unset on
+    // them. Our own tournaments still require it to be turned on.
+    const open = t.external ? t.regOpen !== false : !!t.regOpen;
     const divs = (t.divisions||[]).map((d,di) => {
       const mine = myRegFor(t,d);
       const n = counts[dLeague(t,d)];
@@ -380,7 +383,7 @@ function render(){
           <div class="tsub">
             <span>${esc(t.location || NAC_VENUE)}</span><span class="dot-sep">·</span>
             ${t.external
-              ? `<span class="pill ext">Off-site event</span>`
+              ? `<span class="pill ${open?'open':'closed'}">${open?'Registration open':'Registration closed'}</span>`
               : `<span>${nd} division${nd!==1?'s':''}</span>
                  <span class="pill ${open?'open':'closed'}">${open?'Registration open':'Registration closed'}</span>`}
           </div>
