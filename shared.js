@@ -14,6 +14,16 @@ async function nacVerifyScorePw(pw){
   }catch(e){ return false; }
 }
 
+// ── league_members columns the browser is allowed to read ──
+// Everything except email and phone. Column privileges are not row-aware, so
+// a single select('*') anywhere forces those columns to be granted to every
+// signed-in user -- which let any account read the whole membership's contact
+// details. Nothing in the browser needs them: a member reads their own contact
+// details from profiles, and admins get them via admin-list-accounts, which
+// runs on the service key and is unaffected by grants.
+const LM_COLS = 'id,league_id,season_id,user_id,partner_user_id,first_name,' +
+                'last_name,partner_name,status,joined_at,partner_status';
+
 // ── Score formats for playoffs / finals (leagues + tournaments) ──
 // A format defines how many games and the point target. Single-game formats
 // are decided by the one game's score; multi-game by winning the majority.

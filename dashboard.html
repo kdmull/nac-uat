@@ -332,7 +332,7 @@ async function loadMyMembership(){
   try{
     const seasonId = currentSeason?.id || 'spring2026';
     const { data } = await supabaseClient.from('league_members')
-      .select('*').eq('user_id', currentUser.id).eq('season_id', seasonId)
+      .select(LM_COLS).eq('user_id', currentUser.id).eq('season_id', seasonId)
       .eq('status','active').maybeSingle();
     myMembership = data || null;
   }catch(e){ console.warn('membership load failed:', e); myMembership = null; }

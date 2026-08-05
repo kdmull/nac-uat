@@ -156,7 +156,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const seasonIds = CAT.tournaments.map(tSeason);
     if(seasonIds.length){
       const seasonInList = seasonIds.map(v => `"${v}"`).join(',');
-      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
+      const { data: regs } = await sbT.from('league_members').select(LM_COLS).eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
       myRegs = regs || [];
     }
   }
@@ -194,10 +194,9 @@ async function loadCounts(){
     if(uids.length){
       try{
         // public_players exposes id/name/dupr_id only; profiles stays locked to
-        // its owner. Signed-out visitors can't read it, so they see names only.
-        const { data: profs } = me
-          ? await client.from('public_players').select('id,dupr_id').in('id', uids)
-          : { data: [] };
+        // its owner. The view is readable signed-out too, so ratings show on
+        // rosters without an account -- the same names are already public here.
+        const { data: profs } = await client.from('public_players').select('id,dupr_id').in('id', uids);
         (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
         const dids = [...new Set(Object.values(duprByUser))];
         if(dids.length){
@@ -542,7 +541,7 @@ async function submitRegistration(ti, di){
       }).catch(()=>{});
     }catch(e){}
 
-    const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
+    const { data: regs } = await sbT.from('league_members').select(LM_COLS).eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
     if(regs && regs.length) myRegs.push(regs[0]);
     msgEl.innerHTML = `<div class="msg success">You're registered for ${esc(d.name)}!${status==='accepted'?' You and '+esc(partnerName)+' are partners ✓':''}</div>`;
     await loadCounts(); render();
