@@ -69,6 +69,8 @@ There's no test suite. Before considering an edit done:
   "Cannot find name 'Deno'" — those globals exist at runtime).
 - For visual changes, render at 390px wide as well as desktop. Mobile is the
   primary way members use this site.
+- After anything touching grants, policies or the schema, run
+  `node tools/check-permissions.js`. See "Database permissions" below.
 
 ## Things that have bitten us
 
@@ -106,6 +108,43 @@ There's no test suite. Before considering an edit done:
   It always returns 200, so failures only appear in its logs.
 - Ratings flow: SSO connect → `dupr-subscribe-user` → DUPR sends `RATING_SEED`
   → `dupr_ratings` table → UI reads that table first, batch API as fallback.
+
+## Database permissions
+
+Run this before and after anything that touches grants, policies or the
+schema — it probes both environments as an anonymous visitor and exits
+non-zero if a sensitive column became readable or a public one broke:
+
+```
+node tools/check-permissions.js          # both environments
+node tools/check-permissions.js uat      # one of: prod | uat
+```
+
+Three things about this database are easy to get wrong, and all three have
+already caused a real leak here:
+
+- **Column-level grants are invisible to a policy audit.** `league_members`
+  and `dupr_players` hold member emails/phones and DUPR access tokens next
+  to columns the public roster needs. They are protected by
+  `revoke select` + `grant select (safe, columns, only)`, *not* by policy —
+  both still carry `public read USING true`. So `pg_policies` looks clean
+  while the protection is real, and `has_table_privilege` reports the table
+  as unreadable while `has_column_privilege` shows the truth. A single
+  `grant select on all tables in schema public to anon` silently undoes it.
+  That statement is common in migrations. Never run it here.
+- **Grants do not travel with a schema dump.** `supabase db dump
+  --schema-only` carries tables and policies but not privileges, so a
+  rebuilt UAT comes back with different access to production. This is what
+  left `public_players` ungranted to `anon`, which made every DUPR rating
+  render as `NR` for signed-out visitors.
+- **RLS is the only thing stopping anonymous writes.** `anon` no longer
+  holds INSERT/UPDATE/DELETE, but nothing enforces that beyond the grant —
+  add a permissive policy and those writes become live.
+
+`public_players` is the pattern to copy when the browser needs a subset of
+a sensitive table: a view with `security_invoker=off`, so it runs as its
+owner and deliberately bypasses the underlying `profiles` RLS, exposing
+only id, first name, last name and dupr_id.
 
 ## Secrets
 
