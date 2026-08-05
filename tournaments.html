@@ -194,10 +194,9 @@ async function loadCounts(){
     if(uids.length){
       try{
         // public_players exposes id/name/dupr_id only; profiles stays locked to
-        // its owner. Signed-out visitors can't read it, so they see names only.
-        const { data: profs } = me
-          ? await client.from('public_players').select('id,dupr_id').in('id', uids)
-          : { data: [] };
+        // its owner. The view is readable signed-out too, so ratings show on
+        // rosters without an account -- the same names are already public here.
+        const { data: profs } = await client.from('public_players').select('id,dupr_id').in('id', uids);
         (profs||[]).forEach(p => { if(p.dupr_id) duprByUser[p.id] = p.dupr_id; });
         const dids = [...new Set(Object.values(duprByUser))];
         if(dids.length){
