@@ -168,7 +168,7 @@ let switchMode = false;
 async function loadMyMembership(){
   try{
     const { data, error } = await sb.from('league_members')
-      .select('*')
+      .select(LM_COLS)
       .eq('user_id', currentUser.id)
       .eq('season_id', activeSeasonId)
       .eq('status', 'active')

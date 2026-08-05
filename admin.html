@@ -1660,12 +1660,16 @@ async function loadRegistered(){
   const leagueId = `t:${curT.id}:${curD.id}`;
   const notes = document.getElementById('reg-notes');
   notes.textContent = 'Loading registrations…';
-  const { data: regs, error } = await sbAuth.from('league_members').select('*')
+  const { data: regs, error } = await sbAuth.from('league_members').select(LM_COLS)
     .eq('league_id', leagueId).eq('status','active');
   if(error){ notes.textContent = 'Could not load registrations: ' + error.message; return; }
   if(!regs || !regs.length){ notes.textContent = 'No registrations yet for this division.'; return; }
 
-  const nm = r => deriveScheduleName(r.first_name, r.last_name) || (r.email||'?');
+  // Falls back to a short user id rather than the email: league_members no
+  // longer exposes email to the browser. Full contact details are on the
+  // accounts page, which loads them through admin-list-accounts.
+  const nm = r => deriveScheduleName(r.first_name, r.last_name)
+                  || (r.user_id ? 'Player ' + String(r.user_id).slice(0, 8) : '?');
 
   // DUPR ratings for seeding: user_id -> profiles.dupr_id -> dupr_ratings
   const uids = [...new Set(regs.flatMap(r => [r.user_id, r.partner_user_id]).filter(Boolean))];

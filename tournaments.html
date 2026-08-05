@@ -156,7 +156,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const seasonIds = CAT.tournaments.map(tSeason);
     if(seasonIds.length){
       const seasonInList = seasonIds.map(v => `"${v}"`).join(',');
-      const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
+      const { data: regs } = await sbT.from('league_members').select(LM_COLS).eq('user_id', me.id).filter('season_id','in',`(${seasonInList})`).eq('status','active');
       myRegs = regs || [];
     }
   }
@@ -541,7 +541,7 @@ async function submitRegistration(ti, di){
       }).catch(()=>{});
     }catch(e){}
 
-    const { data: regs } = await sbT.from('league_members').select('*').eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
+    const { data: regs } = await sbT.from('league_members').select(LM_COLS).eq('user_id', me.id).eq('league_id', dLeague(t,d)).eq('status','active');
     if(regs && regs.length) myRegs.push(regs[0]);
     msgEl.innerHTML = `<div class="msg success">You're registered for ${esc(d.name)}!${status==='accepted'?' You and '+esc(partnerName)+' are partners ✓':''}</div>`;
     await loadCounts(); render();
